@@ -1,6 +1,10 @@
 <?php namespace App\Services;
 
 
+/**
+ * Class FulltextSearch
+ * @package App\Services
+ */
 class FulltextSearch extends Services
 {
     /**
@@ -17,6 +21,7 @@ class FulltextSearch extends Services
     const SIZE = 1000;
 
     /**
+     * Full text search
      * @param $request
      * @return array
      */
@@ -34,6 +39,7 @@ class FulltextSearch extends Services
      */
     public function searchInMaster($request)
     {
+        $params = [];
         $params['index'] = self::INDEX;
         $params['type']  = "master";
         if (isset($request['year']) and !empty($request['year'])) {
@@ -107,7 +113,7 @@ class FulltextSearch extends Services
 
 
         $params['body']['from'] = isset($request['from']) ? $request['from'] : self::FROM;
-
+        $data = [];
         $data          = $this->searchText($params);
         $data['total'] = $total;
         return $data;
