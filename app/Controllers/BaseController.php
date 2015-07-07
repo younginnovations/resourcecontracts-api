@@ -23,8 +23,7 @@ class BaseController
     }
 
     /**
-     * display content
-     *
+     * Display content
      * @param $page
      * @return Response
      */
@@ -36,8 +35,7 @@ class BaseController
     }
 
     /**
-     * display jason data
-     *
+     * Return jason data
      * @param $array
      * @return Response
      */

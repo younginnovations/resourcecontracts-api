@@ -1,5 +1,10 @@
 <?php namespace App\Services;
 
+/**
+ * API Service for client site
+ * Class APIServices
+ * @package App\Services
+ */
 class APIServices extends Services
 {
 
@@ -9,9 +14,9 @@ class APIServices extends Services
      */
     public function getSummary()
     {
-        $params                   = $this->getMetadataIndexType();
-        $data                     = [];
-        $params['body']           = [
+        $params         = $this->getMetadataIndexType();
+        $data           = [];
+        $params['body'] = [
             'size' => 0,
             'aggs' =>
                 [
@@ -39,7 +44,7 @@ class APIServices extends Services
                 ],
         ];
 
-        $response                 = $this->search($params);
+        $response = $this->search($params);
 
         $data['country_summary']  = $response['aggregations']['country_summary']['buckets'];
         $data['year_summary']     = $response['aggregations']['year_summary']['buckets'];
@@ -55,6 +60,7 @@ class APIServices extends Services
      */
     public function getMetadataIndexType()
     {
+        $param          = [];
         $param['index'] = "nrgi";
         $param['type']  = "metadata";
         return $param;
@@ -67,7 +73,7 @@ class APIServices extends Services
      */
     public function textSearch($request)
     {
-
+        $params          = [];
         $params['index'] = "nrgi";
         $type            = [];
         $text            = $request['q'] ?: "";
@@ -84,14 +90,13 @@ class APIServices extends Services
         $params['body'] = [
             "query" => [
                 "query_string" => [
-                    "que
-            ry" => $text
+                    "query" => $text
                 ]
             ]
         ];
         $response       = $this->search($params);
-        return $response;
 
+        return $response;
     }
 
     /**
@@ -148,6 +153,7 @@ class APIServices extends Services
     }
 
     /**
+     *Filter the data from metadata,annotations and pdf_text
      * @param $request
      * @return array
      */
@@ -163,6 +169,7 @@ class APIServices extends Services
     }
 
     /**
+     * Return the unique data
      * @param $filter
      * @return array
      */
@@ -181,6 +188,7 @@ class APIServices extends Services
     }
 
     /**
+     * Return the page of pdf text
      * @param $contractId
      * @param $pageNo
      * @return array
@@ -204,12 +212,14 @@ class APIServices extends Services
     }
 
     /**
+     * Return the contract annotations of page
      * @param $contractId
      * @param $pageNo
      * @return array
      */
     public function getAnnotationPages($contractId, $pageNo)
     {
+        $params                                  = [];
         $params['index']                         = "nrgi";
         $params['type']                          = "annotations";
         $params['body']['query']['bool']['must'] = [
@@ -232,6 +242,7 @@ class APIServices extends Services
     }
 
     /**
+     * Return the metadata
      * @param $contractId
      * @return mixed
      */
@@ -246,11 +257,6 @@ class APIServices extends Services
                             '_id' => $contractId
                         ]
                     ]
-                    /*[
-                        "term" => [
-                            "metadata.category" => "rc"
-                        ]
-                    ]*/
                 ]
             ]
         ];
@@ -260,6 +266,7 @@ class APIServices extends Services
     }
 
     /**
+     * Return all the annotations of contract
      * @param $contractId
      * @return array
      */
@@ -267,24 +274,24 @@ class APIServices extends Services
     {
         $params['index'] = "nrgi";
         $params['type']  = "annotations";
-        $params['body']  = array(
+        $params['body']  = [
             'filter' =>
-                array(
+                [
                     'and' =>
-                        array(
+                        [
                             'filters' =>
-                                array(
+                                [
                                     0 =>
-                                        array(
+                                        [
                                             'term' =>
-                                                array(
+                                                [
                                                     'contract_id' => $contractId,
-                                                ),
-                                        ),
-                                ),
-                        ),
-                ),
-        );
+                                                ],
+                                        ],
+                                ],
+                        ],
+                ],
+        ];
 
         $results = $this->search($params);
         $results = $results['hits']['hits'];
@@ -332,6 +339,7 @@ class APIServices extends Services
     }
 
     /**
+     * PDF Search
      * @param $request
      * @return array
      */
@@ -383,7 +391,5 @@ class APIServices extends Services
 
         return $data;
     }
-
-
 
 }

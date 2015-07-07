@@ -2,6 +2,10 @@
 
 use Elasticsearch\ClientBuilder;
 
+/**
+ * Class Services
+ * @package App\Services
+ */
 class Services
 {
     /**
@@ -18,11 +22,21 @@ class Services
         $this->api = $api->create()->build();
     }
 
+    /**
+     * Return the search result
+     * @param $params
+     * @return array
+     */
     public function search($params)
     {
         return $this->api->search($params);
     }
 
+    /**
+     * Return the count of search result
+     * @param $params
+     * @return array
+     */
     public function getCount($params)
     {
         return $this->api->count($params);

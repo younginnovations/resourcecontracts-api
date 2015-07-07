@@ -2,8 +2,12 @@
 
 use App\Services\APIServices;
 use App\Services\FulltextSearch;
-use Symfony\Component\HttpFoundation\Request;
 
+/**
+ * API Controller for Client site
+ * Class APIController
+ * @package App\Controllers
+ */
 class APIController extends BaseController
 {
     /**
