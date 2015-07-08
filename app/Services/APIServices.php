@@ -388,7 +388,7 @@ class APIServices extends Services
                 $data[] = [
                     'page_no'     => $fields['page_no'][0],
                     'contract_id' => $fields['contract_id'][0],
-                    'text'        => $text
+                    'text'        => strip_tags($text)
                 ];
             }
 
