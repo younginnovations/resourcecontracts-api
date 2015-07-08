@@ -352,7 +352,8 @@ class APIServices extends Services
                 "filtered" => [
                     "query"  => [
                         "query_string" => [
-                            "query" => $request['q']
+                            "default_field" => "text",
+                            "query"         => $request['q']
                         ]
                     ],
                     "filter" => [
@@ -382,11 +383,15 @@ class APIServices extends Services
         $data            = [];
         foreach ($hits as $hit) {
             $fields = $hit['fields'];
-            $data[] = [
-                'page_no'     => $fields['page_no'][0],
-                'contract_id' => $fields['contract_id'][0],
-                'text'        => $hit['highlight']['text'][0]
-            ];
+            $text   = $hit['highlight']['text'][0];
+            if (!empty($text)) {
+                $data[] = [
+                    'page_no'     => $fields['page_no'][0],
+                    'contract_id' => $fields['contract_id'][0],
+                    'text'        => $text
+                ];
+            }
+
         }
 
         return $data;

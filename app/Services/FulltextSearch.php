@@ -39,7 +39,7 @@ class FulltextSearch extends Services
      */
     public function searchInMaster($request)
     {
-        $params = [];
+        $params          = [];
         $params['index'] = self::INDEX;
         $params['type']  = "master";
         if (isset($request['year']) and !empty($request['year'])) {
@@ -113,9 +113,9 @@ class FulltextSearch extends Services
 
 
         $params['body']['from'] = isset($request['from']) ? $request['from'] : self::FROM;
-        $data = [];
-        $data          = $this->searchText($params);
-        $data['total'] = $total;
+        $data                   = [];
+        $data                   = $this->searchText($params);
+        $data['total']          = $total;
         return $data;
     }
 
