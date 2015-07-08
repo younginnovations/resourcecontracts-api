@@ -364,8 +364,6 @@ class APIServices extends Services
                 ]
             ],
             "highlight" => [
-                "pre_tags"  => ["<b><em>"],
-                "post_tags" => ["</em></b>"],
                 "fields"    => [
                     "text" => [
                         "fragment_size"       => 200,

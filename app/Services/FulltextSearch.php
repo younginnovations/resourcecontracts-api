@@ -114,7 +114,8 @@ class FulltextSearch extends Services
 
         $params['body']['from'] = isset($request['from']) ? $request['from'] : self::FROM;
         $data                   = [];
-        $data                   = $this->searchText($params);
+        $type                   = isset($request['type']) ? explode(',', $request['type']) : '';
+        $data                   = $this->searchText($params, $type);
         $data['total']          = $total;
         return $data;
     }
@@ -125,7 +126,7 @@ class FulltextSearch extends Services
      * @param $params
      * @return array
      */
-    public function searchText($params)
+    public function searchText($params, $type)
     {
 
         $results = $this->search($params);
@@ -149,22 +150,28 @@ class FulltextSearch extends Services
                 isset($field['fields']['metadata.signature_year'][0]) ? $field['fields']['metadata.signature_year'][0] : '');
             $data['result'][$i]['type']  = [];
             $highlight                   = isset($field['highlight']) ? $field['highlight'] : "";
-            $data['result'][$i]['quote'] = isset($highlight['annotations.quote']) ? $highlight['annotations.quote'][0] : "";
-            $data['result'][$i]['text']  = isset($highlight['annotations.text'][0]) ? $highlight['annotations.text'][0] . '...' : "";
+            $data['result'][$i]['quote'] = (isset($highlight['annotations.quote']) and in_array('annotations',
+                    $type)) ? $highlight['annotations.quote'][0] : "";
+            $data['result'][$i]['text']  = (isset($highlight['annotations.text'][0]) and in_array('annotations',
+                    $type)) ? $highlight['annotations.text'][0] . '...' : "";
 
-            if (isset($highlight['pdf_text.text'])) {
+            if (isset($highlight['pdf_text.text']) and in_array('text', $type)) {
                 $data['result'][$i]['text'] = $highlight['pdf_text.text'][0] . '...';
             }
 
-            if (isset($highlight['pdf_text.text'])) {
+            if (isset($highlight['pdf_text.text']) and in_array('text', $type)) {
                 array_push($data['result'][$i]['type'], "Text");
 
             }
-            if (isset($highlight['annotations.quote']) or isset($highlight['annotations.text'])) {
+            if ((isset($highlight['annotations.quote']) or isset($highlight['annotations.text'])) and in_array('annotations',
+                    $type)
+            ) {
                 array_push($data['result'][$i]['type'], "Annotation");
 
             }
-            if (!isset($highlight['pdf_text.text']) and !isset($highlight['annotations.quote']) and !isset($highlight['annotations.text'])) {
+            if (!isset($highlight['pdf_text.text']) and !isset($highlight['annotations.quote']) and !isset($highlight['annotations.text']) and in_array('metadata',
+                    $type)
+            ) {
                 array_push($data['result'][$i]['type'], "Metadata");
             }
 
