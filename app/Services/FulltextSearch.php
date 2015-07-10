@@ -39,6 +39,8 @@ class FulltextSearch extends Services
      */
     public function searchInMaster($request)
     {
+        $type = isset($request['type']) ? array_map('trim', explode(',', $request['type'])) : [];
+
         $params          = [];
         $params['index'] = self::INDEX;
         $params['type']  = "master";
@@ -48,16 +50,29 @@ class FulltextSearch extends Services
         }
         if (isset($request['country']) and !empty($request['country'])) {
             $country   = explode(',', $request['country']);
-            $filters[] = ["terms" => ["metadata.country.code" => $country]];
+            $filters[] = ["terms" => ["metadata.country_code" => $country]];
         }
         if (isset($request['resource']) and !empty($request['resource'])) {
             $resource  = explode(',', $request['resource']);
             $filters[] = ["terms" => ["metadata.resource" => $resource]];
         }
-
-        if (isset($request['q'])) {
-            $params['body']['query']['query_string']['query'] = $request['q'];
+        $fields = [];
+        if (in_array("metadata", $type)) {
+            array_push($fields, "metadata_string");
         }
+        if (in_array("text", $type)) {
+            array_push($fields, "pdf_text_string");
+        }
+        if (in_array("annotations", $type)) {
+            array_push($fields, "annotations_string");
+        }
+        if (isset($request['q'])) {
+            $params['body']['query']['query_string'] = [
+                "fields" => $fields,
+                'query'  => $request['q']
+            ];
+        }
+
         if (!empty($filters)) {
             $params['body']['filter'] = [
                 "and" => [
@@ -71,39 +86,53 @@ class FulltextSearch extends Services
             "metadata.contract_name",
             "metadata.signature_year",
             "metadata.file_size",
-            "metadata.country.code"
+            "metadata.country_code",
+            "metadata.country_name",
+            "metadata.language",
+            "metadata.file_size"
         ];
         if (isset($request['sortby']) and isset($request['order'])) {
             if ($request['sortby'] == "country") {
-                $params['body']['sort']['metadata.country.name']['order'] = $request['order'];
+                $params['body']['sort']['metadata.country_name']['order'] = $request['order'];
             }
             if ($request['sortby'] == "year") {
                 $params['body']['sort']['metadata.signature_year']['order'] = $request['order'];
             }
         }
 
-        $params['body']['highlight'] = [
-            'pre_tags'  => [
-                '<strong>',
-            ],
-            'post_tags' => [
-                '</strong>',
-            ],
-            'fields'    => [
-                'pdf_text.text'     => [
-                    'fragment_size'       => 200,
-                    'number_of_fragments' => 1,
+        $highlightField = [];
+        if (in_array('metadata', $type)) {
+            $highlightField['metadata_string'] = [
+                'fragment_size'       => 200,
+                'number_of_fragments' => 1,
+            ];
+
+        }
+        if (in_array('text', $type)) {
+            $highlightField['pdf_text_string'] = [
+                'fragment_size'       => 200,
+                'number_of_fragments' => 1,
+            ];
+
+        }
+        if (in_array('annotations', $type)) {
+            $highlightField['annotations_string'] = [
+                'fragment_size'       => 1,
+                'number_of_fragments' => 1,
+            ];
+
+        }
+
+            $params['body']['highlight'] = [
+                'pre_tags'  => [
+                    '<strong>',
                 ],
-                'annotations.quote' => [
-                    'fragment_size'       => 200,
-                    'number_of_fragments' => 1,
+                'post_tags' => [
+                    '</strong>',
                 ],
-                'annotations.text'  => [
-                    'fragment_size'       => 200,
-                    'number_of_fragments' => 1,
-                ],
-            ],
-        ];
+                'fields'    => $highlightField,
+            ];
+
 
         if (isset($request['per_page'])) {
             $params['body']['size'] = $request['per_page'];
@@ -114,9 +143,9 @@ class FulltextSearch extends Services
 
         $params['body']['from'] = isset($request['from']) ? $request['from'] : self::FROM;
         $data                   = [];
-        $type                   = isset($request['type']) ? array_map('trim', explode(',', $request['type'])) : [];
-        $data                   = $this->searchText($params, $type);
-        $data['total']          = $total;
+
+        $data          = $this->searchText($params, $type);
+        $data['total'] = $total;
         return $data;
     }
 
@@ -129,8 +158,7 @@ class FulltextSearch extends Services
     public function searchText($params, $type)
     {
 
-        $results = $this->search($params);
-
+        $results         = $this->search($params);
         $fields          = $results['hits']['hits'];
         $data            = [];
         $data['country'] = [];
@@ -139,57 +167,38 @@ class FulltextSearch extends Services
         $i               = 0;
 
         foreach ($fields as $field) {
+
             $contractId = $field['_id'];
-
-            $data['result'][$i]['type'] = [];
-            $highlight                   = isset($field['highlight']) ? $field['highlight'] : "";
-            if (isset($highlight['pdf_text.text']) and in_array('text', $type)) {
+            array_push($data['country'], $field['fields']['metadata.country_code'][0]);
+            array_push($data['year'], $field['fields']['metadata.signature_year'][0]);
+            $data['result'][$i]                = [
+                "contract_id"    => $contractId,
+                "contract_name"  => $field['fields']['metadata.contract_name'][0],
+                "signature_year" => $field['fields']['metadata.signature_year'][0],
+                'country'        => $field['fields']['metadata.country_code'][0],
+                "file_size"      => $field['fields']['metadata.file_size'][0],
+                "language"       => $field['fields']['metadata.language'][0],
+            ];
+            $data['result'][$i]['type']        = [];
+            $highlight                         = $field['highlight'];
+            $data['result'][$i]['text']        = isset($highlight['pdf_text_string'][0]) ? $highlight['pdf_text_string'][0] : '';
+            $data['result'][$i]['annotations'] = isset($highlight['annotations_string'][0]) ? $highlight['annotations_string'][0] : '';
+            if (isset($highlight['pdf_text_string']) and in_array('text', $type)) {
                 array_push($data['result'][$i]['type'], "Text");
-
             }
-            if ((isset($highlight['annotations.quote']) or isset($highlight['annotations.text'])) and in_array('annotations',
-                    $type)
-            ) {
-                array_push($data['result'][$i]['type'], "Annotation");
-
-            }
-            if (!isset($highlight['pdf_text.text']) and !isset($highlight['annotations.quote']) and !isset($highlight['annotations.text']) and in_array('metadata',
-                    $type)
-            ) {
+            if (isset($highlight['metadata_string']) and in_array('metadata', $type)) {
                 array_push($data['result'][$i]['type'], "Metadata");
             }
-
-            if (!empty($data['result'][$i]['type'])) {
-                $data['result'][$i]['contract_id']    = $contractId;
-                $data['result'][$i]['contract_name']  = isset($field['fields']['metadata.contract_name'][0]) ? $field['fields']['metadata.contract_name'][0] : '';
-                $data['result'][$i]['signature_year'] = isset($field['fields']['metadata.signature_year'][0]) ? $field['fields']['metadata.signature_year'][0] : '';
-                $data['result'][$i]['file_size']      = isset($field['fields']['metadata.file_size'][0]) ? $field['fields']['metadata.file_size'][0] : '';
-                $data['result'][$i]['country']        = strtolower($field['fields']['metadata.country.code'][0]);
-
-                array_push($data['country'], strtolower($field['fields']['metadata.country.code'][0]));
-                array_push($data['year'],
-                    isset($field['fields']['metadata.signature_year'][0]) ? $field['fields']['metadata.signature_year'][0] : '');
-                $highlight                   = isset($field['highlight']) ? $field['highlight'] : "";
-                $data['result'][$i]['quote'] = (isset($highlight['annotations.quote']) and in_array('annotations',
-                        $type)) ? $highlight['annotations.quote'][0] : "";
-                $data['result'][$i]['text']  = (isset($highlight['annotations.text'][0]) and in_array('annotations',
-                        $type)) ? $highlight['annotations.text'][0] . '...' : "";
-
-                if (isset($highlight['pdf_text.text']) and in_array('text', $type)) {
-                    $data['result'][$i]['text'] = $highlight['pdf_text.text'][0] . '...';
-                }
-
-            }
-            if (empty($data['result'][$i]['type'])) {
-                unset($data['result'][$i], $data);
+            if (isset($highlight['annotations_string']) and in_array('annotations', $type)) {
+                array_push($data['result'][$i]['type'], "Annotation");
             }
 
             $i++;
-
         }
-        $data['country']  = isset($data['country'])?array_unique($data['country']):[];
-        $data['year']     = isset($data['year'])?array_unique($data['year']):[];
-        $data['per_page'] = isset($data['result'])?count($data['result']):0;
+
+        $data['country']  = isset($data['country']) ? array_unique($data['country']) : [];
+        $data['year']     = isset($data['year']) ? array_unique($data['year']) : [];
+        $data['per_page'] = isset($data['result']) ? count($data['result']) : 0;
         return $data;
     }
 
