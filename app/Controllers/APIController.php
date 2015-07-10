@@ -23,10 +23,10 @@ class APIController extends BaseController
      * @param APIServices $api
      * @param FulltextSearch $search
      */
-    public function __construct(APIServices $api,FulltextSearch $search)
+    public function __construct(APIServices $api, FulltextSearch $search)
     {
         parent::__construct();
-        $this->api = $api;
+        $this->api    = $api;
         $this->search = $search;
     }
 
@@ -160,8 +160,8 @@ class APIController extends BaseController
      */
     public function fullTextSearch()
     {
-
         $response = $this->search->FullTextSearch($this->request->query->all());
+
         return $this->json($response);
     }
 }
