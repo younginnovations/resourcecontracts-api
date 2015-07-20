@@ -232,11 +232,17 @@ class APIServices extends Services
         ];
         $results                                 = $this->search($params);
         $data                                    = [];
+        $i=0;
         foreach ($results['hits']['hits'] as $result) {
+
             $temp         = $result['_source'];
+            $data['metadata']=$temp['metadata'];
             $temp['id']   = (integer)$result['_id'];
-            $data['rows'] = [$temp];
+            unset($temp['metadata']);
+            $data['rows'][$i]=$temp;
+            $i++; 
         }
+        
         $data['total'] = count($data['rows']);
         return $data;
     }
