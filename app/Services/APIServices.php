@@ -63,6 +63,7 @@ class APIServices extends Services
         $param          = [];
         $param['index'] = "nrgi";
         $param['type']  = "metadata";
+
         return $param;
     }
 
@@ -147,8 +148,9 @@ class APIServices extends Services
             $data[$i]['contract_id']    = $field['fields']['contract_id'][0];
             $data[$i]['signature_year'] = isset($field['fields']['metadata.signature_year'][0]) ? $field['fields']['metadata.signature_year'][0] : '';
             $data[$i]['file_size']      = isset($field['fields']['metadata.file_size'][0]) ? $field['fields']['metadata.file_size'][0] : '';
-            $i++;
+            $i ++;
         }
+
         return $data;
     }
 
@@ -165,6 +167,7 @@ class APIServices extends Services
         $data  = array_merge($data1, $data2);
         $data  = array_merge($data, $data3);
         $data  = $this->getUniqueData($data);
+
         return $data;
     }
 
@@ -176,7 +179,7 @@ class APIServices extends Services
     public function getUniqueData($filter)
     {
 
-        $temp_array = array();
+        $temp_array = [];
         $data       = [];
         foreach ($filter as $v) {
             if (!in_array($v['contract_id'], $temp_array)) {
@@ -184,6 +187,7 @@ class APIServices extends Services
                 array_push($data, $v);
             }
         }
+
         return $data;
     }
 
@@ -207,6 +211,7 @@ class APIServices extends Services
         ];
         $results                                 = $this->search($params);
         $results                                 = $results['hits']['hits'][0]['_source'];
+
         return $results;
 
     }
@@ -232,18 +237,19 @@ class APIServices extends Services
         ];
         $results                                 = $this->search($params);
         $data                                    = [];
-        $i=0;
+        $i                                       = 0;
         foreach ($results['hits']['hits'] as $result) {
 
-            $temp         = $result['_source'];
-            $data['metadata']=$temp['metadata'];
-            $temp['id']   = (integer)$result['_id'];
+            $temp             = $result['_source'];
+            $data['metadata'] = $temp['metadata'];
+            $temp['id']       = (integer) $result['_id'];
             unset($temp['metadata']);
-            $data['rows'][$i]=$temp;
-            $i++; 
+            $data['rows'][$i] = $temp;
+            $i ++;
         }
-        
+
         $data['total'] = count($data['rows']);
+
         return $data;
     }
 
@@ -268,6 +274,7 @@ class APIServices extends Services
         ];
         $result                   = $this->search($params);
         $results                  = $result['hits']['hits'][0]['_source'];
+
         return $results;
     }
 
@@ -312,6 +319,7 @@ class APIServices extends Services
             ];
 
         }
+
         return $data;
     }
 
@@ -327,8 +335,17 @@ class APIServices extends Services
         $results                              = $results['hits']['hits'];
         $data                                 = [];
         foreach ($results as $result) {
-            array_push($data, $result['_source']);
+            $source = $result['_source'];
+            $data[] = [
+                'contract_id'    => $source['contract_id'],
+                'contract_name'  => $source['metadata']['contract_name'],
+                'language'       => $source['metadata']['language'],
+                'file_size'      => $source['metadata']['file_size'],
+                'signature_date' => $source['metadata']['signature_date'],
+            ];
+           // array_push($data, $result['_source']);
         }
+
         return $data;
     }
 
@@ -341,6 +358,7 @@ class APIServices extends Services
         $params                               = $this->getMetadataIndexType();
         $params['body']["query"]["match_all"] = [];
         $response                             = $this->getCount($params);
+
         return $response['count'];
     }
 
@@ -370,7 +388,7 @@ class APIServices extends Services
                 ]
             ],
             "highlight" => [
-                "fields"    => [
+                "fields" => [
                     "text" => [
                         "fragment_size"       => 200,
                         "number_of_fragments" => 1
