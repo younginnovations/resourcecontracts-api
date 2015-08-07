@@ -20,7 +20,7 @@ class APIController extends BaseController
     private $search;
 
     /**
-     * @param APIServices $api
+     * @param APIServices    $api
      * @param FulltextSearch $search
      */
     public function __construct(APIServices $api, FulltextSearch $search)
@@ -41,29 +41,9 @@ class APIController extends BaseController
      */
     public function getSummary()
     {
-
         $reponse = $this->api->getSummary();
+
         return $this->json($reponse);
-    }
-
-    /**
-     * search
-     * @return response
-     */
-    public function search()
-    {
-        $response = $this->api->textSearch($this->request->query->all());
-        return $this->json($response);
-
-    }
-
-    /**
-     * Filter
-     * @return array
-     */
-    public function filterContract()
-    {
-        return $this->api->getFilterData($this->request->query->all());
     }
 
     /**
@@ -75,9 +55,9 @@ class APIController extends BaseController
      */
     public function getTextPages($request, $response, $argument)
     {
-        $id      = $argument['id'];
-        $page_no = $argument['page_no'];
-        $data    = $this->api->getTextPages($id, $page_no);
+        $id   = $argument['id'];
+        $data = $this->api->getTextPages($id, $this->request->query->all());
+
         return $this->json($data);
     }
 
@@ -90,9 +70,9 @@ class APIController extends BaseController
      */
     public function getAnnotationPages($request, $response, $argument)
     {
-        $id      = $argument['id'];
-        $page_no = $argument['page_no'];
-        $data    = $this->api->getAnnotationPages($id, $page_no);
+        $id   = $argument['id'];
+        $data = $this->api->getAnnotationPages($id, $this->request->query->all());
+
         return $this->json($data);
     }
 
@@ -107,20 +87,7 @@ class APIController extends BaseController
     {
         $id       = $argument['id'];
         $response = $this->api->getMetadata($id);
-        return $this->json($response);
-    }
 
-    /**
-     * Get all Annotations of contract
-     * @param $request
-     * @param $response
-     * @param $argument
-     * @return json response
-     */
-    public function getContractAnnotation($request, $response, $argument)
-    {
-        $id       = $argument['id'];
-        $response = $this->api->getContractAnnotations($id);
         return $this->json($response);
     }
 
@@ -130,7 +97,8 @@ class APIController extends BaseController
      */
     public function getAllContract()
     {
-        $response = $this->api->getAllContracts();
+        $response = $this->api->getAllContracts($this->request->query->all());
+
         return $this->json($response);
     }
 
@@ -141,6 +109,7 @@ class APIController extends BaseController
     public function getAllContractCount()
     {
         $response = $this->api->getAllContractCount();
+
         return $this->json($response);
     }
 
@@ -148,9 +117,11 @@ class APIController extends BaseController
      * Search in Pdf Text
      * @return json response
      */
-    public function pdfSearch()
+    public function pdfSearch($request, $response, $argument)
     {
-        $response = $this->api->pdfSearch($this->request->query->all());
+        $id       = $argument['id'];
+        $response = $this->api->pdfSearch($id, $this->request->query->all());
+
         return $this->json($response);
     }
 
@@ -160,7 +131,7 @@ class APIController extends BaseController
      */
     public function fullTextSearch()
     {
-        $response = $this->search->FullTextSearch($this->request->query->all());
+        $response = $this->search->searchInMaster($this->request->query->all());
 
         return $this->json($response);
     }
