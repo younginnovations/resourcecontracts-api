@@ -7,6 +7,9 @@
  */
 class APIServices extends Services
 {
+    const ORDER = "asc";
+    const FROM  = 0;
+    const SIZE  = 25;
 
     /**
      * Return the summary of contracts
@@ -68,152 +71,43 @@ class APIServices extends Services
     }
 
     /**
-     * Text search
-     * @param $request
-     * @return array
-     */
-    public function textSearch($request)
-    {
-        $params          = [];
-        $params['index'] = "nrgi";
-        $type            = [];
-        $text            = $request['q'] ?: "";
-        if (isset($request['metadata'])) {
-            array_push($type, "metadata");
-        }
-        if (isset($request['pdf-text'])) {
-            array_push($type, "pdf_text");
-        }
-        $type = implode(',', $type);
-        if (!empty($type)) {
-            $params['type'] = $type;
-        }
-        $params['body'] = [
-            "query" => [
-                "query_string" => [
-                    "query" => $text
-                ]
-            ]
-        ];
-        $response       = $this->search($params);
-
-        return $response;
-    }
-
-    /**
-     * Filter the data
-     * @param $request
-     * @param $params
-     * @return array
-     */
-    public function filterData($request, $params)
-    {
-        if (isset($request['year']) and !empty($request['year'])) {
-            $year      = explode(',', $request['year']);
-            $filters[] = ["terms" => ["metadata.signature_year" => $year]];
-        }
-        if (isset($request['country']) and !empty($request['country'])) {
-            $country   = explode(',', $request['country']);
-            $filters[] = ["terms" => ["metadata.country.code" => $country]];
-        }
-        if (isset($request['resource']) and !empty($request['resource'])) {
-            $resource  = explode(',', $request['resource']);
-            $filters[] = ["terms" => ["metadata.resource" => $resource]];
-        }
-        $params['body']['fields'] = [
-            "contract_id",
-            "metadata.contract_name",
-            "metadata.signature_year",
-            "metadata.file_size"
-        ];
-
-        if (isset($request['q'])) {
-            $params['body']['query']['query_string']['query'] = $request['q'];
-        }
-        if (!empty($filters)) {
-            $params['body']['filter'] = [
-                "and" => [
-                    "filters" => $filters
-                ]
-            ];
-        }
-        $results = $this->search($params);
-        $fields  = $results['hits']['hits'];
-        $data    = [];
-        $i       = 0;
-
-        foreach ($fields as $field) {
-            $data[$i]['contract_name'] = isset($field['fields']['metadata.contract_name'][0]) ? $field['fields']['metadata.contract_name'][0] : '';
-
-            $data[$i]['contract_id']    = $field['fields']['contract_id'][0];
-            $data[$i]['signature_year'] = isset($field['fields']['metadata.signature_year'][0]) ? $field['fields']['metadata.signature_year'][0] : '';
-            $data[$i]['file_size']      = isset($field['fields']['metadata.file_size'][0]) ? $field['fields']['metadata.file_size'][0] : '';
-            $i ++;
-        }
-
-        return $data;
-    }
-
-    /**
-     *Filter the data from metadata,annotations and pdf_text
-     * @param $request
-     * @return array
-     */
-    public function getFilterData($request)
-    {
-        $data1 = $this->filterData($request, ["index" => "nrgi", "type" => "metadata"]);
-        $data2 = $this->filterData($request, ["index" => "nrgi", "type" => "annotations"]);
-        $data3 = $this->filterData($request, ["index" => "nrgi", "type" => "pdf_text"]);
-        $data  = array_merge($data1, $data2);
-        $data  = array_merge($data, $data3);
-        $data  = $this->getUniqueData($data);
-
-        return $data;
-    }
-
-    /**
-     * Return the unique data
-     * @param $filter
-     * @return array
-     */
-    public function getUniqueData($filter)
-    {
-
-        $temp_array = [];
-        $data       = [];
-        foreach ($filter as $v) {
-            if (!in_array($v['contract_id'], $temp_array)) {
-                array_push($temp_array, $v['contract_id']);
-                array_push($data, $v);
-            }
-        }
-
-        return $data;
-    }
-
-    /**
      * Return the page of pdf text
      * @param $contractId
      * @param $pageNo
      * @return array
      */
-    public function getTextPages($contractId, $pageNo)
+    public function getTextPages($contractId, $request)
     {
-        $params['index']                         = "nrgi";
-        $params['type']                          = "pdf_text";
-        $params['body']['query']['bool']['must'] = [
-            [
+        $params['index'] = "nrgi";
+        $params['type']  = "pdf_text";
+        $filter          = [];
+        if (!empty($contractId)) {
+            $filter[] = [
                 "term" => ["contract_id" => ["value" => $contractId]],
-            ],
-            [
-                "term" => ["page_no" => ["value" => $pageNo]]
-            ]
-        ];
+            ];
+        }
+        if (isset($request['page']) and !empty($request['page'])) {
+            $filter[] = [
+                "term" => ["page_no" => ["value" => $request['page']]]
+            ];
+        }
+        $params['body']['query']['bool']['must'] = $filter;
         $results                                 = $this->search($params);
-        $results                                 = $results['hits']['hits'][0]['_source'];
+        $data                                    = [];
+        $data['total']                           = $results['hits']['total'];
 
-        return $results;
+        foreach ($results['hits']['hits'] as $result) {
+            $source           = $result['_source'];
+            $data['result'][] = [
+                'contract_id' => $source['contract_id'],
+                'id'          => $result['_id'],
+                'text'        => $source['text'],
+                'pdf_url'     => $source['pdf_url'],
+                'page_no'     => $source['page_no']
+            ];
+        }
 
+        return $data;
     }
 
     /**
@@ -222,33 +116,41 @@ class APIServices extends Services
      * @param $pageNo
      * @return array
      */
-    public function getAnnotationPages($contractId, $pageNo)
+    public function getAnnotationPages($contractId, $request)
     {
-        $params                                  = [];
-        $params['index']                         = "nrgi";
-        $params['type']                          = "annotations";
-        $params['body']['query']['bool']['must'] = [
-            [
+        $params          = [];
+        $params['index'] = "nrgi";
+        $params['type']  = "annotations";
+        $filter          = [];
+        if (!empty($contractId)) {
+            $filter[] = [
                 "term" => ["contract_id" => ["value" => $contractId]],
-            ],
-            [
-                "term" => ["page_no" => ["value" => $pageNo]]
-            ]
-        ];
+            ];
+        }
+        if (isset($request['page']) and !empty($request['page'])) {
+            $filter[] = [
+                "term" => ["page_no" => ["value" => $request['page']]]
+            ];
+        }
+        $params['body']['query']['bool']['must'] = $filter;
         $results                                 = $this->search($params);
         $data                                    = [];
+        $data['total']                           = $results['hits']['total'];
         $i                                       = 0;
         foreach ($results['hits']['hits'] as $result) {
-
-            $temp             = $result['_source'];
-            $data['metadata'] = $temp['metadata'];
-            $temp['id']       = (integer) $result['_id'];
-            unset($temp['metadata']);
-            $data['rows'][$i] = $temp;
+            $source             = $result['_source'];
+            $data['result'][$i] = [
+                'contract_id' => $source['contract_id'],
+                'id'          => $result['_id'],
+                'quote'       => $source['quote'],
+                'text'        => $source['text'],
+                'tags'        => $source['tags'],
+                'category'    => $source['category'],
+                'page_no'     => $source['page_no'],
+                'ranges'      => $source['ranges']
+            ];
             $i ++;
         }
-
-        $data['total'] = count($data['rows']);
 
         return $data;
     }
@@ -260,90 +162,98 @@ class APIServices extends Services
      */
     public function getMetadata($contractId)
     {
-        $params                   = $this->getMetadataIndexType();
-        $params['body']['filter'] = [
-            "and" => [
-                "filters" => [
-                    [
-                        'term' => [
-                            '_id' => $contractId
-                        ]
+        $params         = $this->getMetadataIndexType();
+        $params['body'] = [
+            "_source" => [
+                "exclude" => ["updated_user_name", "updated_user_email", "updated_at", "created_user_name", "created_user_email"]
+            ],
+            "query"   => [
+                "term" => [
+                    "_id" => [
+                        "value" => $contractId
                     ]
                 ]
             ]
         ];
-        $result                   = $this->search($params);
-        $results                  = $result['hits']['hits'][0]['_source'];
+
+        $result   = $this->search($params);
+        $results  = $result['hits']['hits'][0]['_source'];
+        $metadata = $results['metadata'];
+        unset($results['metadata']);
+        $results = array_merge($results, $metadata);
 
         return $results;
-    }
-
-    /**
-     * Return all the annotations of contract
-     * @param $contractId
-     * @return array
-     */
-    public function getContractAnnotations($contractId)
-    {
-        $params['index'] = "nrgi";
-        $params['type']  = "annotations";
-        $params['body']  = [
-            'filter' =>
-                [
-                    'and' =>
-                        [
-                            'filters' =>
-                                [
-                                    0 =>
-                                        [
-                                            'term' =>
-                                                [
-                                                    'contract_id' => $contractId,
-                                                ],
-                                        ],
-                                ],
-                        ],
-                ],
-        ];
-
-        $results = $this->search($params);
-        $results = $results['hits']['hits'];
-        $data    = [];
-        foreach ($results as $result) {
-            $data[] = [
-                'quote'   => $result['_source']['quote'],
-                'text'    => $result['_source']['text'],
-                'tag'     => $result['_source']['tags'],
-                'page_no' => $result['_source']['page_no'],
-                'ranges'  => $result['_source']['ranges'][0],
-            ];
-
-        }
-
-        return $data;
     }
 
     /**
      * Return all contracts
      * @return array
      */
-    public function getAllContracts()
+    public function getAllContracts($request)
     {
-        $params                               = $this->getMetadataIndexType();
-        $params['body']['query']["match_all"] = [];
-        $results                              = $this->search($params);
-        $results                              = $results['hits']['hits'];
-        $data                                 = [];
-        foreach ($results as $result) {
-            $source = $result['_source'];
-            $data[] = [
-                'contract_id'    => $source['contract_id'],
-                'contract_name'  => $source['metadata']['contract_name'],
-                'language'       => $source['metadata']['language'],
-                'file_size'      => $source['metadata']['file_size'],
-                'signature_date' => $source['metadata']['signature_date'],
+        $params = $this->getMetadataIndexType();
+        $filter = [];
+        if (isset($request['country_code']) and !empty($request['country_code'])) {
+            $filter[] = [
+                "term" => [
+                    "metadata.country.code" => $request['country_code']
+                ]
             ];
-           // array_push($data, $result['_source']);
+        }
+        if (isset($request['year']) and !empty($request['year'])) {
+            $filter[] = [
+                "term" => [
+                    "metadata.signature_year" => $request['year'],
+                ]
+            ];
+        }
+        if (isset($request['resource']) and !empty($request['resource'])) {
+            $filter[] = [
+                "term" => [
+                    "metadata.resource" => $request['resource'],
+                ]
+            ];
+        }
+        if (isset($request['category']) and !empty($request['category'])) {
+            $filter[] = [
+                "term" => [
+                    "metadata.category" => $request['category']
+                ]
+            ];
+        }
+
+        $params['body']['query']['filtered']['filter']['and']['filters'] = $filter;
+        $params['body']['size']                                          = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
+        if (isset($request['from'])) {
+            $params['body']['from'] = !empty($request['from']) ? $request['from'] : self::FROM;
+        }
+
+        if (isset($request['sort_by']) and !empty($request['sort_by'])) {
+            if ($request['sort_by'] == "country") {
+                $params['body']['sort']['metadata.country.name']['order'] = (isset($request['order']) and in_array($request['order'], ['desc', 'asc'])) ? $request['order'] : self::ORDER;
+            }
+            if ($request['sort_by'] == "year") {
+                $params['body']['sort']['metadata.signature_year']['order'] = (isset($request['order']) and in_array($request['order'], ['desc', 'asc'])) ? $request['order'] : self::ORDER;
+            }
+        }
+        $results          = $this->search($params);
+        $data             = [];
+        $data['total']    = $results['hits']['total'];
+        $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? (integer) $request['per_page'] : $results['hits']['total'];
+        $data['from']     = (isset($request['from']) and !empty($request['from'])) ? $request['from'] : self::FROM;
+        foreach ($results['hits']['hits'] as $result) {
+            $source            = $result['_source'];
+            $data['results'][] = [
+                'contract_id'    => (integer) $source['contract_id'],
+                'contract_name'  => $source['metadata']['contract_name'],
+                'country'        => $source['metadata']['country']['name'],
+                'country_code'   => $source['metadata']['country']['code'],
+                'signature_year' => $source['metadata']['signature_year'],
+                'language'       => $source['metadata']['language'],
+                'resources'      => $source['metadata']['resource'],
+                'file_size'      => $source['metadata']['file_size'],
+                'category'       => $source['metadata']['category']
+            ];
         }
 
         return $data;
@@ -367,11 +277,14 @@ class APIServices extends Services
      * @param $request
      * @return array
      */
-    public function pdfSearch($request)
+    public function pdfSearch($contractId, $request)
     {
         $params['index'] = "nrgi";
         $params['type']  = "pdf_text";
-        $params['body']  = [
+        if ((!isset($request['q']) and empty($request['q'])) or !is_numeric($contractId)) {
+            return [];
+        }
+        $params['body'] = [
             "query"     => [
                 "filtered" => [
                     "query"  => [
@@ -382,7 +295,7 @@ class APIServices extends Services
                     ],
                     "filter" => [
                         "term" => [
-                            "contract_id" => $request['contract_id']
+                            "contract_id" => $contractId
                         ]
                     ]
                 ]
@@ -400,14 +313,14 @@ class APIServices extends Services
                 "contract_id"
             ]
         ];
-        $response        = $this->search($params);
-        $hits            = $response['hits']['hits'];
-        $data            = [];
-        foreach ($hits as $hit) {
+        $response       = $this->search($params);
+        $data           = [];
+        $data['total']  = $response['hits']['total'];
+        foreach ($response['hits']['hits'] as $hit) {
             $fields = $hit['fields'];
             $text   = $hit['highlight']['text'][0];
             if (!empty($text)) {
-                $data[] = [
+                $data['results'][] = [
                     'page_no'     => $fields['page_no'][0],
                     'contract_id' => $fields['contract_id'][0],
                     'text'        => strip_tags($text)
