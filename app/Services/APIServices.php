@@ -239,7 +239,7 @@ class APIServices extends Services
         $results          = $this->search($params);
         $data             = [];
         $data['total']    = $results['hits']['total'];
-        $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? (integer) $request['per_page'] : $results['hits']['total'];
+        $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? (integer) $request['per_page'] : self::SIZE;
         $data['from']     = (isset($request['from']) and !empty($request['from'])) ? $request['from'] : self::FROM;
         foreach ($results['hits']['hits'] as $result) {
             $source            = $result['_source'];

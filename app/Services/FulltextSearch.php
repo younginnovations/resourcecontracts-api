@@ -197,7 +197,7 @@ class FulltextSearch extends Services
         $data['country']  = isset($data['country']) ? array_unique($data['country']) : [];
         $data['year']     = isset($data['year']) ? array_filter(array_unique($data['year'])) : [];
         $data['resource'] = isset($data['resource']) ? array_filter(array_unique($data['resource'])) : [];
-        $data['per_page'] = isset($data['result']) ? count($data['result']) : 0;
+        $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
 
         return $data;
     }
