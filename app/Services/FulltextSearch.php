@@ -84,11 +84,11 @@ class FulltextSearch extends Services
             "metadata.language",
             "metadata.file_size"
         ];
-        if (isset($request['sortby']) and !empty($request['sort_by'])) {
-            if ($request['sortby'] == "country") {
+        if (isset($request['sort_by']) and !empty($request['sort_by'])) {
+            if ($request['sort_by'] == "country") {
                 $params['body']['sort']['metadata.country_name']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
             }
-            if ($request['sortby'] == "year") {
+            if ($request['sort_by'] == "year") {
                 $params['body']['sort']['metadata.signature_year']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
             }
         }
