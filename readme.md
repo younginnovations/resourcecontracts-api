@@ -29,3 +29,4 @@ This application uses following packages:
 * [ElasticSearch PHP client](https://github.com/elastic/elasticsearch-php) - for Elastic Search API
 * [League Route](http://route.thephpleague.com/) - for Routing
 * [PHP dotenv] (https://github.com/vlucas/phpdotenv) - for loading environment variables
+
