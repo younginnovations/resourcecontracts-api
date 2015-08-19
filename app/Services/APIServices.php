@@ -176,11 +176,17 @@ class APIServices extends Services
             ]
         ];
 
-        $result   = $this->search($params);
-        $results  = $result['hits']['hits'][0]['_source'];
-        $metadata = $results['metadata'];
+        $result        = $this->search($params);
+        $results       = $result['hits']['hits'][0]['_source'];
+        $document      = isset($results['supporting_contracts'])?$results['supporting_contracts']:[];
+        $supportingDoc = $this->getSupportingDocument($document);
+        $metadata      = $results['metadata'];
+
         unset($results['metadata']);
-        $results = array_merge($results, $metadata);
+        unset($results['supporting_contracts']);
+        $results                         = array_merge($results, $metadata);
+        $results['supporting_contracts'] = $supportingDoc;
+
 
         return $results;
     }
@@ -330,6 +336,40 @@ class APIServices extends Services
         }
 
         return $data;
+    }
+
+    /**
+     * Return the published supporting document
+     *
+     * @param $document
+     * @return array
+     */
+    private function getSupportingDocument($documents)
+    {
+        $data = [];
+        foreach ($documents as $document) {
+            $params         = $this->getMetadataIndexType();
+            $params['body'] = [
+                'fields' => ["metadata.contract_name"],
+                'query'  => [
+                    'term' => [
+                        '_id' => [
+                            'value' => $document
+                        ]
+                    ]
+                ]
+            ];
+            $result         = $this->search($params);
+            if (!empty($result['hits']['hits'])) {
+                $data[] = [
+                    'id'            => $result['hits']['hits'][0]['_id'],
+                    'contract_name' => $result['hits']['hits'][0]['fields']['metadata.contract_name'][0],
+                ];
+            }
+        }
+
+        return $data;
+
     }
 
 }
