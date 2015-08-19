@@ -42,4 +42,20 @@ class Services
         return $this->api->count($params);
     }
 
+    /**
+     * Filter according to category
+     * @param $category
+     * @return array
+     */
+    public function getCategory($category)
+    {
+        $params['term'] = [
+            "metadata.category" => [
+                "value"=>$category
+            ]
+        ];
+
+        return $params;
+    }
+
 }

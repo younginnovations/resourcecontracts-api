@@ -41,7 +41,7 @@ class APIController extends BaseController
      */
     public function getSummary()
     {
-        $reponse = $this->api->getSummary();
+        $reponse = $this->api->getSummary($this->request->query->all());
 
         return $this->json($reponse);
     }

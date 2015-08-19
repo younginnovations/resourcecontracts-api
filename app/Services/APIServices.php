@@ -15,10 +15,11 @@ class APIServices extends Services
      * Return the summary of contracts
      * @return array
      */
-    public function getSummary()
+    public function getSummary($request)
     {
-        $params         = $this->getMetadataIndexType();
-        $data           = [];
+        $params = $this->getMetadataIndexType();
+        $data   = [];
+
         $params['body'] = [
             'size' => 0,
             'aggs' =>
@@ -46,13 +47,17 @@ class APIServices extends Services
                         ],
                 ],
         ];
+        if (isset($request['category']) && !empty($request['category'])) {
+            $categoryfilter          = $this->getCategory($request['category']);
+            $params['body']['query'] = $categoryfilter;
+        }
 
         $response = $this->search($params);
 
         $data['country_summary']  = $response['aggregations']['country_summary']['buckets'];
         $data['year_summary']     = $response['aggregations']['year_summary']['buckets'];
         $data['resource_summary'] = $response['aggregations']['resource_summary']['buckets'];
-        $data['contract_count']   = $this->getAllContractCount();
+        $data['contract_count']   = $response['hits']['total'];
 
         return $data;
     }
@@ -88,7 +93,12 @@ class APIServices extends Services
         }
         if (isset($request['page']) and !empty($request['page'])) {
             $filter[] = [
-                "term" => ["page_no" => ["value" => $request['page']]]
+                "term" => ["page" => ["value" => $request['page']]]
+            ];
+        }
+        if (isset($request['category']) and !empty($request['category'])) {
+            $filter[] = [
+                "term" => ["metadata.category" => ["value" => $request['category']]]
             ];
         }
         $params['body']['query']['bool']['must'] = $filter;
@@ -401,12 +411,12 @@ class APIServices extends Services
                 ]
             ];
         }
-        $data['results']         = [];
-        $searchResult = $this->search($params);
-        $results      = $searchResult['aggregations']['country_summary']['buckets'];
+        $data['results'] = [];
+        $searchResult    = $this->search($params);
+        $results         = $searchResult['aggregations']['country_summary']['buckets'];
         foreach ($results as $result) {
             $data['results'][] = [
-                'code'  => $result['key'],
+                'code'     => $result['key'],
                 'contract' => $result['doc_count']
             ];
         }
@@ -423,7 +433,7 @@ class APIServices extends Services
     public function getResourceContracts($request)
     {
         $params         = $this->getMetadataIndexType();
-        $country      = isset($request['country']) ? array_map('trim', explode(',', $request['country'])) : [];
+        $country        = isset($request['country']) ? array_map('trim', explode(',', $request['country'])) : [];
         $params['body'] = [
             'size' => 0,
             'aggs' =>
@@ -444,15 +454,16 @@ class APIServices extends Services
                 ]
             ];
         }
-        $data['results']        = [];
-        $searchResult = $this->search($params);
-        $results      = $searchResult['aggregations']['resource_summary']['buckets'];
+        $data['results'] = [];
+        $searchResult    = $this->search($params);
+        $results         = $searchResult['aggregations']['resource_summary']['buckets'];
         foreach ($results as $result) {
             $data['results'][] = [
-                'resource'  => $result['key'],
+                'resource' => $result['key'],
                 'contract' => $result['doc_count']
             ];
         }
+
         return $data;
 
     }
@@ -466,7 +477,7 @@ class APIServices extends Services
     public function getYearsContracts($request)
     {
         $params         = $this->getMetadataIndexType();
-        $country      = isset($request['country']) ? array_map('trim', explode(',', $request['country'])) : [];
+        $country        = isset($request['country']) ? array_map('trim', explode(',', $request['country'])) : [];
         $params['body'] = [
             'size' => 0,
             'aggs' =>
@@ -487,15 +498,16 @@ class APIServices extends Services
                 ]
             ];
         }
-        $data['results']        = [];
-        $searchResult = $this->search($params);
-        $results      = $searchResult['aggregations']['year_summary']['buckets'];
+        $data['results'] = [];
+        $searchResult    = $this->search($params);
+        $results         = $searchResult['aggregations']['year_summary']['buckets'];
         foreach ($results as $result) {
             $data['results'][] = [
-                'year'  => $result['key'],
+                'year'     => $result['key'],
                 'contract' => $result['doc_count']
             ];
         }
+
         return $data;
     }
 
