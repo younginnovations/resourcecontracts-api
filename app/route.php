@@ -9,3 +9,8 @@ $router->addRoute('GET', '/es/contracts/count', 'App\Controllers\APIController::
 $router->addRoute('GET', '/es/contract/{id}/searchtext', 'App\Controllers\APIController::pdfSearch');
 $router->addRoute('GET', '/es/contracts/search', 'App\Controllers\APIController::fullTextSearch');
 
+//Internal API
+$router->addRoute('GET', '/es/contract/countries', 'App\Controllers\APIController::getCoutriesContracts');
+$router->addRoute('GET', '/es/contract/resources', 'App\Controllers\APIController::getResourceContracts');
+$router->addRoute('GET', '/es/contract/years', 'App\Controllers\APIController::getYearsContracts');
+

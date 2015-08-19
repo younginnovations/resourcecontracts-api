@@ -135,4 +135,40 @@ class APIController extends BaseController
 
         return $this->json($response);
     }
+
+    /**
+     * Get all the contracts according to countries
+     *
+     * @return json response
+     */
+    public function getCoutriesContracts()
+    {
+        $response = $this->api->getCountriesContracts($this->request->query->all());
+
+        return $this->json($response);
+    }
+
+    /**
+     *Get aggregation of resource according to country
+     *
+     * @return json response
+     */
+    public function getResourceContracts()
+    {
+        $response = $this->api->getResourceContracts($this->request->query->all());
+
+        return $this->json($response);
+    }
+
+    /**
+     * Get aggregation of years according to country
+     *
+     * @return json response
+     */
+    public function getYearsContracts()
+    {
+        $response = $this->api->getYearsContracts($this->request->query->all());
+
+        return $this->json($response);
+    }
 }

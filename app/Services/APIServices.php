@@ -178,7 +178,7 @@ class APIServices extends Services
 
         $result        = $this->search($params);
         $results       = $result['hits']['hits'][0]['_source'];
-        $document      = isset($results['supporting_contracts'])?$results['supporting_contracts']:[];
+        $document      = isset($results['supporting_contracts']) ? $results['supporting_contracts'] : [];
         $supportingDoc = $this->getSupportingDocument($document);
         $metadata      = $results['metadata'];
 
@@ -371,5 +371,133 @@ class APIServices extends Services
         return $data;
 
     }
+
+    /**
+     * Get all the contract according to countries
+     *
+     * @return array
+     */
+    public function getCountriesContracts($request)
+    {
+        $params         = $this->getMetadataIndexType();
+        $resources      = isset($request['resource']) ? array_map('trim', explode(',', $request['resource'])) : [];
+        $params['body'] = [
+            'size' => 0,
+            'aggs' =>
+                [
+                    'country_summary' =>
+                        [
+                            'terms' =>
+                                [
+                                    'field' => 'metadata.country.code',
+                                ],
+                        ]
+                ],
+        ];
+        if (!empty($resources)) {
+            $params['body']['query'] = [
+                'terms' => [
+                    "metadata.resource" => $resources
+                ]
+            ];
+        }
+        $data['results']         = [];
+        $searchResult = $this->search($params);
+        $results      = $searchResult['aggregations']['country_summary']['buckets'];
+        foreach ($results as $result) {
+            $data['results'][] = [
+                'code'  => $result['key'],
+                'contract' => $result['doc_count']
+            ];
+        }
+
+        return $data;
+    }
+
+    /**
+     * Get resource aggregation according to country
+     *
+     * @param $request
+     * @return array
+     */
+    public function getResourceContracts($request)
+    {
+        $params         = $this->getMetadataIndexType();
+        $country      = isset($request['country']) ? array_map('trim', explode(',', $request['country'])) : [];
+        $params['body'] = [
+            'size' => 0,
+            'aggs' =>
+                [
+                    'resource_summary' =>
+                        [
+                            'terms' =>
+                                [
+                                    'field' => 'metadata.resource',
+                                ],
+                        ]
+                ],
+        ];
+        if (!empty($country)) {
+            $params['body']['query'] = [
+                'terms' => [
+                    "metadata.country.code" => $country
+                ]
+            ];
+        }
+        $data['results']        = [];
+        $searchResult = $this->search($params);
+        $results      = $searchResult['aggregations']['resource_summary']['buckets'];
+        foreach ($results as $result) {
+            $data['results'][] = [
+                'resource'  => $result['key'],
+                'contract' => $result['doc_count']
+            ];
+        }
+        return $data;
+
+    }
+
+    /**
+     * Get years aggregation according to country
+     *
+     * @param $request
+     * @return array
+     */
+    public function getYearsContracts($request)
+    {
+        $params         = $this->getMetadataIndexType();
+        $country      = isset($request['country']) ? array_map('trim', explode(',', $request['country'])) : [];
+        $params['body'] = [
+            'size' => 0,
+            'aggs' =>
+                [
+                    'year_summary' =>
+                        [
+                            'terms' =>
+                                [
+                                    'field' => 'metadata.signature_year',
+                                ],
+                        ]
+                ],
+        ];
+        if (!empty($country)) {
+            $params['body']['query'] = [
+                'terms' => [
+                    "metadata.country.code" => $country
+                ]
+            ];
+        }
+        $data['results']        = [];
+        $searchResult = $this->search($params);
+        $results      = $searchResult['aggregations']['year_summary']['buckets'];
+        foreach ($results as $result) {
+            $data['results'][] = [
+                'year'  => $result['key'],
+                'contract' => $result['doc_count']
+            ];
+        }
+        return $data;
+    }
+
 
 }
