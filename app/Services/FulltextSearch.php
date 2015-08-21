@@ -49,6 +49,9 @@ class FulltextSearch extends Services
             $resource  = explode(',', $request['resource']);
             $filters[] = ["terms" => ["metadata.resource" => $resource]];
         }
+        if (isset($request['category']) and !empty($request['category'])) {
+            $filters[] = ["term" => ["metadata.category" => $request['category']]];
+        }
         $fields = [];
         if (in_array("metadata", $type)) {
             array_push($fields, "metadata_string");
@@ -152,14 +155,14 @@ class FulltextSearch extends Services
     public function searchText($params, $type)
     {
 
-        $results          = $this->search($params);
-        $fields           = $results['hits']['hits'];
+        $results = $this->search($params);
+        $fields  = $results['hits']['hits'];
         $data             = [];
         $data['total']    = $results['hits']['total'];
         $data['country']  = [];
         $data['year']     = [];
         $data['resource'] = [];
-        $data['result']   = [];
+        $data['results']   = [];
         $i                = 0;
 
         foreach ($fields as $field) {
@@ -167,8 +170,11 @@ class FulltextSearch extends Services
             $contractId = $field['_id'];
             array_push($data['country'], $field['fields']['metadata.country_code'][0]);
             array_push($data['year'], $field['fields']['metadata.signature_year'][0]);
-            $data['resource']                  = array_merge($data['resource'], $field['fields']['metadata.resource']);
-            $data['result'][$i]                = [
+            if (isset($field['fields']['metadata.resource'])) {
+                $data['resource'] = array_merge($data['resource'], $field['fields']['metadata.resource']);
+            }
+
+            $data['results'][$i]                = [
                 "contract_id"    => $contractId,
                 "contract_name"  => $field['fields']['metadata.contract_name'][0],
                 "signature_year" => $field['fields']['metadata.signature_year'][0],
@@ -176,19 +182,19 @@ class FulltextSearch extends Services
                 "file_size"      => $field['fields']['metadata.file_size'][0],
                 "language"       => $field['fields']['metadata.language'][0],
             ];
-            $data['result'][$i]['group']       = [];
+            $data['results'][$i]['group']       = [];
             $highlight                         = isset($field['highlight']) ? $field['highlight'] : '';
-            $data['result'][$i]['text']        = isset($highlight['pdf_text_string'][0]) ? $highlight['pdf_text_string'][0] : '';
-            $data['result'][$i]['annotations'] = isset($highlight['annotations_string'][0]) ? $highlight['annotations_string'][0] : '';
-            $data['result'][$i]['metadata']    = isset($highlight['metadata_string'][0]) ? $highlight['metadata_string'][0] : '';
+            $data['results'][$i]['text']        = isset($highlight['pdf_text_string'][0]) ? $highlight['pdf_text_string'][0] : '';
+            $data['results'][$i]['annotations'] = isset($highlight['annotations_string'][0]) ? $highlight['annotations_string'][0] : '';
+            $data['results'][$i]['metadata']    = isset($highlight['metadata_string'][0]) ? $highlight['metadata_string'][0] : '';
             if (isset($highlight['pdf_text_string']) and in_array('text', $type)) {
-                array_push($data['result'][$i]['group'], "Text");
+                array_push($data['results'][$i]['group'], "Text");
             }
             if (isset($highlight['metadata_string']) and in_array('metadata', $type)) {
-                array_push($data['result'][$i]['group'], "Metadata");
+                array_push($data['results'][$i]['group'], "Metadata");
             }
             if (isset($highlight['annotations_string']) and in_array('annotations', $type)) {
-                array_push($data['result'][$i]['group'], "Annotation");
+                array_push($data['results'][$i]['group'], "Annotation");
             }
 
             $i ++;

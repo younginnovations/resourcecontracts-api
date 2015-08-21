@@ -41,7 +41,7 @@ class APIController extends BaseController
      */
     public function getSummary()
     {
-        $reponse = $this->api->getSummary();
+        $reponse = $this->api->getSummary($this->request->query->all());
 
         return $this->json($reponse);
     }
@@ -86,7 +86,7 @@ class APIController extends BaseController
     public function getMetadata($request, $response, $argument)
     {
         $id       = $argument['id'];
-        $response = $this->api->getMetadata($id);
+        $response = $this->api->getMetadata($id, $this->request->query->all());
 
         return $this->json($response);
     }
@@ -132,6 +132,54 @@ class APIController extends BaseController
     public function fullTextSearch()
     {
         $response = $this->search->searchInMaster($this->request->query->all());
+
+        return $this->json($response);
+    }
+
+    /**
+     * Get all the contracts according to countries
+     *
+     * @return json response
+     */
+    public function getCoutriesContracts()
+    {
+        $response = $this->api->getCountriesContracts($this->request->query->all());
+
+        return $this->json($response);
+    }
+
+    /**
+     *Get aggregation of resource according to country
+     *
+     * @return json response
+     */
+    public function getResourceContracts()
+    {
+        $response = $this->api->getResourceContracts($this->request->query->all());
+
+        return $this->json($response);
+    }
+
+    /**
+     * Get aggregation of years according to country
+     *
+     * @return json response
+     */
+    public function getYearsContracts()
+    {
+        $response = $this->api->getYearsContracts($this->request->query->all());
+
+        return $this->json($response);
+    }
+
+    /**
+     * Get Contract aggregation by Country and Resource
+     *
+     * @return json response
+     */
+    public function getContractByCountryAndResource()
+    {
+        $response = $this->api->getContractByCountryAndResource($this->request->query->all());
 
         return $this->json($response);
     }
