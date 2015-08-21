@@ -86,7 +86,7 @@ class APIController extends BaseController
     public function getMetadata($request, $response, $argument)
     {
         $id       = $argument['id'];
-        $response = $this->api->getMetadata($id);
+        $response = $this->api->getMetadata($id, $this->request->query->all());
 
         return $this->json($response);
     }
@@ -168,6 +168,18 @@ class APIController extends BaseController
     public function getYearsContracts()
     {
         $response = $this->api->getYearsContracts($this->request->query->all());
+
+        return $this->json($response);
+    }
+
+    /**
+     * Get Contract aggregation by Country and Resource
+     *
+     * @return json response
+     */
+    public function getContractByCountryAndResource()
+    {
+        $response = $this->api->getContractByCountryAndResource($this->request->query->all());
 
         return $this->json($response);
     }
