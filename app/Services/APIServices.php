@@ -410,7 +410,9 @@ class APIServices extends Services
                             ],
                             [
                                 'term'=>[
-                                    'metadata.category'=>$category
+                                    'metadata.category'=>[
+                                        'value'=>$category
+                                    ]
                                 ]
                             ]
                         ]
