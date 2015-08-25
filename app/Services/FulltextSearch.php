@@ -143,7 +143,7 @@ class FulltextSearch extends Services
         $data                        = $this->searchText($params, $type);
         $data['from']                = isset($request['from']) ? $request['from'] : self::FROM;
 
-        return $data;
+        return (array)$data;
     }
 
 
