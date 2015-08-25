@@ -101,11 +101,18 @@ class APIServices extends Services
                 "term" => ["metadata.category" => ["value" => $request['category']]]
             ];
         }
-        $params['body']['query']['bool']['must'] = $filter;
-        $results                                 = $this->search($params);
-        $data                                    = [];
-        $data['total']                           = $results['hits']['total'];
-        $data['result']                          = [];
+        $params['body'] = [
+            'size'  => 10000,
+            'query' => [
+                'bool' => [
+                    'must' => $filter
+                ]
+            ]
+        ];
+        $results        = $this->search($params);
+        $data           = [];
+        $data['total']  = $results['hits']['total'];
+        $data['result'] = [];
         foreach ($results['hits']['hits'] as $result) {
             $source           = $result['_source'];
             $data['result'][] = [
@@ -147,12 +154,19 @@ class APIServices extends Services
                 "term" => ["metadata.category" => ["value" => $request['category']]]
             ];
         }
-        $params['body']['query']['bool']['must'] = $filter;
-        $results                                 = $this->search($params);
-        $data                                    = [];
-        $data['total']                           = $results['hits']['total'];
-        $i                                       = 0;
-        $data['result']                          = [];
+        $params['body'] = [
+            'size'  => 10000,
+            'query' => [
+                'bool' => [
+                    'must' => $filter
+                ]
+            ]
+        ];
+        $results        = $this->search($params);
+        $data           = [];
+        $data['total']  = $results['hits']['total'];
+        $i              = 0;
+        $data['result'] = [];
         foreach ($results['hits']['hits'] as $result) {
             $source             = $result['_source'];
             $data['result'][$i] = [
@@ -210,7 +224,7 @@ class APIServices extends Services
         if (!empty($result)) {
             $results       = $result[0]['_source'];
             $document      = isset($results['supporting_contracts']) ? $results['supporting_contracts'] : [];
-            $supportingDoc = $this->getSupportingDocument($document,$request['category']);
+            $supportingDoc = $this->getSupportingDocument($document, $request['category']);
             $metadata      = $results['metadata'];
             unset($results['metadata']);
             unset($results['supporting_contracts']);
@@ -393,7 +407,7 @@ class APIServices extends Services
      * @param $document
      * @return array
      */
-    private function getSupportingDocument($documents,$category)
+    private function getSupportingDocument($documents, $category)
     {
         $data = [];
         foreach ($documents as $document) {
@@ -401,17 +415,17 @@ class APIServices extends Services
             $params['body'] = [
                 'fields' => ["metadata.contract_name"],
                 'query'  => [
-                    'bool'=>[
-                        'must'=>[
+                    'bool' => [
+                        'must' => [
                             'term' => [
                                 '_id' => [
                                     'value' => $document['id']
                                 ]
                             ],
                             [
-                                'term'=>[
-                                    'metadata.category'=>[
-                                        'value'=>$category
+                                'term' => [
+                                    'metadata.category' => [
+                                        'value' => $category
                                     ]
                                 ]
                             ]
