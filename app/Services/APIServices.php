@@ -210,7 +210,7 @@ class APIServices extends Services
         if (!empty($result)) {
             $results       = $result[0]['_source'];
             $document      = isset($results['supporting_contracts']) ? $results['supporting_contracts'] : [];
-            $supportingDoc = $this->getSupportingDocument($document);
+            $supportingDoc = $this->getSupportingDocument($document,$request['category']);
             $metadata      = $results['metadata'];
             unset($results['metadata']);
             unset($results['supporting_contracts']);
@@ -393,18 +393,28 @@ class APIServices extends Services
      * @param $document
      * @return array
      */
-    private function getSupportingDocument($documents)
+    private function getSupportingDocument($documents,$category)
     {
         $data = [];
         foreach ($documents as $document) {
-
             $params         = $this->getMetadataIndexType();
             $params['body'] = [
                 'fields' => ["metadata.contract_name"],
                 'query'  => [
-                    'term' => [
-                        '_id' => [
-                            'value' => $document['id']
+                    'bool'=>[
+                        'must'=>[
+                            'term' => [
+                                '_id' => [
+                                    'value' => $document['id']
+                                ]
+                            ],
+                            [
+                                'term'=>[
+                                    'metadata.category'=>[
+                                        'value'=>$category
+                                    ]
+                                ]
+                            ]
                         ]
                     ]
                 ]
@@ -438,7 +448,7 @@ class APIServices extends Services
     public function getCountriesContracts($request)
     {
         $params    = $this->getMetadataIndexType();
-        $resources = isset($request['resource']) ? array_map('trim', explode(',', $request['resource'])) : [];
+        $resources = (isset($request['resource']) && ($request['resource'] != '')) ? array_map('trim', explode(',', $request['resource'])) : [];
         $filters   = [];
         if (!empty($resources)) {
             $filters[] = [
@@ -454,6 +464,7 @@ class APIServices extends Services
                 ]
             ];
         }
+
         $params['body'] = [
             'size'  => 0,
             "query" => [
@@ -495,7 +506,7 @@ class APIServices extends Services
     public function getResourceContracts($request)
     {
         $params  = $this->getMetadataIndexType();
-        $country = isset($request['country']) ? array_map('trim', explode(',', $request['country'])) : [];
+        $country = (isset($request['country']) && ($request['country'] != '')) ? array_map('trim', explode(',', $request['country'])) : [];
         $filters = [];
         if (!empty($country)) {
             $filters[] = [
@@ -553,7 +564,7 @@ class APIServices extends Services
     public function getYearsContracts($request)
     {
         $params  = $this->getMetadataIndexType();
-        $country = isset($request['country']) ? array_map('trim', explode(',', $request['country'])) : [];
+        $country = (isset($request['country']) && ($request['country'] != '')) ? array_map('trim', explode(',', $request['country'])) : [];
         $filters = [];
         if (!empty($country)) {
             $filters[] = [
