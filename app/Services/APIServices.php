@@ -417,26 +417,29 @@ class APIServices extends Services
     {
         $data = [];
         foreach ($documents as $document) {
-
+            $filters   = [];
+            $filters[] = [
+                'term' => [
+                    '_id' => [
+                        'value' => (int) $document['id']
+                    ]
+                ]
+            ];
+            if (!empty($category)) {
+                $filters[] = [
+                    'term' => [
+                        'metadata.category' => [
+                            'value' => $category
+                        ]
+                    ]
+                ];
+            }
             $params         = $this->getMetadataIndexType();
             $params['body'] = [
                 'fields' => ["metadata.contract_name"],
                 'query'  => [
                     'bool' => [
-                        'must' => [
-                            'term' => [
-                                '_id' => [
-                                    'value' => (int) $document['id']
-                                ]
-                            ],
-                            [
-                                'term' => [
-                                    'metadata.category' => [
-                                        'value' => $category
-                                    ]
-                                ]
-                            ]
-                        ]
+                        'must' => $filters
                     ]
                 ]
             ];
