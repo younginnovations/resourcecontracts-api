@@ -143,7 +143,7 @@ class FulltextSearch extends Services
         $data                        = $this->searchText($params, $type);
         $data['from']                = isset($request['from']) ? $request['from'] : self::FROM;
 
-        return (array)$data;
+        return (array) $data;
     }
 
 
@@ -155,14 +155,14 @@ class FulltextSearch extends Services
     public function searchText($params, $type)
     {
 
-        $results = $this->search($params);
-        $fields  = $results['hits']['hits'];
+        $results          = $this->search($params);
+        $fields           = $results['hits']['hits'];
         $data             = [];
         $data['total']    = $results['hits']['total'];
         $data['country']  = [];
         $data['year']     = [];
         $data['resource'] = [];
-        $data['results']   = [];
+        $data['results']  = [];
         $i                = 0;
 
         foreach ($fields as $field) {
@@ -183,7 +183,7 @@ class FulltextSearch extends Services
                 "language"       => $field['fields']['metadata.language'][0],
             ];
             $data['results'][$i]['group']       = [];
-            $highlight                         = isset($field['highlight']) ? $field['highlight'] : '';
+            $highlight                          = isset($field['highlight']) ? $field['highlight'] : '';
             $data['results'][$i]['text']        = isset($highlight['pdf_text_string'][0]) ? $highlight['pdf_text_string'][0] : '';
             $data['results'][$i]['annotations'] = isset($highlight['annotations_string'][0]) ? $highlight['annotations_string'][0] : '';
             $data['results'][$i]['metadata']    = isset($highlight['metadata_string'][0]) ? $highlight['metadata_string'][0] : '';
@@ -200,9 +200,9 @@ class FulltextSearch extends Services
             $i ++;
         }
 
-        $data['country']  = isset($data['country']) ? array_unique($data['country']) : [];
-        $data['year']     = isset($data['year']) ? array_filter(array_unique($data['year'])) : [];
-        $data['resource'] = isset($data['resource']) ? array_filter(array_unique($data['resource'])) : [];
+        $data['country']  = isset($data['country']) ? asort(array_unique($data['country'])) : [];
+        $data['year']     = isset($data['year']) ? asort(array_filter(array_unique($data['year']))) : [];
+        $data['resource'] = isset($data['resource']) ? asort(array_filter(array_unique($data['resource']))) : [];
         $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
 
         return $data;

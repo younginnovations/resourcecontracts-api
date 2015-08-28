@@ -29,6 +29,9 @@ class APIServices extends Services
                             'terms' =>
                                 [
                                     'field' => 'metadata.country.code',
+                                    'order' => [
+                                        "_term" => "asc"
+                                    ]
                                 ],
                         ],
                     'year_summary'     =>
@@ -36,6 +39,9 @@ class APIServices extends Services
                             'terms' =>
                                 [
                                     'field' => 'metadata.signature_year',
+                                    'order' => [
+                                        "_term" => "asc"
+                                    ]
                                 ],
                         ],
                     'resource_summary' =>
@@ -43,6 +49,9 @@ class APIServices extends Services
                             'terms' =>
                                 [
                                     'field' => 'metadata.resource',
+                                    'order' => [
+                                        "_term" => "asc"
+                                    ]
                                 ],
                         ],
                 ],
@@ -417,26 +426,29 @@ class APIServices extends Services
     {
         $data = [];
         foreach ($documents as $document) {
-
+            $filters   = [];
+            $filters[] = [
+                'term' => [
+                    '_id' => [
+                        'value' => (int) $document['id']
+                    ]
+                ]
+            ];
+            if (!empty($category)) {
+                $filters[] = [
+                    'term' => [
+                        'metadata.category' => [
+                            'value' => $category
+                        ]
+                    ]
+                ];
+            }
             $params         = $this->getMetadataIndexType();
             $params['body'] = [
                 'fields' => ["metadata.contract_name"],
                 'query'  => [
                     'bool' => [
-                        'must' => [
-                            'term' => [
-                                '_id' => [
-                                    'value' => (int) $document['id']
-                                ]
-                            ],
-                            [
-                                'term' => [
-                                    'metadata.category' => [
-                                        'value' => $category
-                                    ]
-                                ]
-                            ]
-                        ]
+                        'must' => $filters
                     ]
                 ]
             ];
