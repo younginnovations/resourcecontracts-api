@@ -192,8 +192,9 @@ class APIServices extends Services
      */
     public function getMetadata($contractId, $request)
     {
-        $params  = $this->getMetadataIndexType();
-        $filters = [];
+        $params   = $this->getMetadataIndexType();
+        $filters  = [];
+        $category = '';
         if ($contractId) {
             $filters[] = [
                 "term" => ["_id" => ["value" => $contractId]]
@@ -203,6 +204,7 @@ class APIServices extends Services
             $filters[] = [
                 "term" => ["metadata.category" => ["value" => $request['category']]]
             ];
+            $category  = $request['category'];
         }
 
         $params['body'] = [
@@ -222,14 +224,18 @@ class APIServices extends Services
         $results = [];
 
         if (!empty($result)) {
-            $results       = $result[0]['_source'];
-            $document      = isset($results['supporting_contracts']) ? $results['supporting_contracts'] : [];
-            $supportingDoc = $this->getSupportingDocument($document, $request['category']);
-            $metadata      = $results['metadata'];
+            $results                     = $result[0]['_source'];
+            $document                    = isset($results['supporting_contracts']) ? $results['supporting_contracts'] : [];
+            $supportingDoc               = $this->getSupportingDocument($document, $category);
+            $metadata                    = $results['metadata'];
+            $translatedFrom              = isset($metadata['translated_from']) ? $metadata['translated_from'] : [];
+            $parentDocument              = $this->getSupportingDocument($translatedFrom, $category);
+            $metadata['parent_document'] = $parentDocument;
             unset($results['metadata']);
             unset($results['supporting_contracts']);
             $results                         = array_merge($results, $metadata);
             $results['supporting_contracts'] = $supportingDoc;
+            unset($results['translated_from']);
 
         }
 
@@ -411,6 +417,7 @@ class APIServices extends Services
     {
         $data = [];
         foreach ($documents as $document) {
+
             $params         = $this->getMetadataIndexType();
             $params['body'] = [
                 'fields' => ["metadata.contract_name"],
@@ -419,7 +426,7 @@ class APIServices extends Services
                         'must' => [
                             'term' => [
                                 '_id' => [
-                                    'value' => $document['id']
+                                    'value' => (int) $document['id']
                                 ]
                             ],
                             [
