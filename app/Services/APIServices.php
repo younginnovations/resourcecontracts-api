@@ -29,6 +29,9 @@ class APIServices extends Services
                             'terms' =>
                                 [
                                     'field' => 'metadata.country.code',
+                                    'order' => [
+                                        "_term" => "asc"
+                                    ]
                                 ],
                         ],
                     'year_summary'     =>
@@ -36,6 +39,9 @@ class APIServices extends Services
                             'terms' =>
                                 [
                                     'field' => 'metadata.signature_year',
+                                    'order' => [
+                                        "_term" => "asc"
+                                    ]
                                 ],
                         ],
                     'resource_summary' =>
@@ -43,6 +49,9 @@ class APIServices extends Services
                             'terms' =>
                                 [
                                     'field' => 'metadata.resource',
+                                    'order' => [
+                                        "_term" => "asc"
+                                    ]
                                 ],
                         ],
                 ],
