@@ -48,7 +48,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => 'metadata.resource',
+                                    'field' => 'resource_raw',
                                     'order' => [
                                         "_term" => "asc"
                                     ]
@@ -78,7 +78,7 @@ class APIServices extends Services
     public function getMetadataIndexType()
     {
         $param          = [];
-        $param['index'] = "nrgi";
+        $param['index'] = "nrgi1";
         $param['type']  = "metadata";
 
         return $param;
@@ -92,7 +92,7 @@ class APIServices extends Services
      */
     public function getTextPages($contractId, $request)
     {
-        $params['index'] = "nrgi";
+        $params['index'] = "nrgi1";
         $params['type']  = "pdf_text";
         $filter          = [];
         if (!empty($contractId)) {
@@ -145,7 +145,7 @@ class APIServices extends Services
     public function getAnnotationPages($contractId, $request)
     {
         $params          = [];
-        $params['index'] = "nrgi";
+        $params['index'] = "nrgi1";
         $params['type']  = "annotations";
         $filter          = [];
         if (!empty($contractId)) {
@@ -257,6 +257,7 @@ class APIServices extends Services
      */
     public function getAllContracts($request)
     {
+
         $params = $this->getMetadataIndexType();
         $filter = [];
         if (isset($request['country_code']) and !empty($request['country_code'])) {
@@ -276,7 +277,7 @@ class APIServices extends Services
         if (isset($request['resource']) and !empty($request['resource'])) {
             $filter[] = [
                 "term" => [
-                    "metadata.resource" => $request['resource'],
+                    "metadata.resource_raw" => $request['resource'],
                 ]
             ];
         }
@@ -303,6 +304,7 @@ class APIServices extends Services
             }
         }
         $results          = $this->search($params);
+
         $data             = [];
         $data['total']    = $results['hits']['total'];
         $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? (integer) $request['per_page'] : self::SIZE;
@@ -346,7 +348,7 @@ class APIServices extends Services
      */
     public function pdfSearch($contractId, $request)
     {
-        $params['index'] = "nrgi";
+        $params['index'] = "nrgi1";
         $params['type']  = "pdf_text";
         if ((!isset($request['q']) and empty($request['q'])) or !is_numeric($contractId)) {
             return [];
@@ -568,7 +570,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => 'metadata.resource',
+                                    'field' => 'resource_raw',
                                 ],
                         ]
                 ],
@@ -689,7 +691,7 @@ class APIServices extends Services
                             "aggs"  => [
                                 "resource_summary" => [
                                     "terms" => [
-                                        "field" => "metadata.resource"
+                                        "field" => "resource_raw"
                                     ]
                                 ]
                             ]
