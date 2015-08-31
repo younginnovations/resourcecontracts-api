@@ -166,7 +166,6 @@ class FulltextSearch extends Services
         $i                = 0;
 
         foreach ($fields as $field) {
-
             $contractId = $field['_id'];
             array_push($data['country'], $field['fields']['metadata.country_code'][0]);
             array_push($data['year'], $field['fields']['metadata.signature_year'][0]);
@@ -200,10 +199,13 @@ class FulltextSearch extends Services
             $i ++;
         }
 
-        $data['country']  = isset($data['country']) ? asort(array_unique($data['country'])) : [];
-        $data['year']     = isset($data['year']) ? asort(array_filter(array_unique($data['year']))) : [];
-        $data['resource'] = isset($data['resource']) ? asort(array_filter(array_unique($data['resource']))) : [];
+        $data['country']  = (isset($data['country']) && !empty($data['country'])) ? array_unique($data['country']) : [];
+        $data['year']     = (isset($data['year']) && !empty($data['year'])) ? array_filter(array_unique($data['year'])) : [];
+        $data['resource'] = (isset($data['resource']) && !empty($data['resource'])) ? array_filter(array_unique($data['resource'])) : [];
         $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
+        asort($data['country']);
+        asort($data['year']);
+        asort($data['resource']);
 
         return $data;
     }
