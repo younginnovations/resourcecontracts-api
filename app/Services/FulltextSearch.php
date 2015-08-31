@@ -16,7 +16,7 @@ class FulltextSearch extends Services
      * @param APIRepositoryInterface $api
      */
 
-    const INDEX = "nrgi";
+    const INDEX = "nrgi1";
     const FROM  = 0;
     const SIZE  = 25;
     const ORDER = "asc";
