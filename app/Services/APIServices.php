@@ -158,7 +158,7 @@ class APIServices extends Services
         }
         if (isset($request['page']) and !empty($request['page'])) {
             $filter[] = [
-                "term" => ["page_no" => ["value" => $request['page']]]
+                "term" => ["page" => ["value" => $request['page']]]
             ];
         }
         if (isset($request['category']) and !empty($request['category'])) {
@@ -188,7 +188,7 @@ class APIServices extends Services
                 'text'        => $source['text'],
                 'tags'        => $source['tags'],
                 'category'    => $source['category'],
-                'page_no'     => $source['page_no'],
+                'page_no'     => $source['page'],
                 'ranges'      => $source['ranges']
             ];
             $i ++;
