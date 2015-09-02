@@ -183,4 +183,16 @@ class APIController extends BaseController
 
         return $this->json($response);
     }
+
+    /**
+     * Get all the unique filter attributes for search
+     *
+     * @return json response
+     */
+    public function getFilterAttributes()
+    {
+        $response = $this->api->getFilterAttributes($this->request->query->all());
+
+        return $this->json($response);
+    }
 }

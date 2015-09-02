@@ -29,6 +29,7 @@ class APIServices extends Services
                             'terms' =>
                                 [
                                     'field' => 'metadata.country.code',
+                                    'size'  => 252,
                                     'order' => [
                                         "_term" => "asc"
                                     ]
@@ -39,8 +40,9 @@ class APIServices extends Services
                             'terms' =>
                                 [
                                     'field' => 'metadata.signature_year',
+                                    'size'  => 1000,
                                     'order' => [
-                                        "_term" => "asc"
+                                        "_term" => "desc"
                                     ]
                                 ],
                         ],
@@ -49,6 +51,7 @@ class APIServices extends Services
                             'terms' =>
                                 [
                                     'field' => 'resource_raw',
+                                    'size'  => 1000,
                                     'order' => [
                                         "_term" => "asc"
                                     ]
@@ -78,7 +81,7 @@ class APIServices extends Services
     public function getMetadataIndexType()
     {
         $param          = [];
-        $param['index'] = "nrgi1";
+        $param['index'] = $this->index;
         $param['type']  = "metadata";
 
         return $param;
@@ -92,7 +95,7 @@ class APIServices extends Services
      */
     public function getTextPages($contractId, $request)
     {
-        $params['index'] = "nrgi1";
+        $params['index'] = $this->index;
         $params['type']  = "pdf_text";
         $filter          = [];
         if (!empty($contractId)) {
@@ -145,7 +148,7 @@ class APIServices extends Services
     public function getAnnotationPages($contractId, $request)
     {
         $params          = [];
-        $params['index'] = "nrgi1";
+        $params['index'] = $this->index;
         $params['type']  = "annotations";
         $filter          = [];
         if (!empty($contractId)) {
@@ -303,7 +306,7 @@ class APIServices extends Services
                 $params['body']['sort']['metadata.signature_year']['order'] = (isset($request['order']) and in_array($request['order'], ['desc', 'asc'])) ? $request['order'] : self::ORDER;
             }
         }
-        $results          = $this->search($params);
+        $results = $this->search($params);
 
         $data             = [];
         $data['total']    = $results['hits']['total'];
@@ -348,7 +351,7 @@ class APIServices extends Services
      */
     public function pdfSearch($contractId, $request)
     {
-        $params['index'] = "nrgi1";
+        $params['index'] = $this->index;
         $params['type']  = "pdf_text";
         if ((!isset($request['q']) and empty($request['q'])) or !is_numeric($contractId)) {
             return [];
@@ -514,6 +517,7 @@ class APIServices extends Services
                             'terms' =>
                                 [
                                     'field' => 'metadata.country.code',
+                                    'size'  => 252
                                 ],
                         ]
                 ],
@@ -571,6 +575,7 @@ class APIServices extends Services
                             'terms' =>
                                 [
                                     'field' => 'resource_raw',
+                                    'size'  => 1000
                                 ],
                         ]
                 ],
@@ -629,6 +634,7 @@ class APIServices extends Services
                             'terms' =>
                                 [
                                     'field' => 'metadata.signature_year',
+                                    'size'  => 1000
                                 ],
                         ]
                 ],
@@ -687,11 +693,13 @@ class APIServices extends Services
                             'terms' =>
                                 [
                                     'field' => 'metadata.country.code',
+                                    'size'  => 1000,
                                 ],
                             "aggs"  => [
                                 "resource_summary" => [
                                     "terms" => [
-                                        "field" => "resource_raw"
+                                        "field" => "resource_raw",
+                                        'size'  => 1000
                                     ]
                                 ]
                             ]
@@ -725,5 +733,79 @@ class APIServices extends Services
         return $data;
     }
 
+    /**
+     * Get the search filter attributes, such as contract_type,company_name,corporate_group
+     *
+     * @return array
+     */
+    public function getFilterAttributes($request)
+    {
+        $params['index'] = $this->index;
+        $params['type']  = "master";
+        $data            = [];
+
+        $params['body'] = [
+            'size' => 0,
+            'aggs' =>
+                [
+                    'company_name'       =>
+                        [
+                            'terms' =>
+                                [
+                                    'field' => 'metadata.company_name',
+                                    'size'  => 1000,
+                                    'order' => [
+                                        "_term" => "asc"
+                                    ]
+                                ],
+                        ],
+                    'corporate_grouping' =>
+                        [
+                            'terms' =>
+                                [
+                                    'field' => 'metadata.corporate_grouping',
+                                    'size'  => 1000,
+                                    'order' => [
+                                        "_term" => "asc"
+                                    ]
+                                ],
+                        ],
+                    'contract_type'      =>
+                        [
+                            'terms' =>
+                                [
+                                    'field' => 'metadata.contract_type',
+                                    'size'  => 1000,
+                                    'order' => [
+                                        "_term" => "asc"
+                                    ]
+                                ],
+                        ],
+                ],
+        ];
+        if (isset($request['category']) && !empty($request['category'])) {
+            $categoryfilter          = $this->getCategory($request['category']);
+            $params['body']['query'] = $categoryfilter;
+        }
+
+        $response                   = $this->search($params);
+        $data['company_name']       = [];
+        $data['corporate_grouping'] = [];
+        $data['contract_type']      = [];
+        foreach ($response['aggregations']['company_name']['buckets'] as $companyname) {
+            array_push($data['company_name'], $companyname['key']);
+        }
+        foreach ($response['aggregations']['corporate_grouping']['buckets'] as $grouping) {
+            array_push($data['corporate_grouping'], $grouping['key']);
+        }
+        foreach ($response['aggregations']['contract_type']['buckets'] as $type) {
+            array_push($data['contract_type'], $type['key']);
+        }
+        $data['company_name']       = array_unique($data['company_name']);
+        $data['corporate_grouping'] = array_unique($data['corporate_grouping']);
+        $data['contract_type']      = array_unique($data['contract_type']);
+
+        return $data;
+    }
 
 }

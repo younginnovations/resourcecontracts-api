@@ -16,7 +16,7 @@ class FulltextSearch extends Services
      * @param APIRepositoryInterface $api
      */
 
-    const INDEX = "nrgi1";
+
     const FROM  = 0;
     const SIZE  = 25;
     const ORDER = "asc";
@@ -30,7 +30,7 @@ class FulltextSearch extends Services
     public function searchInMaster($request)
     {
         $params          = [];
-        $params['index'] = self::INDEX;
+        $params['index'] = $this->index;
         $params['type']  = "master";
         $type            = isset($request['group']) ? array_map('trim', explode(',', $request['group'])) : [];
         $typecheck       = $this->typeCheck($type);
@@ -47,11 +47,25 @@ class FulltextSearch extends Services
         }
         if (isset($request['resource']) and !empty($request['resource'])) {
             $resource  = explode(',', $request['resource']);
-            $filters[] = ["terms" => ["metadata.resource" => $resource]];
+            $filters[] = ["terms" => ["metadata.resource_raw" => $resource]];
         }
         if (isset($request['category']) and !empty($request['category'])) {
             $filters[] = ["term" => ["metadata.category" => $request['category']]];
         }
+        if (isset($request['contract_type']) and !empty($request['contract_type'])) {
+            $contractType = explode(',', $request['contract_type']);
+            $filters[]    = ["terms" => ["metadata.contract_type" => $contractType]];
+        }
+        if (isset($request['company_name']) and !empty($request['company_name'])) {
+            $companyName = explode(',', $request['company_name']);
+            $filters[]   = ["terms" => ["metadata.company_name" => $companyName]];
+        }
+        if (isset($request['corporate_group']) and !empty($request['corporate_group'])) {
+            $corporateGroup = explode(',', $request['corporate_group']);
+            $filters[]      = ["terms" => ["metadata.corporate_grouping" => $corporateGroup]];
+        }
+
+
         $fields = [];
         if (in_array("metadata", $type)) {
             array_push($fields, "metadata_string");
@@ -62,7 +76,7 @@ class FulltextSearch extends Services
         if (in_array("annotations", $type)) {
             array_push($fields, "annotations_string");
         }
-        if (isset($request['q'])) {
+        if (isset($request['q']) && !empty($request['q'])) {
             $params['body']['query']['query_string'] = [
                 "fields" => $fields,
                 'query'  => $request['q']
@@ -85,7 +99,10 @@ class FulltextSearch extends Services
             "metadata.country_name",
             "metadata.resource",
             "metadata.language",
-            "metadata.file_size"
+            "metadata.file_size",
+            "metadata.company_name",
+            "metadata.contract_type",
+            "metadata.corporate_grouping"
         ];
         if (isset($request['sort_by']) and !empty($request['sort_by'])) {
             if ($request['sort_by'] == "country") {
@@ -156,6 +173,7 @@ class FulltextSearch extends Services
     {
 
         $results          = $this->search($params);
+
         $fields           = $results['hits']['hits'];
         $data             = [];
         $data['total']    = $results['hits']['total'];
@@ -163,12 +181,14 @@ class FulltextSearch extends Services
         $data['year']     = [];
         $data['resource'] = [];
         $data['results']  = [];
+
         $i                = 0;
 
         foreach ($fields as $field) {
             $contractId = $field['_id'];
             array_push($data['country'], $field['fields']['metadata.country_code'][0]);
             array_push($data['year'], $field['fields']['metadata.signature_year'][0]);
+
             if (isset($field['fields']['metadata.resource'])) {
                 $data['resource'] = array_merge($data['resource'], $field['fields']['metadata.resource']);
             }
@@ -198,7 +218,6 @@ class FulltextSearch extends Services
 
             $i ++;
         }
-
         $data['country']  = (isset($data['country']) && !empty($data['country'])) ? array_unique($data['country']) : [];
         $data['year']     = (isset($data['year']) && !empty($data['year'])) ? array_filter(array_unique($data['year'])) : [];
         $data['resource'] = (isset($data['resource']) && !empty($data['resource'])) ? array_filter(array_unique($data['resource'])) : [];

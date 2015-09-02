@@ -9,17 +9,23 @@ use Elasticsearch\ClientBuilder;
 class Services
 {
     /**
+     * @param index
+     */
+    public $index;
+    /**
      * @var ClientBuilder
      */
     private $api;
 
     /**
      * @param ClientBuilder $api
+     * @param               index
      */
     public function __construct()
     {
-        $api       = new ClientBuilder();
-        $this->api = $api->create()->build();
+        $this->index = env("INDEX");
+        $api         = new ClientBuilder();
+        $this->api   = $api->create()->build();
     }
 
     /**
@@ -51,7 +57,7 @@ class Services
     {
         $params['term'] = [
             "metadata.category" => [
-                "value"=>$category
+                "value" => $category
             ]
         ];
 
