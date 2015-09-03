@@ -161,11 +161,7 @@ class APIServices extends Services
                 "term" => ["page" => ["value" => $request['page']]]
             ];
         }
-        if (isset($request['category']) and !empty($request['category'])) {
-            $filter[] = [
-                "term" => ["metadata.category" => ["value" => $request['category']]]
-            ];
-        }
+
         $params['body'] = [
             'size'  => 10000,
             'query' => [
@@ -184,13 +180,18 @@ class APIServices extends Services
             $data['result'][$i] = [
                 'contract_id' => $source['contract_id'],
                 'id'          => $result['_id'],
-                'quote'       => $source['quote'],
+                'quote'       => isset($source['quote'])?$source['quote']:null,
                 'text'        => $source['text'],
                 'tags'        => $source['tags'],
                 'category'    => $source['category'],
                 'page_no'     => $source['page'],
-                'ranges'      => $source['ranges']
+                'ranges'      => isset($source['ranges'])?$source['ranges']:null,
             ];
+            if (isset($source['shapes'])) {
+                unset($data['result'][$i]['ranges']);
+                $data['result'][$i]['shapes'] = $source['shapes'];
+            }
+
             $i ++;
         }
 
@@ -491,7 +492,7 @@ class APIServices extends Services
         if (!empty($resources)) {
             $filters[] = [
                 'terms' => [
-                    "metadata.resource" => $resources
+                    "metadata.resource_raw" => $resources
                 ]
             ];
         }
