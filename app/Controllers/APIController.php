@@ -195,4 +195,15 @@ class APIController extends BaseController
 
         return $this->json($response);
     }
+
+    /**
+     * Get all the annotations category
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function getAnnotationsCategory()
+    {
+        $response = $this->api->getAnnotationsCategory($this->request->query->all());
+
+        return $this->json($response);
+    }
 }
