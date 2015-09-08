@@ -180,12 +180,12 @@ class APIServices extends Services
             $data['result'][$i] = [
                 'contract_id' => $source['contract_id'],
                 'id'          => $result['_id'],
-                'quote'       => isset($source['quote'])?$source['quote']:null,
+                'quote'       => isset($source['quote']) ? $source['quote'] : null,
                 'text'        => $source['text'],
                 'tags'        => $source['tags'],
                 'category'    => $source['category'],
                 'page_no'     => $source['page'],
-                'ranges'      => isset($source['ranges'])?$source['ranges']:null,
+                'ranges'      => isset($source['ranges']) ? $source['ranges'] : null,
             ];
             if (isset($source['shapes'])) {
                 unset($data['result'][$i]['ranges']);
@@ -807,6 +807,51 @@ class APIServices extends Services
         $data['contract_type']      = array_unique($data['contract_type']);
 
         return $data;
+    }
+
+    /**
+     * Get all the annotations category
+     * @param $request
+     */
+    public function getAnnotationsCategory($request)
+    {
+
+        $params['index'] = $this->index;
+        $params['type']  = "master";
+        $filters         = [];
+
+        if (isset($request['category']) && !empty($request['category'])) {
+            $filters[]                               = [
+                "term" => [
+                    "metadata.category" => $request['category']
+                ]
+            ];
+            $params['body']['query']['bool']['must'] = $filters;
+        }
+        $params['body'] = [
+            'size' => 0,
+            'aggs' =>
+                [
+                    'category_summary' =>
+                        [
+                            "terms" => [
+                                "field" => "annotations_category",
+                                "size"  => 1000
+                            ]
+                        ]
+                ],
+        ];
+
+        $data['results'] = [];
+        $searchResult    = $this->search($params);
+        $results         = $searchResult['aggregations']['category_summary']['buckets'];
+        $i               = 0;
+
+        foreach ($results as $result) {
+            array_push($data['results'], $result['key']);
+        }
+
+        return array_unique($data);
     }
 
 }

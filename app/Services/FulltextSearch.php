@@ -61,8 +61,14 @@ class FulltextSearch extends Services
             $filters[]   = ["terms" => ["metadata.company_name" => $companyName]];
         }
         if (isset($request['corporate_group']) and !empty($request['corporate_group'])) {
+
             $corporateGroup = explode(',', $request['corporate_group']);
             $filters[]      = ["terms" => ["metadata.corporate_grouping" => $corporateGroup]];
+        }
+        if (isset($request['annotation_category']) and !empty($request['annotation_category'])) {
+
+            $annotationsCategory = explode(',', $request['annotation_category']);
+            $filters[]           = ["terms" => ["annotations_category" => $annotationsCategory]];
         }
 
 
@@ -102,7 +108,7 @@ class FulltextSearch extends Services
             "metadata.file_size",
             "metadata.company_name",
             "metadata.contract_type",
-            "metadata.corporate_grouping"
+            "metadata.corporate_grouping",
         ];
         if (isset($request['sort_by']) and !empty($request['sort_by'])) {
             if ($request['sort_by'] == "country") {
@@ -172,31 +178,43 @@ class FulltextSearch extends Services
     public function searchText($params, $type)
     {
 
-        $results          = $this->search($params);
+        $results = $this->search($params);
 
-        $fields           = $results['hits']['hits'];
-        $data             = [];
-        $data['total']    = $results['hits']['total'];
-        $data['country']  = [];
-        $data['year']     = [];
-        $data['resource'] = [];
-        $data['results']  = [];
+        $fields                  = $results['hits']['hits'];
+        $data                    = [];
+        $data['total']           = $results['hits']['total'];
+        $data['country']         = [];
+        $data['year']            = [];
+        $data['resource']        = [];
+        $data['results']         = [];
+        $data['contract_type']   = [];
+        $data['company_name']    = [];
+        $data['corporate_group'] = [];
 
-        $i                = 0;
+
+        $i = 0;
 
         foreach ($fields as $field) {
             $contractId = $field['_id'];
             array_push($data['country'], $field['fields']['metadata.country_code'][0]);
-            array_push($data['year'], $field['fields']['metadata.signature_year'][0]);
-
+            if (isset($field['fields']['metadata.signature_year'])) {
+                array_push($data['year'], $field['fields']['metadata.signature_year'][0]);
+            }
+            array_push($data['contract_type'], $field['fields']['metadata.contract_type'][0]);
             if (isset($field['fields']['metadata.resource'])) {
                 $data['resource'] = array_merge($data['resource'], $field['fields']['metadata.resource']);
+            }
+            if (isset($field['fields']['metadata.company_name'])) {
+                $data['company_name'] = array_merge($data['company_name'], $field['fields']['metadata.company_name']);
+            }
+            if (isset($field['fields']['metadata.corporate_grouping'])) {
+                $data['corporate_group'] = array_merge($data['corporate_group'], $field['fields']['metadata.corporate_grouping']);
             }
 
             $data['results'][$i]                = [
                 "contract_id"    => $contractId,
                 "contract_name"  => $field['fields']['metadata.contract_name'][0],
-                "signature_year" => $field['fields']['metadata.signature_year'][0],
+                "signature_year" => isset($field['fields']['metadata.signature_year']) ? $field['fields']['metadata.signature_year'][0] : "",
                 'country'        => $field['fields']['metadata.country_code'][0],
                 "file_size"      => $field['fields']['metadata.file_size'][0],
                 "language"       => $field['fields']['metadata.language'][0],
