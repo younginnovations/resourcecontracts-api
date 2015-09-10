@@ -100,6 +100,7 @@ class FulltextSearch extends Services
         $params['body']['fields'] = [
             "metadata.contract_name",
             "metadata.signature_year",
+            "metadata.signature_date",
             "metadata.file_size",
             "metadata.country_code",
             "metadata.country_name",
@@ -196,11 +197,15 @@ class FulltextSearch extends Services
 
         foreach ($fields as $field) {
             $contractId = $field['_id'];
-            array_push($data['country'], $field['fields']['metadata.country_code'][0]);
-            if (isset($field['fields']['metadata.signature_year'])) {
-                array_push($data['year'], $field['fields']['metadata.signature_year'][0]);
+            if (isset($field['fields']['metadata.country_code'])) {
+                array_push($data['country'], $field['fields']['metadata.country_code'][0]);
             }
-            array_push($data['contract_type'], $field['fields']['metadata.contract_type'][0]);
+            if (isset($field['fields']['metadata.signature_year'])) {
+                array_push($data['year'], (int)$field['fields']['metadata.signature_year'][0]);
+            }
+            if (isset($field['fields']['metadata.contract_type'])) {
+                array_push($data['contract_type'], $field['fields']['metadata.contract_type'][0]);
+            }
             if (isset($field['fields']['metadata.resource'])) {
                 $data['resource'] = array_merge($data['resource'], $field['fields']['metadata.resource']);
             }
@@ -212,12 +217,14 @@ class FulltextSearch extends Services
             }
 
             $data['results'][$i]                = [
-                "contract_id"    => $contractId,
-                "contract_name"  => $field['fields']['metadata.contract_name'][0],
+                "contract_id"    => (int)$contractId,
+                "contract_name"  => isset($field['fields']['metadata.contract_name']) ? $field['fields']['metadata.contract_name'][0] : "",
                 "signature_year" => isset($field['fields']['metadata.signature_year']) ? $field['fields']['metadata.signature_year'][0] : "",
-                'country'        => $field['fields']['metadata.country_code'][0],
-                "file_size"      => $field['fields']['metadata.file_size'][0],
-                "language"       => $field['fields']['metadata.language'][0],
+                "contract_type"  => isset($field['fields']['metadata.contract_type']) ? $field['fields']['metadata.contract_type'][0] : "",
+                "resource"       => isset($field['fields']['metadata.resource']) ? $field['fields']['metadata.resource'] : [],
+                'country'        => isset($field['fields']['metadata.country_code']) ? $field['fields']['metadata.country_code'][0] : "",
+                "file_size"      => isset($field['fields']['metadata.file_size']) ? $field['fields']['metadata.file_size'][0] : "",
+                "language"       => isset($field['fields']['metadata.language']) ? $field['fields']['metadata.language'][0] : "",
             ];
             $data['results'][$i]['group']       = [];
             $highlight                          = isset($field['highlight']) ? $field['highlight'] : '';
@@ -239,11 +246,16 @@ class FulltextSearch extends Services
         $data['country']  = (isset($data['country']) && !empty($data['country'])) ? array_unique($data['country']) : [];
         $data['year']     = (isset($data['year']) && !empty($data['year'])) ? array_filter(array_unique($data['year'])) : [];
         $data['resource'] = (isset($data['resource']) && !empty($data['resource'])) ? array_filter(array_unique($data['resource'])) : [];
+        $data['contract_type'] = (isset($data['contract_type']) && !empty($data['contract_type'])) ? array_filter(array_unique($data['contract_type'])) : [];
+        $data['company_name'] = (isset($data['company_name']) && !empty($data['company_name'])) ? array_filter(array_unique($data['company_name'])) : [];
+        $data['corporate_group'] = (isset($data['corporate_group']) && !empty($data['corporate_group'])) ? array_filter(array_unique($data['corporate_group'])) : [];
         $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
         asort($data['country']);
         asort($data['year']);
         asort($data['resource']);
-
+        asort($data['contract_type']);
+        asort($data['company_name']);
+        asort($data['corporate_group']);
         return $data;
     }
 
