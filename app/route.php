@@ -3,6 +3,7 @@ $router->addRoute('GET', '/', 'App\Controllers\APIController::home');
 $router->addRoute('GET', '/contracts/summary', 'App\Controllers\APIController::getSummary');
 $router->addRoute('GET', '/contract/{id}/text', 'App\Controllers\APIController::getTextPages');
 $router->addRoute('GET', '/contract/{id}/annotations', 'App\Controllers\APIController::getAnnotationPages');
+$router->addRoute('GET', '/contract/{id}/annotations/search', 'App\Controllers\APIController::getAnnotationPages');
 $router->addRoute('GET', '/contract/{id}/metadata', 'App\Controllers\APIController::getMetadata');
 $router->addRoute('GET', '/contracts', 'App\Controllers\APIController::getAllContract');
 $router->addRoute('GET', '/contracts/count', 'App\Controllers\APIController::getAllContractCount');
