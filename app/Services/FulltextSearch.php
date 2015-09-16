@@ -161,11 +161,13 @@ class FulltextSearch extends Services
             ],
             'fields'    => $highlightField,
         ];
+
         $params['body']['size']      = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
         $params['body']['from']      = (isset($request['from']) and !empty($request['from'])) ? $request['from'] : self::FROM;
         $data                        = [];
         $data                        = $this->searchText($params, $type);
         $data['from']                = isset($request['from']) ? $request['from'] : self::FROM;
+        $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
 
         return (array) $data;
     }
@@ -249,7 +251,6 @@ class FulltextSearch extends Services
         $data['contract_type'] = (isset($data['contract_type']) && !empty($data['contract_type'])) ? array_filter(array_unique($data['contract_type'])) : [];
         $data['company_name'] = (isset($data['company_name']) && !empty($data['company_name'])) ? array_filter(array_unique($data['company_name'])) : [];
         $data['corporate_group'] = (isset($data['corporate_group']) && !empty($data['corporate_group'])) ? array_filter(array_unique($data['corporate_group'])) : [];
-        $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
         asort($data['country']);
         asort($data['year']);
         asort($data['resource']);
