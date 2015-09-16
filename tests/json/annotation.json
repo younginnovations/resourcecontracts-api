@@ -1,0 +1,21 @@
+[
+  {
+    "annotations" : "[   {     \"ranges\":[{\"annotationsstart\":\"\/div[1]\/div[2]\/div[1]\/div[10]\",         \"startOffset\":52,         \"end\":\"\/div[1]\/div[2]\/div[1]\/div[10]\",         \"endOffset\":55}],     \"quote\":\"MCC\",     \"category\":\"This is updated company\",     \"text\":\"MCC-Jiangxi Copper Consortium--Preamble\",     \"tags\":[],     \"url\":\"http:\\resourcecontracts.elasticbeanstalk.com\/contract\/35\/page\",     \"contract\":\"2\",     \"document_page_no\":4,     \"page\":5,     \"page_id\":\"3790\",     \"id\":10,     \"contract_id\":2   }    ]"
+  },
+
+  {
+    "annotations" : "[   {     \"ranges\":[{\"annotationsstart\":\"\/div[1]\/div[2]\/div[1]\/div[10]\",         \"startOffset\":52,         \"end\":\"\/div[1]\/div[2]\/div[1]\/div[10]\",         \"endOffset\":55}],     \"quote\":\"MCC\",     \"category\":\"This is updated company\",     \"text\":\"I can understand this\",     \"tags\":[],     \"url\":\"http:\\resourcecontracts.elasticbeanstalk.com\/contract\/35\/page\",     \"contract\":\"1\",     \"document_page_no\":4,     \"page\":5,     \"page_id\":\"3790\",     \"id\":40,     \"contract_id\":1   }    ]"
+
+  },
+
+  {
+    "annotations" : "[   {     \"ranges\":[{\"annotationsstart\":\"\/div[1]\/div[2]\/div[1]\/div[10]\",         \"startOffset\":52,         \"end\":\"\/div[1]\/div[2]\/div[1]\/div[10]\",         \"endOffset\":55}],     \"quote\":\"MCC\",     \"category\":\"This is updated company\",     \"text\":\"MCC-Jiangxi\",     \"tags\":[],     \"url\":\"http:\\resourcecontracts.elasticbeanstalk.com\/contract\/35\/page\",     \"contract\":\"1\",     \"document_page_no\":4,     \"page\":5,     \"page_id\":\"3790\",     \"id\":30,     \"contract_id\":3   }    ]"
+
+  },
+
+  {
+    "annotations" : "[   {     \"ranges\":[{\"annotationsstart\":\"\/div[1]\/div[2]\/div[1]\/div[10]\",         \"startOffset\":52,         \"end\":\"\/div[1]\/div[2]\/div[1]\/div[10]\",         \"endOffset\":55}],     \"quote\":\"MCC\",     \"category\":\"This is updated company\",     \"text\":\"Welcome to Nepal !!\",     \"tags\":[],     \"url\":\"http:\\resourcecontracts.elasticbeanstalk.com\/contract\/35\/page\",     \"contract\":\"2\",     \"document_page_no\":4,     \"page\":5,     \"page_id\":\"3790\",     \"id\":27,     \"contract_id\":2   }    ]"
+
+  }
+
+]

@@ -4,8 +4,11 @@
   "require": {
     "elasticsearch/elasticsearch": "~2.0@beta",
     "league/route": "^1.1",
-    "vlucas/phpdotenv": "^2.0",
-    "phpunit/phpunit": "~4.0"
+    "vlucas/phpdotenv": "^2.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^4.8",
+    "guzzlehttp/guzzle": ">=4,<6"
   },
   "autoload": {
     "psr-4": {
