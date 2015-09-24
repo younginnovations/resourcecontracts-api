@@ -855,4 +855,32 @@ class APIServices extends Services
         return array_unique($data);
     }
 
+    /**
+     * Get all the metadata of given id
+     * @param $request
+     * @return array
+     */
+    public function downloadMetadtaAsCSV($request)
+    {
+        $params['index'] = $this->index;
+        $params['type']  = "metadata";
+        $filters         = [];
+
+        if (isset($request['id']) && !empty($request['id'])) {
+            $filters = explode(',', $request['id']);
+        }
+        $params['body']['query']['terms']['_id'] = $filters;
+        $searchResult                            = $this->search($params);
+        $data                                    = [];
+        if ($searchResult['hits']['total'] > 0) {
+            $results = $searchResult['hits']['hits'];
+            foreach ($results as $result) {
+                unset($result['_source']['metadata']['amla_url'], $result['_source']['metadata']['file_size'], $result['_source']['metadata']['file_url'], $result['_source']['metadata']['word_file']);
+                $data[] = $result['_source']['metadata'];
+            }
+        }
+
+        return $data;
+    }
+
 }

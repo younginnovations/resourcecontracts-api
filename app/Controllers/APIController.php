@@ -206,4 +206,15 @@ class APIController extends BaseController
 
         return $this->json($response);
     }
+
+    /**
+     * Download metadata as csv
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function downloadMetadtaAsCSV()
+    {
+        $response = $this->api->downloadMetadtaAsCSV($this->request->query->all());
+
+        return $this->json($response);
+    }
 }

@@ -18,4 +18,5 @@ $router->addRoute('GET', '/contract/years', 'App\Controllers\APIController::getY
 $router->addRoute('GET', '/contract/country/resource', 'App\Controllers\APIController::getContractByCountryAndResource');
 $router->addRoute('GET', '/contract/attributes', 'App\Controllers\APIController::getFilterAttributes');
 $router->addRoute('GET', '/contracts/annotations/category', 'App\Controllers\APIController::getAnnotationsCategory');
+$router->addRoute('GET', '/contracts/metadata/download', 'App\Controllers\APIController::downloadMetadtaAsCSV');
 
