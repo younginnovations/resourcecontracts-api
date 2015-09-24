@@ -869,9 +869,16 @@ class APIServices extends Services
         if (isset($request['id']) && !empty($request['id'])) {
             $filters = explode(',', $request['id']);
         }
-        $params['body']['query']['terms']['_id'] = $filters;
-        $searchResult                            = $this->search($params);
-        $data                                    = [];
+        $params['body'] = [
+            'size'  => 100000,
+            'query' => [
+                "terms" => [
+                    "_id" => $filters
+                ]
+            ]
+        ];
+        $searchResult   = $this->search($params);
+        $data           = [];
         if ($searchResult['hits']['total'] > 0) {
             $results = $searchResult['hits']['hits'];
             foreach ($results as $result) {
