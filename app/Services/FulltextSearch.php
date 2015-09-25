@@ -224,7 +224,7 @@ class FulltextSearch extends Services
                 "signature_year" => isset($field['fields']['metadata.signature_year']) ? $field['fields']['metadata.signature_year'][0] : "",
                 "contract_type"  => isset($field['fields']['metadata.contract_type']) ? $field['fields']['metadata.contract_type'][0] : "",
                 "resource"       => isset($field['fields']['metadata.resource']) ? $field['fields']['metadata.resource'] : [],
-                'country'        => isset($field['fields']['metadata.country_code']) ? $field['fields']['metadata.country_code'][0] : "",
+                'country_code'        => isset($field['fields']['metadata.country_code']) ? $field['fields']['metadata.country_code'][0] : "",
                 "file_size"      => isset($field['fields']['metadata.file_size']) ? $field['fields']['metadata.file_size'][0] : "",
                 "language"       => isset($field['fields']['metadata.language']) ? $field['fields']['metadata.language'][0] : "",
             ];
