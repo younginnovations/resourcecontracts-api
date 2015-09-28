@@ -381,9 +381,8 @@ class APIServices extends Services
             "query"     => [
                 "filtered" => [
                     "query"  => [
-                        "query_string" => [
-                            "default_field" => "text",
-                            "query"         => $request['q']
+                        "match_phrase"=>[
+                            "text"=>$request['q']
                         ]
                     ],
                     "filter" => [
