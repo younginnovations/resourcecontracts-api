@@ -178,14 +178,16 @@ class APIServices extends Services
         foreach ($results['hits']['hits'] as $result) {
             $source             = $result['_source'];
             $data['result'][$i] = [
-                'contract_id' => $source['contract_id'],
-                'id'          => $result['_id'],
-                'quote'       => isset($source['quote']) ? $source['quote'] : null,
-                'text'        => $source['text'],
-                'tags'        => $source['tags'],
-                'category'    => $source['category'],
-                'page_no'     => $source['page'],
-                'ranges'      => isset($source['ranges']) ? $source['ranges'] : null,
+                'contract_id'  => $source['contract_id'],
+                'id'           => $result['_id'],
+                'quote'        => isset($source['quote']) ? $source['quote'] : null,
+                'text'         => $source['text'],
+                'tags'         => $source['tags'],
+                'category'     => $source['category'],
+                'page_no'      => $source['page'],
+                'ranges'       => isset($source['ranges']) ? $source['ranges'] : null,
+                'cluster'      => isset($source['cluster']) ? $source['cluster'] : null,
+                'category_key' => isset($source['category_key']) ? $source['category_key'] : null,
             ];
             if (isset($source['shapes'])) {
                 unset($data['result'][$i]['ranges']);
@@ -325,7 +327,7 @@ class APIServices extends Services
                 'signature_date' => $source['metadata']['signature_date'],
                 'contract_type'  => $source['metadata']['type_of_contract'],
                 'language'       => $source['metadata']['language'],
-                'resource'      => $source['metadata']['resource'],
+                'resource'       => $source['metadata']['resource'],
                 'file_size'      => $source['metadata']['file_size'],
                 'category'       => $source['metadata']['category']
             ];
