@@ -883,7 +883,7 @@ class APIServices extends Services
         if ($searchResult['hits']['total'] > 0) {
             $results = $searchResult['hits']['hits'];
             foreach ($results as $result) {
-                unset($result['_source']['metadata']['amla_url'], $result['_source']['metadata']['file_size'], $result['_source']['metadata']['file_url'], $result['_source']['metadata']['word_file']);
+                unset($result['_source']['metadata']['amla_url'], $result['_source']['metadata']['file_size'], $result['_source']['metadata']['word_file']);
                 $data[] = $result['_source']['metadata'];
             }
         }
