@@ -381,8 +381,8 @@ class APIServices extends Services
             "query"     => [
                 "filtered" => [
                     "query"  => [
-                        "match_phrase"=>[
-                            "text"=>$request['q']
+                        "match_phrase" => [
+                            "text" => $request['q']
                         ]
                     ],
                     "filter" => [
@@ -832,8 +832,13 @@ class APIServices extends Services
             $params['body']['query']['bool']['must'] = $filters;
         }
         $params['body'] = [
-            'size' => 0,
-            'aggs' =>
+            'size'  => 0,
+            'query' => [
+                'bool' => [
+                    'must' => $filters
+                ]
+            ],
+            'aggs'  =>
                 [
                     'category_summary' =>
                         [
@@ -844,7 +849,7 @@ class APIServices extends Services
                         ]
                 ],
         ];
-
+        
         $data['results'] = [];
         $searchResult    = $this->search($params);
         $results         = $searchResult['aggregations']['category_summary']['buckets'];
