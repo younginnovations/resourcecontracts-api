@@ -308,6 +308,8 @@ class APIServices extends Services
             if ($request['sort_by'] == "year") {
                 $params['body']['sort']['metadata.signature_year']['order'] = (isset($request['order']) and in_array($request['order'], ['desc', 'asc'])) ? $request['order'] : self::ORDER;
             }
+        } else {
+            $params['body']['sort']['metadata.signature_year']['order'] = self::ORDER;
         }
         $results = $this->search($params);
 
@@ -849,7 +851,7 @@ class APIServices extends Services
                         ]
                 ],
         ];
-        
+
         $data['results'] = [];
         $searchResult    = $this->search($params);
         $results         = $searchResult['aggregations']['category_summary']['buckets'];
