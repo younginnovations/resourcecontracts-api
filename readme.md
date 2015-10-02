@@ -4,14 +4,17 @@
 
 NRGI- Client API can be cloned from gitlab repository and installed. Following the procedure given below:
 
-* git clone git@gitlab.yipl.com.np:web-apps/rc-api.git
-* cd rc-api
+* git clone https://github.com/younginnovations/resourcecontracts-api.git
+* cd resourcecontracts-api
 
 ## Run
 
 The app can be run with the command below:
 
 * install the application dependencies using command: `composer install`
+* copy .env.example to .env and update your configuration .
+* run php server ie. `php -S localhost:8000`
+* make sure elasticsearch is running .
 
 ## Setup Elasticsearch
 
