@@ -309,7 +309,7 @@ class APIServices extends Services
                 $params['body']['sort']['metadata.signature_year']['order'] = (isset($request['order']) and in_array($request['order'], ['desc', 'asc'])) ? $request['order'] : self::ORDER;
             }
         } else {
-            $params['body']['sort']['metadata.signature_year']['order'] = self::ORDER;
+            $params['body']['sort']['metadata.signature_year']['order'] = "desc";
         }
         $results = $this->search($params);
 

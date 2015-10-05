@@ -119,7 +119,7 @@ class FulltextSearch extends Services
                 $params['body']['sort']['metadata.signature_year']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
             }
         } else {
-            $params['body']['sort']['metadata.signature_year']['order'] = self::ORDER;
+            $params['body']['sort']['metadata.signature_year']['order'] = "desc";
         }
 
         $highlightField = [];
