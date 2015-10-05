@@ -175,26 +175,28 @@ class APIServices extends Services
         $data['total']  = $results['hits']['total'];
         $i              = 0;
         $data['result'] = [];
+        $remove         = ["Pages missing from  copy//Pages Manquantes de la copie", "Annexes missing from copy//Annexes Manquantes de la copie"];
         foreach ($results['hits']['hits'] as $result) {
-            $source             = $result['_source'];
-            $data['result'][$i] = [
-                'contract_id'  => $source['contract_id'],
-                'id'           => $result['_id'],
-                'quote'        => isset($source['quote']) ? $source['quote'] : null,
-                'text'         => $source['text'],
-                'tags'         => $source['tags'],
-                'category'     => $source['category'],
-                'page_no'      => $source['page'],
-                'ranges'       => isset($source['ranges']) ? $source['ranges'] : null,
-                'cluster'      => isset($source['cluster']) ? $source['cluster'] : null,
-                'category_key' => isset($source['category_key']) ? $source['category_key'] : null,
-            ];
-            if (isset($source['shapes'])) {
-                unset($data['result'][$i]['ranges']);
-                $data['result'][$i]['shapes'] = $source['shapes'];
+            $source = $result['_source'];
+            if (!in_array($source['category'], $remove)) {
+                $data['result'][$i] = [
+                    'contract_id'  => $source['contract_id'],
+                    'id'           => $result['_id'],
+                    'quote'        => isset($source['quote']) ? $source['quote'] : null,
+                    'text'         => $source['text'],
+                    'tags'         => $source['tags'],
+                    'category'     => $source['category'],
+                    'page_no'      => $source['page'],
+                    'ranges'       => isset($source['ranges']) ? $source['ranges'] : null,
+                    'cluster'      => isset($source['cluster']) ? $source['cluster'] : null,
+                    'category_key' => isset($source['category_key']) ? $source['category_key'] : null,
+                ];
+                if (isset($source['shapes'])) {
+                    unset($data['result'][$i]['ranges']);
+                    $data['result'][$i]['shapes'] = $source['shapes'];
+                }
+                $i ++;
             }
-
-            $i ++;
         }
 
         return $data;
@@ -861,7 +863,18 @@ class APIServices extends Services
             array_push($data['results'], $result['key']);
         }
 
-        return array_unique($data);
+        $data=array_unique($data);
+        $remove   = ["Pages missing from  copy//Pages Manquantes de la copie", "Annexes missing from copy//Annexes Manquantes de la copie"];
+        array_walk(
+            $data['results'],
+            function ($value, $key) use ($data, $remove) {
+                if (in_array($value, $remove)) {
+                    unset($data['results'][$key]);
+                }
+            }
+        );
+
+        return $data;
     }
 
     /**
