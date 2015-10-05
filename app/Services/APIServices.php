@@ -164,12 +164,14 @@ class APIServices extends Services
 
         $params['body'] = [
             'size'  => 10000,
+            'sort'  => ['page' => ["order" => "asc"]],
             'query' => [
                 'bool' => [
                     'must' => $filter
                 ]
             ]
         ];
+
         $results        = $this->search($params);
         $data           = [];
         $data['total']  = $results['hits']['total'];
@@ -863,8 +865,8 @@ class APIServices extends Services
             array_push($data['results'], $result['key']);
         }
 
-        $data=array_unique($data);
-        $remove   = ["Pages missing from  copy//Pages Manquantes de la copie", "Annexes missing from copy//Annexes Manquantes de la copie"];
+        $data   = array_unique($data);
+        $remove = ["Pages missing from  copy//Pages Manquantes de la copie", "Annexes missing from copy//Annexes Manquantes de la copie"];
         array_walk(
             $data['results'],
             function ($value, $key) use ($data, $remove) {
