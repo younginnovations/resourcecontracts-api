@@ -134,7 +134,7 @@ class FulltextSearch extends Services
         if (in_array('text', $type)) {
             $highlightField['pdf_text_string'] = [
                 'fragment_size'       => 200,
-                'number_of_fragments' => 1,
+                'number_of_fragments' => 50,
             ];
 
         }
