@@ -141,7 +141,7 @@ class FulltextSearch extends Services
 
         if (in_array('annotations', $type)) {
             $highlightField['annotations_string'] = [
-                'fragment_size'       => 1,
+                'fragment_size'       => 50,
                 'number_of_fragments' => 1,
             ];
 
