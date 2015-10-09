@@ -100,6 +100,7 @@ class FulltextSearch extends Services
         $params['body']['fields'] = [
             "metadata.contract_name",
             "metadata.signature_year",
+            "metadata.open_contracting_id",
             "metadata.signature_date",
             "metadata.file_size",
             "metadata.country_code",
@@ -118,6 +119,16 @@ class FulltextSearch extends Services
             if ($request['sort_by'] == "year") {
                 $params['body']['sort']['metadata.signature_year']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
             }
+            if ($request['sort_by'] == "contract_name") {
+                $params['body']['sort']['metadata.contract_name.raw']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
+            }
+            if ($request['sort_by'] == "resource") {
+                $params['body']['sort']['metadata.resource_raw']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
+            }
+            if ($request['sort_by'] == "contract_type") {
+                $params['body']['sort']['metadata.contract_type']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
+            }
+
         } else {
             $params['body']['sort']['metadata.signature_year']['order'] = "desc";
         }
@@ -221,14 +232,16 @@ class FulltextSearch extends Services
             }
 
             $data['results'][$i]                = [
-                "contract_id"    => (int) $contractId,
-                "contract_name"  => isset($field['fields']['metadata.contract_name']) ? $field['fields']['metadata.contract_name'][0] : "",
-                "signature_year" => isset($field['fields']['metadata.signature_year']) ? $field['fields']['metadata.signature_year'][0] : "",
-                "contract_type"  => isset($field['fields']['metadata.contract_type']) ? $field['fields']['metadata.contract_type'][0] : "",
-                "resource"       => isset($field['fields']['metadata.resource']) ? $field['fields']['metadata.resource'] : [],
-                'country_code'   => isset($field['fields']['metadata.country_code']) ? $field['fields']['metadata.country_code'][0] : "",
-                "file_size"      => isset($field['fields']['metadata.file_size']) ? $field['fields']['metadata.file_size'][0] : "",
-                "language"       => isset($field['fields']['metadata.language']) ? $field['fields']['metadata.language'][0] : "",
+                "contract_id"         => (int) $contractId,
+                "open_contracting_id" => isset($field['fields']['metadata.open_contracting_id']) ? $field['fields']['metadata.open_contracting_id'][0] : "",
+                'guid'                => $contractId . '-' . $field['fields']['metadata.open_contracting_id'][0],
+                "contract_name"       => isset($field['fields']['metadata.contract_name']) ? $field['fields']['metadata.contract_name'][0] : "",
+                "signature_year"      => isset($field['fields']['metadata.signature_year']) ? $field['fields']['metadata.signature_year'][0] : "",
+                "contract_type"       => isset($field['fields']['metadata.contract_type']) ? $field['fields']['metadata.contract_type'][0] : "",
+                "resource"            => isset($field['fields']['metadata.resource']) ? $field['fields']['metadata.resource'] : [],
+                'country_code'        => isset($field['fields']['metadata.country_code']) ? $field['fields']['metadata.country_code'][0] : "",
+                "file_size"           => isset($field['fields']['metadata.file_size']) ? $field['fields']['metadata.file_size'][0] : "",
+                "language"            => isset($field['fields']['metadata.language']) ? $field['fields']['metadata.language'][0] : "",
             ];
             $data['results'][$i]['group']       = [];
             $highlight                          = isset($field['highlight']) ? $field['highlight'] : '';
