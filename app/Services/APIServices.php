@@ -243,13 +243,16 @@ class APIServices extends Services
         $results = [];
 
         if (!empty($result)) {
-            $results                     = $result[0]['_source'];
-            $document                    = isset($results['supporting_contracts']) ? $results['supporting_contracts'] : [];
-            $supportingDoc               = $this->getSupportingDocument($document, $category);
-            $metadata                    = $results['metadata'];
-            $translatedFrom              = isset($metadata['translated_from']) ? $metadata['translated_from'] : [];
+            $results        = $result[0]['_source'];
+            $document       = isset($results['supporting_contracts']) ? $results['supporting_contracts'] : [];
+            $supportingDoc  = $this->getSupportingDocument($document, $category);
+            $metadata       = $results['metadata'];
+            $translatedFrom = isset($metadata['translated_from']) ? $metadata['translated_from'] : [];
+
+            $guId                        = $results['contract_id'] . '-' . $metadata['open_contracting_id'];
             $parentDocument              = $this->getSupportingDocument($translatedFrom, $category);
             $metadata['parent_document'] = $parentDocument;
+            $metadata['guid']            = $guId;
             unset($results['metadata']);
             unset($results['supporting_contracts']);
             $results                         = array_merge($results, $metadata);
@@ -306,11 +309,21 @@ class APIServices extends Services
         }
 
         if (isset($request['sort_by']) and !empty($request['sort_by'])) {
+
             if ($request['sort_by'] == "country") {
                 $params['body']['sort']['metadata.country.name']['order'] = (isset($request['order']) and in_array($request['order'], ['desc', 'asc'])) ? $request['order'] : self::ORDER;
             }
             if ($request['sort_by'] == "year") {
                 $params['body']['sort']['metadata.signature_year']['order'] = (isset($request['order']) and in_array($request['order'], ['desc', 'asc'])) ? $request['order'] : self::ORDER;
+            }
+            if ($request['sort_by'] == "contract_name") {
+                $params['body']['sort']['metadata.contract_name.raw']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
+            }
+            if ($request['sort_by'] == "resource") {
+                $params['body']['sort']['resource_raw']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
+            }
+            if ($request['sort_by'] == "contract_type") {
+                $params['body']['sort']['metadata.type_of_contract.raw']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
             }
         } else {
             $params['body']['sort']['metadata.signature_year']['order'] = "desc";
@@ -325,17 +338,19 @@ class APIServices extends Services
         foreach ($results['hits']['hits'] as $result) {
             $source            = $result['_source'];
             $data['results'][] = [
-                'contract_id'    => (integer) $source['contract_id'],
-                'contract_name'  => $source['metadata']['contract_name'],
-                'country'        => $source['metadata']['country']['name'],
-                'country_code'   => $source['metadata']['country']['code'],
-                'signature_year' => $source['metadata']['signature_year'],
-                'signature_date' => $source['metadata']['signature_date'],
-                'contract_type'  => $source['metadata']['type_of_contract'],
-                'language'       => $source['metadata']['language'],
-                'resource'       => $source['metadata']['resource'],
-                'file_size'      => $source['metadata']['file_size'],
-                'category'       => $source['metadata']['category']
+                'contract_id'         => (integer) $source['contract_id'],
+                'open_contracting_id' => $source['metadata']['open_contracting_id'],
+                'guid'                => $source['contract_id'] . '-' . $source['metadata']['open_contracting_id'],
+                'contract_name'       => $source['metadata']['contract_name'],
+                'country'             => $source['metadata']['country']['name'],
+                'country_code'        => $source['metadata']['country']['code'],
+                'signature_year'      => $source['metadata']['signature_year'],
+                'signature_date'      => $source['metadata']['signature_date'],
+                'contract_type'       => $source['metadata']['type_of_contract'],
+                'language'            => $source['metadata']['language'],
+                'resource'            => $source['metadata']['resource'],
+                'file_size'           => $source['metadata']['file_size'],
+                'category'            => $source['metadata']['category']
             ];
         }
 
@@ -460,7 +475,7 @@ class APIServices extends Services
             }
             $params         = $this->getMetadataIndexType();
             $params['body'] = [
-                'fields' => ["metadata.contract_name"],
+                'fields' => ["metadata.contract_name","metadata.open_contracting_id"],
                 'query'  => [
                     'bool' => [
                         'must' => $filters
@@ -472,12 +487,14 @@ class APIServices extends Services
             if (!empty($result['hits']['hits'])) {
                 $data[] = [
                     'id'            => $result['hits']['hits'][0]['_id'],
+                    'guid'          => $result['hits']['hits'][0]['_id'] . '-' . $result['hits']['hits'][0]['fields']['metadata.open_contracting_id'][0],
                     'contract_name' => $result['hits']['hits'][0]['fields']['metadata.contract_name'][0],
                     'status'        => "published"
                 ];
             } else {
                 $data[] = [
                     'id'            => $document['id'],
+                    'guid'          => '',
                     'contract_name' => $document['contract_name'],
                     'status'        => 'unpublished'
                 ];
