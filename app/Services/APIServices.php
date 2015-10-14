@@ -98,7 +98,14 @@ class APIServices extends Services
         $params['index'] = $this->index;
         $params['type']  = "pdf_text";
         $filter          = [];
-        if (!empty($contractId)) {
+        $type            = $this->getIdType($contractId);
+
+        if ($contractId && $type == "string") {
+            $filters[] = [
+                "term" => ["open_contracting_id" => ["value" => $contractId]]
+            ];
+        }
+        if (!empty($contractId) && $type == "numeric") {
             $filter[] = [
                 "term" => ["contract_id" => ["value" => $contractId]],
             ];
@@ -128,11 +135,12 @@ class APIServices extends Services
         foreach ($results['hits']['hits'] as $result) {
             $source           = $result['_source'];
             $data['result'][] = [
-                'contract_id' => $source['contract_id'],
-                'id'          => $result['_id'],
-                'text'        => $source['text'],
-                'pdf_url'     => $source['pdf_url'],
-                'page_no'     => $source['page_no']
+                'contract_id'         => $source['contract_id'],
+                'id'                  => $result['_id'],
+                'open_contracting_id' => $source['open_contracting_id'],
+                'text'                => $source['text'],
+                'pdf_url'             => $source['pdf_url'],
+                'page_no'             => $source['page_no']
             ];
         }
 
@@ -151,7 +159,15 @@ class APIServices extends Services
         $params['index'] = $this->index;
         $params['type']  = "annotations";
         $filter          = [];
-        if (!empty($contractId)) {
+
+        $type = $this->getIdType($contractId);
+
+        if ($contractId && $type == "string") {
+            $filters[] = [
+                "term" => ["open_contracting_id" => ["value" => $contractId]]
+            ];
+        }
+        if (!empty($contractId) && $type == "numeric") {
             $filter[] = [
                 "term" => ["contract_id" => ["value" => $contractId]],
             ];
@@ -180,18 +196,20 @@ class APIServices extends Services
         $remove         = ["Pages missing from  copy//Pages Manquantes de la copie", "Annexes missing from copy//Annexes Manquantes de la copie"];
         foreach ($results['hits']['hits'] as $result) {
             $source = $result['_source'];
+
             if (!in_array($source['category'], $remove)) {
                 $data['result'][$i] = [
-                    'contract_id'  => $source['contract_id'],
-                    'id'           => $result['_id'],
-                    'quote'        => isset($source['quote']) ? $source['quote'] : null,
-                    'text'         => $source['text'],
-                    'tags'         => $source['tags'],
-                    'category'     => $source['category'],
-                    'page_no'      => $source['page'],
-                    'ranges'       => isset($source['ranges']) ? $source['ranges'] : null,
-                    'cluster'      => isset($source['cluster']) ? $source['cluster'] : null,
-                    'category_key' => isset($source['category_key']) ? $source['category_key'] : null,
+                    'contract_id'         => $source['contract_id'],
+                    'open_contracting_id' => $source['open_contracting_id'],
+                    'id'                  => $result['_id'],
+                    'quote'               => isset($source['quote']) ? $source['quote'] : null,
+                    'text'                => $source['text'],
+                    'tags'                => $source['tags'],
+                    'category'            => $source['category'],
+                    'page_no'             => $source['page'],
+                    'ranges'              => isset($source['ranges']) ? $source['ranges'] : null,
+                    'cluster'             => isset($source['cluster']) ? $source['cluster'] : null,
+                    'category_key'        => isset($source['category_key']) ? $source['category_key'] : null,
                 ];
                 if (isset($source['shapes'])) {
                     unset($data['result'][$i]['ranges']);
@@ -214,9 +232,16 @@ class APIServices extends Services
         $params   = $this->getMetadataIndexType();
         $filters  = [];
         $category = '';
-        if ($contractId) {
+        $type     = $this->getIdType($contractId);
+
+        if ($contractId && $type == "numeric") {
             $filters[] = [
                 "term" => ["_id" => ["value" => $contractId]]
+            ];
+        }
+        if ($contractId && $type == "string") {
+            $filters[] = [
+                "term" => ["metadata.open_contracting_id" => ["value" => $contractId]]
             ];
         }
         if (isset($request['category']) && !empty($request['category'])) {
@@ -243,16 +268,13 @@ class APIServices extends Services
         $results = [];
 
         if (!empty($result)) {
-            $results        = $result[0]['_source'];
-            $document       = isset($results['supporting_contracts']) ? $results['supporting_contracts'] : [];
-            $supportingDoc  = $this->getSupportingDocument($document, $category);
-            $metadata       = $results['metadata'];
-            $translatedFrom = isset($metadata['translated_from']) ? $metadata['translated_from'] : [];
-
-            $guId                        = $results['contract_id'] . '-' . $metadata['open_contracting_id'];
+            $results                     = $result[0]['_source'];
+            $document                    = isset($results['supporting_contracts']) ? $results['supporting_contracts'] : [];
+            $supportingDoc               = $this->getSupportingDocument($document, $category);
+            $metadata                    = $results['metadata'];
+            $translatedFrom              = isset($metadata['translated_from']) ? $metadata['translated_from'] : [];
             $parentDocument              = $this->getSupportingDocument($translatedFrom, $category);
             $metadata['parent_document'] = $parentDocument;
-            $metadata['guid']            = $guId;
             unset($results['metadata']);
             unset($results['supporting_contracts']);
             $results                         = array_merge($results, $metadata);
@@ -340,7 +362,6 @@ class APIServices extends Services
             $data['results'][] = [
                 'contract_id'         => (integer) $source['contract_id'],
                 'open_contracting_id' => $source['metadata']['open_contracting_id'],
-                'guid'                => $source['contract_id'] . '-' . $source['metadata']['open_contracting_id'],
                 'contract_name'       => $source['metadata']['contract_name'],
                 'country'             => $source['metadata']['country']['name'],
                 'country_code'        => $source['metadata']['country']['code'],
@@ -379,11 +400,18 @@ class APIServices extends Services
     {
         $params['index'] = $this->index;
         $params['type']  = "pdf_text";
-        if ((!isset($request['q']) and empty($request['q'])) or !is_numeric($contractId)) {
+        if ((!isset($request['q']) and empty($request['q']))) {
             return [];
         }
         $filters = [];
-        if ($contractId) {
+        $type    = $this->getIdType($contractId);
+
+        if ($contractId && $type == "string") {
+            $filters[] = [
+                "term" => ["open_contracting_id" => ["value" => $contractId]]
+            ];
+        }
+        if ($contractId && $type == "numeric") {
             $filters[] = [
                 "term" => [
                     "contract_id" => $contractId
@@ -423,7 +451,8 @@ class APIServices extends Services
             ],
             "fields"    => [
                 "page_no",
-                "contract_id"
+                "contract_id",
+                "open_contracting_id"
             ]
         ];
         $response        = $this->search($params);
@@ -435,9 +464,10 @@ class APIServices extends Services
             $text   = $hit['highlight']['text'][0];
             if (!empty($text)) {
                 $data['results'][] = [
-                    'page_no'     => $fields['page_no'][0],
-                    'contract_id' => $fields['contract_id'][0],
-                    'text'        => strip_tags($text)
+                    'page_no'             => $fields['page_no'][0],
+                    'contract_id'         => $fields['contract_id'][0],
+                    'open_contracting_id' => $fields['open_contracting_id'][0],
+                    'text'                => strip_tags($text)
                 ];
             }
 
@@ -475,7 +505,7 @@ class APIServices extends Services
             }
             $params         = $this->getMetadataIndexType();
             $params['body'] = [
-                'fields' => ["metadata.contract_name","metadata.open_contracting_id"],
+                'fields' => ["metadata.contract_name", "metadata.open_contracting_id"],
                 'query'  => [
                     'bool' => [
                         'must' => $filters
@@ -486,17 +516,17 @@ class APIServices extends Services
 
             if (!empty($result['hits']['hits'])) {
                 $data[] = [
-                    'id'            => $result['hits']['hits'][0]['_id'],
-                    'guid'          => $result['hits']['hits'][0]['_id'] . '-' . $result['hits']['hits'][0]['fields']['metadata.open_contracting_id'][0],
-                    'contract_name' => $result['hits']['hits'][0]['fields']['metadata.contract_name'][0],
-                    'status'        => "published"
+                    'id'                  => $result['hits']['hits'][0]['_id'],
+                    'open_contracting_id' => $result['hits']['hits'][0]['fields']['metadata.open_contracting_id'][0],
+                    'contract_name'       => $result['hits']['hits'][0]['fields']['metadata.contract_name'][0],
+                    'status'              => "published"
                 ];
             } else {
                 $data[] = [
-                    'id'            => $document['id'],
-                    'guid'          => '',
-                    'contract_name' => $document['contract_name'],
-                    'status'        => 'unpublished'
+                    'id'                  => $document['id'],
+                    'open_contracting_id' => '',
+                    'contract_name'       => $document['contract_name'],
+                    'status'              => 'unpublished'
                 ];
             }
         }

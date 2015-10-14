@@ -23,9 +23,10 @@ class Services
      */
     public function __construct()
     {
+        $hosts       = [env('ELASTICSEARCH_SERVER')];
         $this->index = env("INDEX");
-        $api         = new ClientBuilder();
-        $this->api   = $api->create()->build();
+        $client      = ClientBuilder::create()->setHosts($hosts);
+        $this->api   = $client->build();
     }
 
     /**
@@ -62,6 +63,16 @@ class Services
         ];
 
         return $params;
+    }
+
+    /**
+     * Return the type of Id
+     * @param $id
+     * @return string
+     */
+    public function getIdType($id)
+    {
+        return is_numeric($id) ? 'numeric' : 'string';
     }
 
 }
