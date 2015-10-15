@@ -100,8 +100,8 @@ class APIServices extends Services
         $filter          = [];
         $type            = $this->getIdType($contractId);
 
-        if ($contractId && $type == "string") {
-            $filters[] = [
+        if (!empty($contractId) && $type == "string") {
+            $filter[] = [
                 "term" => ["open_contracting_id" => ["value" => $contractId]]
             ];
         }
@@ -128,6 +128,7 @@ class APIServices extends Services
                 ]
             ]
         ];
+
         $results        = $this->search($params);
         $data           = [];
         $data['total']  = $results['hits']['total'];
@@ -163,7 +164,7 @@ class APIServices extends Services
         $type = $this->getIdType($contractId);
 
         if ($contractId && $type == "string") {
-            $filters[] = [
+            $filter[] = [
                 "term" => ["open_contracting_id" => ["value" => $contractId]]
             ];
         }
