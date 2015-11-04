@@ -83,7 +83,7 @@ class FulltextSearch extends Services
             array_push($fields, "annotations_string");
         }
         if (isset($request['q']) && !empty($request['q'])) {
-            $params['body']['query']['query_string'] = [
+            $params['body']['query']['simple_query_string'] = [
                 "fields" => $fields,
                 'query'  => $request['q']
             ];
@@ -176,11 +176,19 @@ class FulltextSearch extends Services
         ];
 
         $params['body']['size'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
+        if (isset($request['download']) && $request['download']) {
+            $params['body']['size'] = 100000;
+        }
         $params['body']['from'] = (isset($request['from']) and !empty($request['from'])) ? $request['from'] : self::FROM;
         $data                   = [];
         $data                   = $this->searchText($params, $type);
         $data['from']           = isset($request['from']) ? $request['from'] : self::FROM;
         $data['per_page']       = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
+        if (isset($request['download']) && $request['download']) {
+            $download = new DownloadServices();
+            $downloadData=$download->getMetadataAndAnnotations($data, $request);
+            return $download->downloadSearchResult($downloadData);
+        }
 
         return (array) $data;
     }
@@ -290,4 +298,6 @@ class FulltextSearch extends Services
 
         return $check;
     }
+
+
 }
