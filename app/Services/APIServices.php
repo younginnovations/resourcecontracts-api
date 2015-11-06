@@ -378,6 +378,7 @@ class APIServices extends Services
                 'category'            => $source['metadata']['category']
             ];
         }
+
         if (isset($request['download']) && $request['download']) {
             $download = new DownloadServices();
             $downloadData=$download->getMetadataAndAnnotations($data, $request);
