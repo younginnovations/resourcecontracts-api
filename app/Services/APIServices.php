@@ -327,6 +327,9 @@ class APIServices extends Services
 
         $params['body']['query']['filtered']['filter']['and']['filters'] = $filter;
         $params['body']['size']                                          = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
+        if (isset($request['download']) && $request['download']) {
+            $params['body']['size'] = 100000;
+        }
         if (isset($request['from'])) {
             $params['body']['from'] = !empty($request['from']) ? $request['from'] : self::FROM;
         }
@@ -376,6 +379,11 @@ class APIServices extends Services
             ];
         }
 
+        if (isset($request['download']) && $request['download']) {
+            $download = new DownloadServices();
+            $downloadData=$download->getMetadataAndAnnotations($data, $request);
+            return $download->downloadSearchResult($downloadData);
+        }
         return $data;
     }
 
