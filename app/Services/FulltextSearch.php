@@ -85,7 +85,8 @@ class FulltextSearch extends Services
         if (isset($request['q']) && !empty($request['q'])) {
             $params['body']['query']['simple_query_string'] = [
                 "fields" => $fields,
-                'query'  => $request['q']
+                'query'  => $request['q'],
+                "default_operator"=> "AND"
             ];
         }
 
