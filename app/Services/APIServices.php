@@ -313,7 +313,7 @@ class APIServices extends Services
         if (isset($request['resource']) and !empty($request['resource'])) {
             $filter[] = [
                 "term" => [
-                    "metadata.resource_raw" => $request['resource'],
+                    "resource_raw" => $request['resource'],
                 ]
             ];
         }
