@@ -177,10 +177,11 @@ class FulltextSearch extends Services
         ];
 
         $params['body']['size'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
+        $params['body']['from'] = (isset($request['from']) and !empty($request['from'])) ? $request['from'] : self::FROM;
         if (isset($request['download']) && $request['download']) {
             $params['body']['size'] = 100000;
+            $params['body']['from'] = 0;
         }
-        $params['body']['from'] = (isset($request['from']) and !empty($request['from'])) ? $request['from'] : self::FROM;
         $data                   = [];
         $data                   = $this->searchText($params, $type);
         $data['from']           = isset($request['from']) ? $request['from'] : self::FROM;
