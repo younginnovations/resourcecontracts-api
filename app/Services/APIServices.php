@@ -205,7 +205,6 @@ class APIServices extends Services
                     'id'                  => $result['_id'],
                     'quote'               => isset($source['quote']) ? $source['quote'] : null,
                     'text'                => $source['text'],
-                    'tags'                => $source['tags'],
                     'category'            => $source['category'],
                     'page_no'             => $source['page'],
                     'ranges'              => isset($source['ranges']) ? $source['ranges'] : null,
@@ -557,7 +556,7 @@ class APIServices extends Services
         if (!empty($resources)) {
             $filters[] = [
                 'terms' => [
-                    "metadata.resource_raw" => $resources
+                    "resource_raw" => $resources
                 ]
             ];
         }
