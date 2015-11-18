@@ -350,9 +350,7 @@ class APIServices extends Services
             if ($request['sort_by'] == "contract_type") {
                 $params['body']['sort']['metadata.type_of_contract.raw']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
             }
-        } else {
-            $params['body']['sort']['metadata.signature_year']['order'] = "desc";
-        }
+        } 
         $results = $this->search($params);
 
         $data             = [];
