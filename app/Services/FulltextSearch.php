@@ -130,8 +130,6 @@ class FulltextSearch extends Services
                 $params['body']['sort']['metadata.contract_type']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
             }
 
-        } else {
-            $params['body']['sort']['metadata.signature_year']['order'] = "desc";
         }
 
         $highlightField = [];
@@ -160,7 +158,7 @@ class FulltextSearch extends Services
         }
         if (in_array('metadata', $type)) {
             $highlightField['metadata_string'] = [
-                'fragment_size'       => 1,
+                'fragment_size'       => 50,
                 'number_of_fragments' => 1,
             ];
 
