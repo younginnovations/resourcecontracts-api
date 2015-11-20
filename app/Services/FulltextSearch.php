@@ -93,10 +93,14 @@ class FulltextSearch extends Services
             array_push($fields, "annotations_string");
         }
         if (isset($request['q']) && !empty($request['q'])) {
-            $params['body']['query']['simple_query_string'] = [
-                "fields"           => $fields,
-                'query'            => urldecode($request['q']),
-                "default_operator" => "AND"
+
+            $params['body']['query']['query_string'] = [
+                "fields"              => $fields,
+                'query'               => $this->addFuzzyOperator($request['q']),
+                "default_operator"    => "AND",
+                "fuzzy_prefix_length" => 4,
+                "fuzziness"           => "AUTO"
+
             ];
         }
 
@@ -315,6 +319,7 @@ class FulltextSearch extends Services
         return $check;
     }
 
+
     /**
      * Return the values of signature year
      * @param $signatureYear
@@ -364,6 +369,16 @@ class FulltextSearch extends Services
         }
 
         return $data;
+}
+    private function addFuzzyOperator($queryString)
+    {
+        $queryString=urldecode($queryString);
+        $string = preg_replace('/[^A-Za-z0-9\-\(\) ]/', '', $queryString);
+        $string = preg_replace('/\s\s+/', ' ', $string);
+        $string = str_replace(' ', '~ ', $string) . '~';
+
+        return $string;
+
     }
 
     /**
