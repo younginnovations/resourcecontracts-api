@@ -84,9 +84,9 @@ class FulltextSearch extends Services
         }
         if (isset($request['q']) && !empty($request['q'])) {
             $params['body']['query']['simple_query_string'] = [
-                "fields" => $fields,
-                'query'  => $request['q'],
-                "default_operator"=> "AND"
+                "fields"           => $fields,
+                'query'            => $request['q'],
+                "default_operator" => "AND"
             ];
         }
 
@@ -112,6 +112,7 @@ class FulltextSearch extends Services
             "metadata.company_name",
             "metadata.contract_type",
             "metadata.corporate_grouping",
+            "metadata.show_pdf_text"
         ];
         if (isset($request['sort_by']) and !empty($request['sort_by'])) {
             if ($request['sort_by'] == "country") {
@@ -180,13 +181,14 @@ class FulltextSearch extends Services
             $params['body']['size'] = 100000;
             $params['body']['from'] = 0;
         }
-        $data                   = [];
-        $data                   = $this->searchText($params, $type);
-        $data['from']           = isset($request['from']) ? $request['from'] : self::FROM;
-        $data['per_page']       = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
+        $data             = [];
+        $data             = $this->searchText($params, $type);
+        $data['from']     = isset($request['from']) ? $request['from'] : self::FROM;
+        $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
         if (isset($request['download']) && $request['download']) {
-            $download = new DownloadServices();
-            $downloadData=$download->getMetadataAndAnnotations($data, $request);
+            $download     = new DownloadServices();
+            $downloadData = $download->getMetadataAndAnnotations($data, $request);
+
             return $download->downloadSearchResult($downloadData);
         }
 
@@ -250,6 +252,7 @@ class FulltextSearch extends Services
                 'country_code'        => isset($field['fields']['metadata.country_code']) ? $field['fields']['metadata.country_code'][0] : "",
                 "file_size"           => isset($field['fields']['metadata.file_size']) ? $field['fields']['metadata.file_size'][0] : "",
                 "language"            => isset($field['fields']['metadata.language']) ? $field['fields']['metadata.language'][0] : "",
+                "show_pdf_text"       => isset($field['fields']['metadata.show_pdf_text']) ? $field['fields']['metadata.show_pdf_text'][0] : "",
             ];
             $data['results'][$i]['group']       = [];
             $highlight                          = isset($field['highlight']) ? $field['highlight'] : '';
