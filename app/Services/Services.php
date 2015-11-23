@@ -85,4 +85,9 @@ class Services
         return is_numeric($id) ? 'numeric' : 'string';
     }
 
+    public function suggest($params)
+    {
+        return $this->api->suggest($params);
+    }
+
 }

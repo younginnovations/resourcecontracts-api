@@ -207,6 +207,10 @@ class FulltextSearch extends Services
 
             return $download->downloadSearchResult($downloadData);
         }
+        $data['suggestion'] = [];
+        if (isset($request['q']) && !empty($request['q'])) {
+            $data['suggestion'] = $this->getSuggestionText($params, $request['q']);
+        }
 
         return (array) $data;
     }
@@ -372,10 +376,10 @@ class FulltextSearch extends Services
 }
     private function addFuzzyOperator($queryString)
     {
-        $queryString=urldecode($queryString);
-        $string = preg_replace('/[^A-Za-z0-9\-\(\) ]/', '', $queryString);
-        $string = preg_replace('/\s\s+/', ' ', $string);
-        $string = str_replace(' ', '~ ', $string) . '~';
+        $queryString = urldecode($queryString);
+        $string      = preg_replace('/[^A-Za-z0-9\-\(\) ]/', '', $queryString);
+        $string      = preg_replace('/\s\s+/', ' ', $string);
+        $string      = str_replace(' ', '~ ', $string) . '~';
 
         return $string;
 
@@ -399,6 +403,71 @@ class FulltextSearch extends Services
 
         return $count['count'];
     }
+    /*
+     * write brief description
+     * @param $params
+     * @param $q
+     * @return array
+     */
+    private function getSuggestionText($params, $q)
+    {
+        $params['body']['size']    = 0;
+        $params['body']['suggest'] = [
+            "text"                   => urldecode($q),
+            "text_suggestion"        => [
+                "term" => [
+                    "field"         => "pdf_text_string",
+                    "suggest_mode"  => "always",
+                    "prefix_length" => 4
+                ]
+            ],
+            "annotations_suggestion" => [
+                "term" => [
+                    "field"         => "annotations_string",
+                    "suggest_mode"  => "always",
+                    "prefix_length" => 4
+                ]
+            ],
+        ];
 
+        $suggestion         = $this->search($params);
+        $suggestions        = $suggestion['suggest'];
+        $annotationsSuggest = $this->formatSuggestedData($suggestions, 'annotations_suggestion');
+        $textSuggestion     = $this->formatSuggestedData($suggestions, 'text_suggestion');
+        $intersections      = array_intersect_key($annotationsSuggest, $textSuggestion);
+        $complement         = array_diff_key($annotationsSuggest, $textSuggestion);
+        foreach ($intersections as $intersection) {
+            $freq                                          = $intersection['freq'];
+            $textSuggestion[$intersection['text']]['freq'] = $freq + $textSuggestion[$intersection['text']]['freq'];
+        }
+        $suggestion = array_merge($textSuggestion, $complement);
+        $data       = array_values($suggestion);
+        usort(
+            $data,
+            function ($a, $b) {
+                return $b['freq'] - $a['freq'];
+            }
+        );
+       
+        return $data;
+    }
+
+
+    private function formatSuggestedData($suggestions, $field)
+    {
+        $data = [];
+
+        foreach ($suggestions[$field] as $sugField) {
+            foreach ($sugField['options'] as $suggestion) {
+                $data[$suggestion['text']] = [
+                    'text' => $suggestion['text'],
+                    'freq' => $suggestion['freq']
+                ];
+            }
+
+        }
+
+        return $data;
+    }
 
 }
