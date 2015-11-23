@@ -350,7 +350,7 @@ class APIServices extends Services
             if ($request['sort_by'] == "contract_type") {
                 $params['body']['sort']['metadata.type_of_contract.raw']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
             }
-        } 
+        }
         $results = $this->search($params);
 
         $data             = [];
@@ -372,15 +372,18 @@ class APIServices extends Services
                 'language'            => $source['metadata']['language'],
                 'resource'            => $source['metadata']['resource'],
                 'file_size'           => $source['metadata']['file_size'],
-                'category'            => $source['metadata']['category']
+                'category'            => $source['metadata']['category'],
+                'show_pdf_text'       => $source['metadata']['show_pdf_text'],
             ];
         }
 
         if (isset($request['download']) && $request['download']) {
-            $download = new DownloadServices();
-            $downloadData=$download->getMetadataAndAnnotations($data, $request);
+            $download     = new DownloadServices();
+            $downloadData = $download->getMetadataAndAnnotations($data, $request);
+
             return $download->downloadSearchResult($downloadData);
         }
+
         return $data;
     }
 
