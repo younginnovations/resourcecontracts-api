@@ -247,7 +247,7 @@ class FulltextSearch extends Services
                 'guid'                => $contractId . '-' . $field['fields']['metadata.open_contracting_id'][0],
                 "contract_name"       => isset($field['fields']['metadata.contract_name']) ? $field['fields']['metadata.contract_name'][0] : "",
                 "signature_year"      => isset($field['fields']['metadata.signature_year']) ? $field['fields']['metadata.signature_year'][0] : "",
-                "contract_type"       => isset($field['fields']['metadata.contract_type']) ? $field['fields']['metadata.contract_type'][0] : "",
+                "contract_type"       => isset($field['fields']['metadata.contract_type']) ? $field['fields']['metadata.contract_type'] : "",
                 "resource"            => isset($field['fields']['metadata.resource']) ? $field['fields']['metadata.resource'] : [],
                 'country_code'        => isset($field['fields']['metadata.country_code']) ? $field['fields']['metadata.country_code'][0] : "",
                 "file_size"           => isset($field['fields']['metadata.file_size']) ? $field['fields']['metadata.file_size'][0] : "",
