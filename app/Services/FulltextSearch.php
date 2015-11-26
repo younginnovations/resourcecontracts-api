@@ -411,9 +411,13 @@ class FulltextSearch extends Services
      */
     private function getSuggestionText($params, $q)
     {
-        $params['body']['size']    = 0;
-        $params['body']['suggest'] = [
-            "text"                   => urldecode($q),
+        $params['body']['size'] = 0;
+
+        $q           = urldecode($q);
+        $queryLength = str_word_count($q);
+
+        $filter = [
+            "text"                   => $q,
             "text_suggestion"        => [
                 "term" => [
                     "field"         => "pdf_text_string",
@@ -429,6 +433,31 @@ class FulltextSearch extends Services
                 ]
             ],
         ];
+        if ($queryLength > 1) {
+            $filter = [
+                "text"                   => $q,
+                "text_suggestion"        => [
+                    "phrase" => [
+                        "field"                      => "pdf_text_string",
+                        "real_word_error_likelihood" => 0.50,
+                        "size"                       => 1,
+                        "max_errors"                 => 0.5,
+                        "gram_size"                  => 2
+                    ]
+                ],
+                "annotations_suggestion" => [
+                    "phrase" => [
+                        "field"                      => "annotations_string",
+                        "real_word_error_likelihood" => 0.50,
+                        "size"                       => 1,
+                        "max_errors"                 => 0.5,
+                        "gram_size"                  => 2
+                    ]
+                ],
+            ];
+        }
+
+        $params['body']['suggest'] = $filter;
 
         $suggestion         = $this->search($params);
         $suggestions        = $suggestion['suggest'];
@@ -448,7 +477,7 @@ class FulltextSearch extends Services
                 return $b['freq'] - $a['freq'];
             }
         );
-       
+
         return $data;
     }
 
@@ -461,7 +490,7 @@ class FulltextSearch extends Services
             foreach ($sugField['options'] as $suggestion) {
                 $data[$suggestion['text']] = [
                     'text' => $suggestion['text'],
-                    'freq' => $suggestion['freq']
+                    'freq' => (isset($suggestion['freq']) && !empty($suggestion['freq'])) ? $suggestion['freq'] : 1
                 ];
             }
 
