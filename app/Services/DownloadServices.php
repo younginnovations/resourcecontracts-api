@@ -9,7 +9,7 @@ class DownloadServices extends Services
      * @param array $request
      * @return array
      */
-    public function getMetadataAndAnnotations($data, $request=[])
+    public function getMetadataAndAnnotations($data, $request = [])
     {
 
         $ids             = $this->getMetadataId($data);
@@ -116,7 +116,7 @@ class DownloadServices extends Services
         $filename = "export" . date('Y-m-d');
         header('Content-type: text/csv');
         header('Content-Disposition: attachment; filename="' . $filename . '.csv"');
-        $file = fopen('php://output', 'w');
+        $file    = fopen('php://output', 'w');
         $heading = [
             'OCID',
             'Category',
@@ -147,14 +147,16 @@ class DownloadServices extends Services
             'Source Url',
             'Disclosure Mode',
             'Retrieval Date',
-            'Pdf Url'
+            'Pdf Url',
+            'Deal Number',
+            'Contract Note',
+            'Matrix Page'
         ];
-        if(isset($downloadData[0]->annotation))
-        {
-            array_push($heading,'Annotation Category');
-            array_push($heading,'Annotation Text');
+        if (isset($downloadData[0]->annotation)) {
+            array_push($heading, 'Annotation Category');
+            array_push($heading, 'Annotation Text');
         }
-        fputcsv($file,$heading);
+        fputcsv($file, $heading);
 
         foreach ($data as $row) {
             fputcsv($file, $row);
@@ -179,8 +181,7 @@ class DownloadServices extends Services
 
 
                 }
-            }
-            else{
+            } else {
                 $data[] = $this->getCSVData($contract);
             }
 
@@ -260,7 +261,7 @@ class DownloadServices extends Services
             $contract->language,
             $contract->country->name,
             implode(';', $contract->resource),
-            $contract->type_of_contract,
+            implode(';', $contract->type_of_contract),
             $contract->signature_date,
             $contract->document_type,
             implode(';', $this->makeSemicolonSeparated($contract->government_entity, 'entity')),
@@ -283,6 +284,9 @@ class DownloadServices extends Services
             $contract->disclosure_mode,
             $contract->date_retrieval,
             $contract->file_url,
+            $contract->deal_number,
+            $contract->contract_note,
+            $contract->matrix_page,
             isset($annotations->annotation_category) ? $annotations->annotation_category : '',
             isset($annotations->text) ? $annotations->text : ''
         ];
