@@ -1,10 +1,14 @@
 # NRGI- Client API
 
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/younginnovations/resourcecontracts-api/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/younginnovations/resourcecontracts-api/?branch=master)
+
 ## Install
 
 NRGI- Client API can be cloned from gitlab repository and installed. Following the procedure given below:
 
 * git clone https://github.com/younginnovations/resourcecontracts-api.git
+
+
 * cd resourcecontracts-api
 
 ## Run
