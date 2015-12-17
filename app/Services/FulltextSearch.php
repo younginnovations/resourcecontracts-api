@@ -242,17 +242,16 @@ class FulltextSearch extends Services
             }
 
             $data['results'][$i]                = [
-                "contract_id"         => (int) $contractId,
+                "id"                  => (int) $contractId,
                 "open_contracting_id" => isset($field['fields']['metadata.open_contracting_id']) ? $field['fields']['metadata.open_contracting_id'][0] : "",
-                'guid'                => $contractId . '-' . $field['fields']['metadata.open_contracting_id'][0],
-                "contract_name"       => isset($field['fields']['metadata.contract_name']) ? $field['fields']['metadata.contract_name'][0] : "",
-                "signature_year"      => isset($field['fields']['metadata.signature_year']) ? $field['fields']['metadata.signature_year'][0] : "",
+                "name"                => isset($field['fields']['metadata.contract_name']) ? $field['fields']['metadata.contract_name'][0] : "",
+                "year_signed"         => isset($field['fields']['metadata.signature_year']) ? $field['fields']['metadata.signature_year'][0] : "",
                 "contract_type"       => isset($field['fields']['metadata.contract_type']) ? $field['fields']['metadata.contract_type'] : [],
                 "resource"            => isset($field['fields']['metadata.resource']) ? $field['fields']['metadata.resource'] : [],
                 'country_code'        => isset($field['fields']['metadata.country_code']) ? $field['fields']['metadata.country_code'][0] : "",
-                "file_size"           => isset($field['fields']['metadata.file_size']) ? $field['fields']['metadata.file_size'][0] : "",
+                "file_size"           => (int) isset($field['fields']['metadata.file_size']) ? $field['fields']['metadata.file_size'][0] : "",
                 "language"            => isset($field['fields']['metadata.language']) ? $field['fields']['metadata.language'][0] : "",
-                "show_pdf_text"       => isset($field['fields']['metadata.show_pdf_text']) ? $field['fields']['metadata.show_pdf_text'][0] : "",
+                "is_ocr_reviewed"     => (int) isset($field['fields']['metadata.show_pdf_text']) ? $field['fields']['metadata.show_pdf_text'][0] : "",
             ];
             $data['results'][$i]['group']       = [];
             $highlight                          = isset($field['highlight']) ? $field['highlight'] : '';
