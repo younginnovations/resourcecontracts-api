@@ -245,7 +245,7 @@ class FulltextSearch extends Services
                 "id"                  => (int) $contractId,
                 "open_contracting_id" => isset($field['fields']['metadata.open_contracting_id']) ? $field['fields']['metadata.open_contracting_id'][0] : "",
                 "name"                => isset($field['fields']['metadata.contract_name']) ? $field['fields']['metadata.contract_name'][0] : "",
-                "year_signed"         => isset($field['fields']['metadata.signature_year']) ? $field['fields']['metadata.signature_year'][0] : "",
+                "year_signed"         => isset($field['fields']['metadata.signature_year']) ? $this->getSignatureYear($field['fields']['metadata.signature_year'][0]) : "",
                 "contract_type"       => isset($field['fields']['metadata.contract_type']) ? $field['fields']['metadata.contract_type'] : [],
                 "resource"            => isset($field['fields']['metadata.resource']) ? $field['fields']['metadata.resource'] : [],
                 'country_code'        => isset($field['fields']['metadata.country_code']) ? $field['fields']['metadata.country_code'][0] : "",
@@ -299,6 +299,16 @@ class FulltextSearch extends Services
         }
 
         return $check;
+    }
+
+    public function getSignatureYear($signatureYear)
+    {
+        if (empty($signatureYear)) {
+            return '';
+        }
+
+        return (int) $signatureYear;
+
     }
 
 

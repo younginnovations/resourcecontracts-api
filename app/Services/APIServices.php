@@ -354,7 +354,7 @@ class APIServices extends Services
                 'open_contracting_id' => $source['metadata']['open_contracting_id'],
                 'name'                => $source['metadata']['contract_name'],
                 'country_code'        => $source['metadata']['country']['code'],
-                'year_signed'         => (int) $source['metadata']['signature_year'],
+                'year_signed'         => $this->getSignatureYear($source['metadata']['signature_year']),
                 'date_signed'         => $source['metadata']['signature_date'],
                 'contract_type'       => $source['metadata']['type_of_contract'],
                 'language'            => $source['metadata']['language'],
@@ -987,7 +987,7 @@ class APIServices extends Services
         }
         $data['contract_type'] = isset($metadata['type_of_contract']) ? $metadata['type_of_contract'] : '';
         $data['date_signed']   = isset($metadata['signature_date']) ? $metadata['signature_date'] : '';
-        $data['year_signed']   = isset($metadata['signature_year']) ? (int) $metadata['signature_year'] : '';
+        $data['year_signed']   = isset($metadata['signature_year']) ? $this->getSignatureYear($metadata['signature_year']) : '';
         $data['type']          = isset($metadata['document_type']) ? $metadata['document_type'] : '';
 
 
@@ -1026,7 +1026,7 @@ class APIServices extends Services
 
         $data['url']['source']          = isset($metadata['source_url']) ? $metadata['source_url'] : '';
         $data['url']['amla']            = isset($metadata['amla_url']) ? $metadata['amla_url'] : '';
-        $data['publisher_type']         = isset($metadata['disclosure_type']) ? $metadata['disclosure_type'] : '';
+        $data['publisher_type']         = isset($metadata['disclosure_mode']) ? $metadata['disclosure_mode'] : '';
         $data['retrieved_at']           = isset($metadata['date_retrieval']) ? $metadata['date_retrieval'] : '';
         $data['created_at']             = isset($metadata['created_at']) ? $metadata['created_at'] : '';
         $data['category']               = isset($metadata['category']) ? $metadata['category'] : '';
@@ -1085,6 +1085,16 @@ class APIServices extends Services
         }
 
         return (float) $participationShare;
+    }
+
+    public function getSignatureYear($signatureYear)
+    {
+        if (empty($signatureYear)) {
+            return '';
+        }
+
+        return (int) $signatureYear;
+
     }
 
 }
