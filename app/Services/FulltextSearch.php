@@ -249,7 +249,7 @@ class FulltextSearch extends Services
                 "contract_type"       => isset($field['fields']['metadata.contract_type']) ? $field['fields']['metadata.contract_type'] : [],
                 "resource"            => isset($field['fields']['metadata.resource']) ? $field['fields']['metadata.resource'] : [],
                 'country_code'        => isset($field['fields']['metadata.country_code']) ? $field['fields']['metadata.country_code'][0] : "",
-                "file_size"           => (int) isset($field['fields']['metadata.file_size']) ? $field['fields']['metadata.file_size'][0] : "",
+                "byte_size"           => (int) isset($field['fields']['metadata.file_size']) ? $field['fields']['metadata.file_size'][0] : "",
                 "language"            => isset($field['fields']['metadata.language']) ? $field['fields']['metadata.language'][0] : "",
                 "is_ocr_reviewed"     => (int) isset($field['fields']['metadata.show_pdf_text']) ? $field['fields']['metadata.show_pdf_text'][0] : "",
             ];
