@@ -19,6 +19,7 @@ class BaseController
      */
     function __construct()
     {
+        //header('Access-Control-Allow-Origin: *');
         $this->request = Request::createFromGlobals();
     }
 
