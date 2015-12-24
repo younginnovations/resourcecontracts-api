@@ -1028,7 +1028,7 @@ class APIServices extends Services
         $data['url']['amla']            = isset($metadata['amla_url']) ? $metadata['amla_url'] : '';
         $data['publisher_type']         = isset($metadata['disclosure_mode']) ? $metadata['disclosure_mode'] : '';
         $data['retrieved_at']           = isset($metadata['date_retrieval']) ? $metadata['date_retrieval'] : '';
-        $data['created_at']             = isset($metadata['created_at']) ? $metadata['created_at'] : '';
+        $data['created_at']             = isset($results['created_at']) ? $results['created_at'] : '';
         $data['category']               = isset($metadata['category']) ? $metadata['category'] : '';
         $data['note']                   = isset($metadata['contract_note']) ? $metadata['contract_note'] : '';
         $data['is_associated_document'] = isset($metadata['is_supporting_document']) ? (int) $metadata['is_supporting_document'] : '';
