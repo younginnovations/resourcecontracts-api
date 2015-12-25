@@ -41,8 +41,8 @@ class FulltextSearch extends Services
             $year      = explode(',', $request['year']);
             $filters[] = ["terms" => ["metadata.signature_year" => $year]];
         }
-        if (isset($request['country']) and !empty($request['country'])) {
-            $country   = explode(',', $request['country']);
+        if (isset($request['country_code']) and !empty($request['country_code'])) {
+            $country   = explode(',', $request['country_code']);
             $filters[] = ["terms" => ["metadata.country_code" => $country]];
         }
         if (isset($request['resource']) and !empty($request['resource'])) {
@@ -249,7 +249,6 @@ class FulltextSearch extends Services
                 "contract_type"       => isset($field['fields']['metadata.contract_type']) ? $field['fields']['metadata.contract_type'] : [],
                 "resource"            => isset($field['fields']['metadata.resource']) ? $field['fields']['metadata.resource'] : [],
                 'country_code'        => isset($field['fields']['metadata.country_code']) ? $field['fields']['metadata.country_code'][0] : "",
-                "byte_size"           => (int) isset($field['fields']['metadata.file_size']) ? $field['fields']['metadata.file_size'][0] : "",
                 "language"            => isset($field['fields']['metadata.language']) ? $field['fields']['metadata.language'][0] : "",
                 "is_ocr_reviewed"     => (int) isset($field['fields']['metadata.show_pdf_text']) ? $field['fields']['metadata.show_pdf_text'][0] : "",
             ];

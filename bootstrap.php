@@ -17,6 +17,11 @@ try {
     $response->send();
 
 } catch (\League\Route\Http\Exception $e) {
-    return $response->create(view(404), 400)->send();
+    $errorMsg["error"] = [
+        "code"=>400,
+        "message"=>"The API you are currently looking is not available."
+    ];
+
+    return $response->create(json_encode($errorMsg))->send();
 }
 

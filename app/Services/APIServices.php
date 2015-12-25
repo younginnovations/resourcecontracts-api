@@ -59,10 +59,21 @@ class APIServices extends Services
                         ],
                 ],
         ];
+        $filters        = [];
         if (isset($request['category']) && !empty($request['category'])) {
-            $categoryfilter          = $this->getCategory($request['category']);
-            $params['body']['query'] = $categoryfilter;
+            $categoryfilter = $this->getCategory($request['category']);
+            array_push($filters, $categoryfilter);
+            //
         }
+        if (isset($request['country_code']) && !empty($request['country_code'])) {
+            $country['term'] = [
+                "metadata.country.code" => [
+                    "value" => $request['country_code']
+                ]
+            ];
+            array_push($filters, $country);
+        }
+        $params['body']['query']['bool']['must'] = $filters;
 
         $response = $this->search($params);
 
@@ -355,11 +366,10 @@ class APIServices extends Services
                 'name'                => $source['metadata']['contract_name'],
                 'country_code'        => $source['metadata']['country']['code'],
                 'year_signed'         => $this->getSignatureYear($source['metadata']['signature_year']),
-                'date_signed'         => $source['metadata']['signature_date'],
+                'date_signed'         => !empty($source['metadata']['signature_date'])?$source['metadata']['signature_date']:'',
                 'contract_type'       => $source['metadata']['type_of_contract'],
                 'language'            => $source['metadata']['language'],
                 'resource'            => $source['metadata']['resource'],
-                'byte_size'           => $source['metadata']['file_size'],
                 'category'            => $source['metadata']['category'],
                 'is_ocr_reviewed'     => (int) $source['metadata']['show_pdf_text'],
             ];
@@ -557,6 +567,14 @@ class APIServices extends Services
             ];
         }
 
+        if (isset($request['country_code']) && !empty($request['country_code'])) {
+            $filters[] = [
+                "term" => [
+                    "metadata.country.code" => $request['country_code']
+                ]
+            ];
+        }
+
         $params['body'] = [
             'size'  => 0,
             "query" => [
@@ -612,6 +630,14 @@ class APIServices extends Services
             $filters[] = [
                 'term' => [
                     "metadata.category" => $request['category']
+                ]
+            ];
+        }
+
+        if (isset($request['country_code']) && !empty($request['country_code'])) {
+            $filters[] = [
+                'term' => [
+                    "metadata.country.code" => $request['country_code']
                 ]
             ];
         }
@@ -674,6 +700,16 @@ class APIServices extends Services
                 ]
             ];
         }
+
+        if (isset($request['country_code']) && !empty($request['country_code'])) {
+            $filters[] = [
+                "term" => [
+                    "metadata.country.code" => $request['country_code']
+                ]
+            ];
+        }
+
+
         $params['body'] = [
             'size'  => 0,
             'query' => [
@@ -733,6 +769,16 @@ class APIServices extends Services
                 ]
             ];
         }
+
+        if (isset($request['country_code']) && !empty($request['country_code'])) {
+            $filters[] = [
+                "term" => [
+                    "metadata.country.code" => $request['country_code']
+                ]
+            ];
+        }
+
+
         $params['body'] = [
             'size'  => 0,
             "query" => [
