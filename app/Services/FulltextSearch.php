@@ -112,7 +112,8 @@ class FulltextSearch extends Services
             "metadata.company_name",
             "metadata.contract_type",
             "metadata.corporate_grouping",
-            "metadata.show_pdf_text"
+            "metadata.show_pdf_text",
+            "metadata.category"
         ];
         if (isset($request['sort_by']) and !empty($request['sort_by'])) {
             if ($request['sort_by'] == "country") {
@@ -250,7 +251,8 @@ class FulltextSearch extends Services
                 "resource"            => isset($field['fields']['metadata.resource']) ? $field['fields']['metadata.resource'] : [],
                 'country_code'        => isset($field['fields']['metadata.country_code']) ? $field['fields']['metadata.country_code'][0] : "",
                 "language"            => isset($field['fields']['metadata.language']) ? $field['fields']['metadata.language'][0] : "",
-                "is_ocr_reviewed"     => (int) isset($field['fields']['metadata.show_pdf_text']) ? $field['fields']['metadata.show_pdf_text'][0] : "",
+                "category"            => isset($field['fields']['metadata.category']) ? $field['fields']['metadata.category'] : "",
+                "is_ocr_reviewed"     => (int) isset($field['fields']['metadata.show_pdf_text']) ? (int) $field['fields']['metadata.show_pdf_text'][0] : "",
             ];
             $data['results'][$i]['group']       = [];
             $highlight                          = isset($field['highlight']) ? $field['highlight'] : '';
