@@ -63,7 +63,6 @@ class APIServices extends Services
         if (isset($request['category']) && !empty($request['category'])) {
             $categoryfilter = $this->getCategory($request['category']);
             array_push($filters, $categoryfilter);
-            //
         }
         if (isset($request['country_code']) && !empty($request['country_code'])) {
             $country['term'] = [
@@ -1133,6 +1132,11 @@ class APIServices extends Services
         return (float) $participationShare;
     }
 
+    /**
+     * Return the signature value
+     * @param $signatureYear
+     * @return int|string
+     */
     public function getSignatureYear($signatureYear)
     {
         if (empty($signatureYear)) {

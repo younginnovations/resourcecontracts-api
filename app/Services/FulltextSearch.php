@@ -302,6 +302,11 @@ class FulltextSearch extends Services
         return $check;
     }
 
+    /**
+     * Return the values of signature year
+     * @param $signatureYear
+     * @return int|string
+     */
     public function getSignatureYear($signatureYear)
     {
         if (empty($signatureYear)) {
