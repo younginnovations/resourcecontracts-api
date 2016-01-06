@@ -59,10 +59,20 @@ class APIServices extends Services
                         ],
                 ],
         ];
+        $filters        = [];
         if (isset($request['category']) && !empty($request['category'])) {
-            $categoryfilter          = $this->getCategory($request['category']);
-            $params['body']['query'] = $categoryfilter;
+            $categoryfilter = $this->getCategory($request['category']);
+            array_push($filters, $categoryfilter);
         }
+        if (isset($request['country_code']) && !empty($request['country_code'])) {
+            $country['term'] = [
+                "metadata.country.code" => [
+                    "value" => $request['country_code']
+                ]
+            ];
+            array_push($filters, $country);
+        }
+        $params['body']['query']['bool']['must'] = $filters;
 
         $response = $this->search($params);
 
@@ -263,27 +273,16 @@ class APIServices extends Services
         ];
 
 
-        $result  = $this->search($params);
-        $result  = $result['hits']['hits'];
-        $results = [];
+        $result = $this->search($params);
+        $result = $result['hits']['hits'];
+        $data   = [];
 
         if (!empty($result)) {
-            $results                     = $result[0]['_source'];
-            $document                    = isset($results['supporting_contracts']) ? $results['supporting_contracts'] : [];
-            $supportingDoc               = $this->getSupportingDocument($document, $category);
-            $metadata                    = $results['metadata'];
-            $translatedFrom              = isset($metadata['translated_from']) ? $metadata['translated_from'] : [];
-            $parentDocument              = $this->getSupportingDocument($translatedFrom, $category);
-            $metadata['parent_document'] = $parentDocument;
-            unset($results['metadata']);
-            unset($results['supporting_contracts']);
-            $results                         = array_merge($results, $metadata);
-            $results['supporting_contracts'] = $supportingDoc;
-            unset($results['translated_from']);
-
+            $results = $result[0]['_source'];
+            $data    = $this->formatMetadata($results, $category);
         }
 
-        return $results;
+        return $data;
     }
 
     /**
@@ -361,19 +360,17 @@ class APIServices extends Services
         foreach ($results['hits']['hits'] as $result) {
             $source            = $result['_source'];
             $data['results'][] = [
-                'contract_id'         => (integer) $source['contract_id'],
+                'id'                  => (integer) $source['contract_id'],
                 'open_contracting_id' => $source['metadata']['open_contracting_id'],
-                'contract_name'       => $source['metadata']['contract_name'],
-                'country'             => $source['metadata']['country']['name'],
+                'name'                => $source['metadata']['contract_name'],
                 'country_code'        => $source['metadata']['country']['code'],
-                'signature_year'      => $source['metadata']['signature_year'],
-                'signature_date'      => $source['metadata']['signature_date'],
+                'year_signed'         => $this->getSignatureYear($source['metadata']['signature_year']),
+                'date_signed'         => !empty($source['metadata']['signature_date'])?$source['metadata']['signature_date']:'',
                 'contract_type'       => $source['metadata']['type_of_contract'],
                 'language'            => $source['metadata']['language'],
                 'resource'            => $source['metadata']['resource'],
-                'file_size'           => $source['metadata']['file_size'],
                 'category'            => $source['metadata']['category'],
-                'show_pdf_text'       => $source['metadata']['show_pdf_text'],
+                'is_ocr_reviewed'     => (int) $source['metadata']['show_pdf_text'],
             ];
         }
 
@@ -527,15 +524,15 @@ class APIServices extends Services
                 $data[] = [
                     'id'                  => $result['hits']['hits'][0]['_id'],
                     'open_contracting_id' => $result['hits']['hits'][0]['fields']['metadata.open_contracting_id'][0],
-                    'contract_name'       => $result['hits']['hits'][0]['fields']['metadata.contract_name'][0],
-                    'status'              => "published"
+                    'name'                => $result['hits']['hits'][0]['fields']['metadata.contract_name'][0],
+                    'is_published'        => 1
                 ];
             } else {
                 $data[] = [
                     'id'                  => $document['id'],
                     'open_contracting_id' => '',
-                    'contract_name'       => $document['contract_name'],
-                    'status'              => 'unpublished'
+                    'name'                => $document['contract_name'],
+                    'is_published'        => 0
                 ];
             }
         }
@@ -565,6 +562,14 @@ class APIServices extends Services
             $filters[] = [
                 "term" => [
                     "metadata.category" => $request['category']
+                ]
+            ];
+        }
+
+        if (isset($request['country_code']) && !empty($request['country_code'])) {
+            $filters[] = [
+                "term" => [
+                    "metadata.country.code" => $request['country_code']
                 ]
             ];
         }
@@ -627,6 +632,14 @@ class APIServices extends Services
                 ]
             ];
         }
+
+        if (isset($request['country_code']) && !empty($request['country_code'])) {
+            $filters[] = [
+                'term' => [
+                    "metadata.country.code" => $request['country_code']
+                ]
+            ];
+        }
         $params['body'] = [
             'size'  => 0,
             'query' => [
@@ -686,6 +699,16 @@ class APIServices extends Services
                 ]
             ];
         }
+
+        if (isset($request['country_code']) && !empty($request['country_code'])) {
+            $filters[] = [
+                "term" => [
+                    "metadata.country.code" => $request['country_code']
+                ]
+            ];
+        }
+
+
         $params['body'] = [
             'size'  => 0,
             'query' => [
@@ -745,6 +768,16 @@ class APIServices extends Services
                 ]
             ];
         }
+
+        if (isset($request['country_code']) && !empty($request['country_code'])) {
+            $filters[] = [
+                "term" => [
+                    "metadata.country.code" => $request['country_code']
+                ]
+            ];
+        }
+
+
         $params['body'] = [
             'size'  => 0,
             "query" => [
@@ -970,4 +1003,149 @@ class APIServices extends Services
         return $data;
     }
 
+    /**
+     * Format metadata
+     *
+     * @param $results
+     * @param $category
+     * @return array
+     */
+    private function formatMetadata($results, $category)
+    {
+
+        $data                        = [];
+        $metadata                    = $results['metadata'];
+        $data['id']                  = (int) $results['contract_id'];
+        $data['open_contracting_id'] = isset($metadata['open_contracting_id']) ? $metadata['open_contracting_id'] : '';
+        $data['name']                = isset($metadata['contract_name']) ? $metadata['contract_name'] : '';
+        $data['identifier']          = isset($metadata['contract_identifier']) ? $metadata['contract_identifier'] : '';
+        $data['number_of_pages']     = isset($results['total_pages']) ? (int) $results['total_pages'] : '';
+        $data['language']            = isset($metadata['language']) ? $metadata['language'] : '';
+        $data['country']             = isset($metadata['country']) ? $metadata['country'] : '';
+        $data['resource']            = isset($metadata['resource']) ? $metadata['resource'] : '';
+
+        foreach ($metadata['government_entity'] as $government) {
+            $data['government_entity'][] = [
+                "name"       => $government['entity'],
+                "identifier" => $government['identifier']
+            ];
+        }
+        $data['contract_type'] = isset($metadata['type_of_contract']) ? $metadata['type_of_contract'] : '';
+        $data['date_signed']   = isset($metadata['signature_date']) ? $metadata['signature_date'] : '';
+        $data['year_signed']   = isset($metadata['signature_year']) ? $this->getSignatureYear($metadata['signature_year']) : '';
+        $data['type']          = isset($metadata['document_type']) ? $metadata['document_type'] : '';
+
+
+        foreach ($metadata['company'] as $company) {
+            $data['participation'][] = [
+                "company"     => [
+                    "name"                => isset($company['name']) ? $company['name'] : '',
+                    "address"             => isset($company['company_address']) ? $company['company_address'] : '',
+                    "founding_date"       => isset($company['company_founding_date']) ? $company['company_founding_date'] : '',
+                    "corporate_grouping"  => isset($company['parent_company']) ? $company['parent_company'] : '',
+                    "opencorporates_link" => isset($company['open_corporate_id']) ? $company['open_corporate_id'] : '',
+                    "identifier"          => [
+                        "id"      => isset($company['company_number']) ? $company['company_number'] : '',
+                        "creator" => [
+                            "name"    => isset($company['registration_agency']) ? $company['registration_agency'] : '',
+                            "spatial" => isset($company['jurisdiction_of_incorporation']) ? $company['jurisdiction_of_incorporation'] : '',
+                        ]
+                    ]
+                ],
+                "is_operator" => $this->getOperator($company['operator']),
+                "share"       => $this->getShare($company['participation_share'])
+            ];
+        }
+
+
+        $data['project']['name']       = isset($metadata['project_title']) ? $metadata['project_title'] : '';
+        $data['project']['identifier'] = isset($metadata['project_identifier']) ? $metadata['project_identifier'] : '';
+
+
+        foreach ($metadata['concession'] as $concession) {
+            $data['concession'][] = [
+                "name"       => $concession['license_name'],
+                "identifier" => $concession['license_identifier']
+            ];
+        }
+
+        $data['url']['source']          = isset($metadata['source_url']) ? $metadata['source_url'] : '';
+        $data['url']['amla']            = isset($metadata['amla_url']) ? $metadata['amla_url'] : '';
+        $data['publisher_type']         = isset($metadata['disclosure_mode']) ? $metadata['disclosure_mode'] : '';
+        $data['retrieved_at']           = isset($metadata['date_retrieval']) ? $metadata['date_retrieval'] : '';
+        $data['created_at']             = isset($results['created_at']) ? $results['created_at'] : '';
+        $data['category']               = isset($metadata['category']) ? $metadata['category'] : '';
+        $data['note']                   = isset($metadata['contract_note']) ? $metadata['contract_note'] : '';
+        $data['is_associated_document'] = isset($metadata['is_supporting_document']) ? (int) $metadata['is_supporting_document'] : '';
+        $data['deal_number']            = isset($metadata['deal_number']) ? $metadata['deal_number'] : '';
+        $data['matrix_page']            = isset($metadata['matrix_page']) ? $metadata['matrix_page'] : '';
+        $data['is_ocr_reviewed']        = isset($metadata['show_pdf_text']) ? (int) $metadata['show_pdf_text'] : '';
+
+        $data['file']       = [
+            [
+                "url"        => isset($metadata['file_url']) ? $metadata['file_url'] : '',
+                "byte_size"  => isset($metadata['file_size']) ? (int) $metadata['file_size'] : '',
+                "media_type" => "application/pdf"
+            ],
+            [
+                "url"        => isset($metadata['word_file']) ? $metadata['word_file'] : '',
+                "media_type" => "text/plain"
+            ]
+        ];
+        $translatedFrom     = isset($metadata['translated_from']) ? $metadata['translated_from'] : [];
+        $parentDocument     = $this->getSupportingDocument($translatedFrom, $category);
+        $data['parent']     = $parentDocument;
+        $document           = isset($results['supporting_contracts']) ? $results['supporting_contracts'] : [];
+        $supportingDoc      = $this->getSupportingDocument($document, $category);
+        $data['supporting'] = $supportingDoc;
+
+        return $data;
+    }
+
+    /**
+     * Return operator values
+     *
+     * @param $operator
+     * @return int|string
+     */
+    private function getOperator($operator)
+    {
+        if ($operator == - 1) {
+            return "";
+        }
+
+        return (int) $operator;
+    }
+
+    /**
+     * Return participation share values
+     *
+     * @param $participationShare
+     * @return float|string
+     */
+    private function getShare($participationShare)
+    {
+        if (empty($participationShare)) {
+            return "";
+        }
+
+        return (float) $participationShare;
+    }
+
+    /**
+     * Return the signature value
+     * @param $signatureYear
+     * @return int|string
+     */
+    public function getSignatureYear($signatureYear)
+    {
+        if (empty($signatureYear)) {
+            return '';
+        }
+
+        return (int) $signatureYear;
+
+    }
+
 }
+

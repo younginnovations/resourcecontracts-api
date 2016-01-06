@@ -56,7 +56,7 @@ class DownloadServices extends Services
 
         $ids = [];
         foreach ($data['results'] as $result) {
-            array_push($ids, $result['contract_id']);
+            array_push($ids, $result['id']);
         }
 
         return $ids;

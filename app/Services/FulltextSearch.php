@@ -41,8 +41,8 @@ class FulltextSearch extends Services
             $year      = explode(',', $request['year']);
             $filters[] = ["terms" => ["metadata.signature_year" => $year]];
         }
-        if (isset($request['country']) and !empty($request['country'])) {
-            $country   = explode(',', $request['country']);
+        if (isset($request['country_code']) and !empty($request['country_code'])) {
+            $country   = explode(',', $request['country_code']);
             $filters[] = ["terms" => ["metadata.country_code" => $country]];
         }
         if (isset($request['resource']) and !empty($request['resource'])) {
@@ -112,7 +112,8 @@ class FulltextSearch extends Services
             "metadata.company_name",
             "metadata.contract_type",
             "metadata.corporate_grouping",
-            "metadata.show_pdf_text"
+            "metadata.show_pdf_text",
+            "metadata.category"
         ];
         if (isset($request['sort_by']) and !empty($request['sort_by'])) {
             if ($request['sort_by'] == "country") {
@@ -242,17 +243,16 @@ class FulltextSearch extends Services
             }
 
             $data['results'][$i]                = [
-                "contract_id"         => (int) $contractId,
+                "id"                  => (int) $contractId,
                 "open_contracting_id" => isset($field['fields']['metadata.open_contracting_id']) ? $field['fields']['metadata.open_contracting_id'][0] : "",
-                'guid'                => $contractId . '-' . $field['fields']['metadata.open_contracting_id'][0],
-                "contract_name"       => isset($field['fields']['metadata.contract_name']) ? $field['fields']['metadata.contract_name'][0] : "",
-                "signature_year"      => isset($field['fields']['metadata.signature_year']) ? $field['fields']['metadata.signature_year'][0] : "",
+                "name"                => isset($field['fields']['metadata.contract_name']) ? $field['fields']['metadata.contract_name'][0] : "",
+                "year_signed"         => isset($field['fields']['metadata.signature_year']) ? $this->getSignatureYear($field['fields']['metadata.signature_year'][0]) : "",
                 "contract_type"       => isset($field['fields']['metadata.contract_type']) ? $field['fields']['metadata.contract_type'] : [],
                 "resource"            => isset($field['fields']['metadata.resource']) ? $field['fields']['metadata.resource'] : [],
                 'country_code'        => isset($field['fields']['metadata.country_code']) ? $field['fields']['metadata.country_code'][0] : "",
-                "file_size"           => isset($field['fields']['metadata.file_size']) ? $field['fields']['metadata.file_size'][0] : "",
                 "language"            => isset($field['fields']['metadata.language']) ? $field['fields']['metadata.language'][0] : "",
-                "show_pdf_text"       => isset($field['fields']['metadata.show_pdf_text']) ? $field['fields']['metadata.show_pdf_text'][0] : "",
+                "category"            => isset($field['fields']['metadata.category']) ? $field['fields']['metadata.category'] : [],
+                "is_ocr_reviewed"     => (int) isset($field['fields']['metadata.show_pdf_text']) ? (int) $field['fields']['metadata.show_pdf_text'][0] : "",
             ];
             $data['results'][$i]['group']       = [];
             $highlight                          = isset($field['highlight']) ? $field['highlight'] : '';
@@ -300,6 +300,21 @@ class FulltextSearch extends Services
         }
 
         return $check;
+    }
+
+    /**
+     * Return the values of signature year
+     * @param $signatureYear
+     * @return int|string
+     */
+    public function getSignatureYear($signatureYear)
+    {
+        if (empty($signatureYear)) {
+            return '';
+        }
+
+        return (int) $signatureYear;
+
     }
 
 
