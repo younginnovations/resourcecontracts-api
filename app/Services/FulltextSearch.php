@@ -252,7 +252,7 @@ class FulltextSearch extends Services
                 'country_code'        => isset($field['fields']['metadata.country_code']) ? $field['fields']['metadata.country_code'][0] : "",
                 "language"            => isset($field['fields']['metadata.language']) ? $field['fields']['metadata.language'][0] : "",
                 "category"            => isset($field['fields']['metadata.category']) ? $field['fields']['metadata.category'] : [],
-                "is_ocr_reviewed"     => (int) isset($field['fields']['metadata.show_pdf_text']) ? (int) $field['fields']['metadata.show_pdf_text'][0] : "",
+                "is_ocr_reviewed"     => isset($field['fields']['metadata.show_pdf_text']) ? $this->getBoolean((int) $field['fields']['metadata.show_pdf_text'][0]) : null,
             ];
             $data['results'][$i]['group']       = [];
             $highlight                          = isset($field['highlight']) ? $field['highlight'] : '';
@@ -315,6 +315,20 @@ class FulltextSearch extends Services
 
         return (int) $signatureYear;
 
+    }
+
+    /**
+     * Return boolean
+     * @param $param
+     */
+    private function getBoolean($param)
+    {
+        if ($param == 0) {
+            return false;
+        }
+        if ($param == 1) {
+            return true;
+        }
     }
 
 

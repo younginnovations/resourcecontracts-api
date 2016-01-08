@@ -365,12 +365,12 @@ class APIServices extends Services
                 'name'                => $source['metadata']['contract_name'],
                 'country_code'        => $source['metadata']['country']['code'],
                 'year_signed'         => $this->getSignatureYear($source['metadata']['signature_year']),
-                'date_signed'         => !empty($source['metadata']['signature_date'])?$source['metadata']['signature_date']:'',
+                'date_signed'         => !empty($source['metadata']['signature_date']) ? $source['metadata']['signature_date'] : '',
                 'contract_type'       => $source['metadata']['type_of_contract'],
                 'language'            => $source['metadata']['language'],
                 'resource'            => $source['metadata']['resource'],
                 'category'            => $source['metadata']['category'],
-                'is_ocr_reviewed'     => (int) $source['metadata']['show_pdf_text'],
+                'is_ocr_reviewed'     => $this->getBoolean($source['metadata']['show_pdf_text']),
             ];
         }
 
@@ -522,17 +522,17 @@ class APIServices extends Services
 
             if (!empty($result['hits']['hits'])) {
                 $data[] = [
-                    'id'                  => $result['hits']['hits'][0]['_id'],
+                    'id'                  => (int) $result['hits']['hits'][0]['_id'],
                     'open_contracting_id' => $result['hits']['hits'][0]['fields']['metadata.open_contracting_id'][0],
                     'name'                => $result['hits']['hits'][0]['fields']['metadata.contract_name'][0],
-                    'is_published'        => 1
+                    'is_published'        => true
                 ];
             } else {
                 $data[] = [
-                    'id'                  => $document['id'],
+                    'id'                  => (int) $document['id'],
                     'open_contracting_id' => '',
                     'name'                => $document['contract_name'],
-                    'is_published'        => 0
+                    'is_published'        => false
                 ];
             }
         }
@@ -1039,12 +1039,12 @@ class APIServices extends Services
         foreach ($metadata['company'] as $company) {
             $data['participation'][] = [
                 "company"     => [
-                    "name"                => isset($company['name']) ? $company['name'] : '',
-                    "address"             => isset($company['company_address']) ? $company['company_address'] : '',
-                    "founding_date"       => isset($company['company_founding_date']) ? $company['company_founding_date'] : '',
-                    "corporate_grouping"  => isset($company['parent_company']) ? $company['parent_company'] : '',
-                    "opencorporates_link" => isset($company['open_corporate_id']) ? $company['open_corporate_id'] : '',
-                    "identifier"          => [
+                    "name"               => isset($company['name']) ? $company['name'] : '',
+                    "address"            => isset($company['company_address']) ? $company['company_address'] : '',
+                    "founding_date"      => isset($company['company_founding_date']) ? $company['company_founding_date'] : '',
+                    "corporate_grouping" => isset($company['parent_company']) ? $company['parent_company'] : '',
+                    "opencorporates_url" => (isset($company['open_corporate_id']) && !empty($company['open_corporate_id'])) ? $company['open_corporate_id'] : '',
+                    "identifier"         => [
                         "id"      => isset($company['company_number']) ? $company['company_number'] : '',
                         "creator" => [
                             "name"    => isset($company['registration_agency']) ? $company['registration_agency'] : '',
@@ -1052,7 +1052,7 @@ class APIServices extends Services
                         ]
                     ]
                 ],
-                "is_operator" => $this->getOperator($company['operator']),
+                "is_operator" => $this->getBoolean($company['operator']),
                 "share"       => $this->getShare($company['participation_share'])
             ];
         }
@@ -1064,22 +1064,22 @@ class APIServices extends Services
 
         foreach ($metadata['concession'] as $concession) {
             $data['concession'][] = [
-                "name"       => $concession['license_name'],
+                "name"       => !empty($concession['license_name']) ? $concession['license_name'] : "",
                 "identifier" => $concession['license_identifier']
             ];
         }
 
-        $data['url']['source']          = isset($metadata['source_url']) ? $metadata['source_url'] : '';
-        $data['url']['amla']            = isset($metadata['amla_url']) ? $metadata['amla_url'] : '';
+        $data['source_url']             = isset($metadata['source_url']) ? $metadata['source_url'] : '';
+        $data['amla_url']               = isset($metadata['amla_url']) ? $metadata['amla_url'] : '';
         $data['publisher_type']         = isset($metadata['disclosure_mode']) ? $metadata['disclosure_mode'] : '';
         $data['retrieved_at']           = isset($metadata['date_retrieval']) ? $metadata['date_retrieval'] : '';
-        $data['created_at']             = isset($results['created_at']) ? $results['created_at'] : '';
+        $data['created_at']             = isset($results['created_at']) ? $results['created_at'] . 'Z' : '';
         $data['category']               = isset($metadata['category']) ? $metadata['category'] : '';
         $data['note']                   = isset($metadata['contract_note']) ? $metadata['contract_note'] : '';
-        $data['is_associated_document'] = isset($metadata['is_supporting_document']) ? (int) $metadata['is_supporting_document'] : '';
+        $data['is_associated_document'] = isset($metadata['is_supporting_document']) ? $this->getBoolean($metadata['is_supporting_document']) : null;
         $data['deal_number']            = isset($metadata['deal_number']) ? $metadata['deal_number'] : '';
         $data['matrix_page']            = isset($metadata['matrix_page']) ? $metadata['matrix_page'] : '';
-        $data['is_ocr_reviewed']        = isset($metadata['show_pdf_text']) ? (int) $metadata['show_pdf_text'] : '';
+        $data['is_ocr_reviewed']        = isset($metadata['show_pdf_text']) ? $this->getBoolean($metadata['show_pdf_text']) : null;
 
         $data['file']       = [
             [
@@ -1097,24 +1097,29 @@ class APIServices extends Services
         $data['parent']     = $parentDocument;
         $document           = isset($results['supporting_contracts']) ? $results['supporting_contracts'] : [];
         $supportingDoc      = $this->getSupportingDocument($document, $category);
-        $data['supporting'] = $supportingDoc;
+        $data['associated'] = $supportingDoc;
 
         return $data;
     }
 
     /**
-     * Return operator values
+     * Return Boolean values(true or false)
      *
      * @param $operator
      * @return int|string
      */
-    private function getOperator($operator)
+    private function getBoolean($operator)
     {
         if ($operator == - 1) {
-            return "";
+            return null;
+        }
+        if ($operator == 1) {
+            return true;
+        }
+        if ($operator == 0) {
+            return false;
         }
 
-        return (int) $operator;
     }
 
     /**
@@ -1126,7 +1131,7 @@ class APIServices extends Services
     private function getShare($participationShare)
     {
         if (empty($participationShare)) {
-            return "";
+            return null;
         }
 
         return (float) $participationShare;
@@ -1140,7 +1145,7 @@ class APIServices extends Services
     public function getSignatureYear($signatureYear)
     {
         if (empty($signatureYear)) {
-            return '';
+            return null;
         }
 
         return (int) $signatureYear;
