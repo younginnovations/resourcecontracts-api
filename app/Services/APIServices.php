@@ -199,16 +199,18 @@ class APIServices extends Services
             ]
         ];
 
-        $results        = $this->search($params);
-        $data           = [];
-        $data['total']  = $results['hits']['total'];
-        $i              = 0;
-        $data['result'] = [];
-        $remove         = ["Pages missing from  copy//Pages Manquantes de la copie", "Annexes missing from copy//Annexes Manquantes de la copie"];
+        $results         = $this->search($params);
+        $data            = [];
+        $data['total']   = $results['hits']['total'];
+        $i               = 0;
+        $data['result']  = [];
+        $remove          = ["Pages missing from  copy//Pages Manquantes de la copie", "Annexes missing from copy//Annexes Manquantes de la copie"];
+        $totalAnnotation = 0;
         foreach ($results['hits']['hits'] as $result) {
             $source = $result['_source'];
 
             if (!in_array($source['category'], $remove)) {
+                $totalAnnotation    = $totalAnnotation + 1;
                 $data['result'][$i] = [
                     'contract_id'         => $source['contract_id'],
                     'open_contracting_id' => $source['open_contracting_id'],
@@ -228,6 +230,8 @@ class APIServices extends Services
                 $i ++;
             }
         }
+
+        $data['total'] = $totalAnnotation;
 
         return $data;
     }
