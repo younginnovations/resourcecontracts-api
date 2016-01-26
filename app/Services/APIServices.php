@@ -1156,6 +1156,10 @@ class APIServices extends Services
 
     }
 
+    /**
+     * Annotation download
+     * @param $contractId
+     */
     public function downloadAnnotationsAsCSV($contractId)
     {
         $annotations=$this->getAnnotationPages($contractId,'');
