@@ -1,6 +1,7 @@
 <?php namespace App\Controllers;
 
 use App\Services\APIServices;
+use App\Services\DownloadServices;
 use App\Services\FulltextSearch;
 
 /**
@@ -18,16 +19,22 @@ class APIController extends BaseController
      * @var FulltextSearch
      */
     private $search;
+    /**
+     * @var DownloadServices
+     */
+    private $download;
 
     /**
-     * @param APIServices    $api
-     * @param FulltextSearch $search
+     * @param APIServices      $api
+     * @param FulltextSearch   $search
+     * @param DownloadServices $download
      */
-    public function __construct(APIServices $api, FulltextSearch $search)
+    public function __construct(APIServices $api, FulltextSearch $search,DownloadServices $download)
     {
         parent::__construct();
         $this->api    = $api;
         $this->search = $search;
+        $this->download = $download;
     }
 
     public function home()
@@ -216,5 +223,17 @@ class APIController extends BaseController
         $response = $this->api->downloadMetadtaAsCSV($this->request->query->all());
 
         return $this->json($response);
+    }
+
+    /**
+     * Download Annotations As CSV
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function downloadAnnotationsAsCSV($request, $response, $argument)
+    {
+        $id       = $argument['id'];
+        $response = $this->api->downloadAnnotationsAsCSV($id);
+
+        return $response;
     }
 }

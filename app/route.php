@@ -12,6 +12,7 @@ $router->addRoute('GET', '/contracts/search', 'App\Controllers\APIController::fu
 
 
 //Internal API
+$router->addRoute('GET', '/contract/{id}/annotations/download', 'App\Controllers\APIController::downloadAnnotationsAsCSV');
 $router->addRoute('GET', '/contract/countries', 'App\Controllers\APIController::getCoutriesContracts');
 $router->addRoute('GET', '/contract/resources', 'App\Controllers\APIController::getResourceContracts');
 $router->addRoute('GET', '/contract/years', 'App\Controllers\APIController::getYearsContracts');

@@ -291,4 +291,61 @@ class DownloadServices extends Services
             isset($annotations->text) ? $annotations->text : ''
         ];
     }
+
+    /**
+     * Annotations Download
+     * @param $annotations
+     */
+    public function downloadAnnotations($annotations)
+    {
+        $data = $this->getAnnotationsData($annotations);
+        $filename = "export_annotations" . date('Y-m-d');
+        header('Content-type: text/csv');
+        header('Content-Disposition: attachment; filename="' . $filename . '.csv"');
+        $file    = fopen('php://output', 'w');
+        $heading = [
+            'OCID',
+            'Page No',
+            'Category',
+            'Cluster',
+            'Quote',
+            'Annotations Text',
+            'Annotations Type'
+        ];
+        fputcsv($file, $heading);
+
+        foreach ($data as $row) {
+            fputcsv($file, $row);
+        }
+
+        fclose($file);
+        exit;
+    }
+
+    /**
+     * Return the formatted annotations data
+     * @param $annotations
+     * @return array
+     */
+    private function getAnnotationsData($annotations)
+    {
+        $data=[];
+
+        foreach($annotations['result'] as $annotation)
+        {
+            $type=isset($annotation['shapes'])?"Pdf":"Text";
+            $data[]=[
+                $annotation['open_contracting_id'],
+                $annotation['page_no'],
+                $annotation['category'],
+                $annotation['cluster'],
+                $annotation['quote'],
+                $annotation['text'],
+                $type
+            ];
+        }
+
+        return $data;
+    }
+
 }
