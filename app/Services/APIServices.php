@@ -406,7 +406,118 @@ class APIServices extends Services
      * @param $request
      * @return array
      */
-    public function pdfSearch($contractId, $request)
+    public function searchAnnotationAndText($contractId, $request)
+    {
+        $textResult        = $this->textSearch($contractId, $request);
+        $annotationsResult = $this->annotationSearch($contractId, $request);
+        $result            = array_merge($textResult, $annotationsResult);
+        $data['total']     = count($result);
+        $data['results']   = $result;
+
+        return $data;
+    }
+
+    /**
+     * Annotation Search
+     *
+     * @param $contractId
+     * @param $request
+     * @return array
+     */
+    public function annotationSearch($contractId, $request)
+    {
+        $params['index'] = $this->index;
+        $params['type']  = "annotations";
+        if ((!isset($request['q']) and empty($request['q']))) {
+            return [];
+        }
+        $filters = [];
+        $type    = $this->getIdType($contractId);
+
+        if ($contractId && $type == "string") {
+            $filters[] = [
+                "term" => ["open_contracting_id" => ["value" => $contractId]]
+            ];
+        }
+        if ($contractId && $type == "numeric") {
+            $filters[] = [
+                "term" => [
+                    "contract_id" => $contractId
+                ]
+            ];
+        }
+        if (isset($request['category']) && !empty($request['category'])) {
+            $filters[] = [
+                "term" => [
+                    "metadata.category" => $request['category']
+                ]
+            ];
+        }
+        $q              = urldecode("\"" . $request['q'] . "\"");
+        $params['body'] = [
+            "query"     => [
+                "simple_query_string" => [
+                    "fields"           => ["text"],
+                    'query'            => $q,
+                    "default_operator" => "AND",
+                    "flags"            => "PHRASE",
+                ]
+            ],
+            "filter"    => [
+                "and" => [
+                    "filters" => $filters
+                ]
+            ]
+            ,
+            "highlight" => [
+                "fields" => [
+                    "text"     => [
+                        "fragment_size"       => 200,
+                        "number_of_fragments" => 1
+                    ]
+                ]
+            ],
+            "fields"    => [
+                "id",
+                "page",
+                "shapes ",
+                "contract_id",
+                "open_contracting_id"
+            ]
+        ];
+        $results        = $this->search($params);
+        $data           = [];
+        foreach ($results['hits']['hits'] as $hit) {
+            $fields          = $hit['fields'];
+            $text            = isset($hit['highlight']['text']) ? $hit['highlight']['text'][0] : "";
+            $category        = isset($hit['highlight']['category']) ? $hit['highlight']['category'][0] : "";
+            $annotationsType = $this->getAnnotationType($fields['id'][0]);
+
+            if (!empty($text)) {
+                $data[] = [
+                    'annotation_id'       => $fields['id'][0],
+                    'page_no'             => $fields['page'][0],
+                    'contract_id'         => $fields['contract_id'][0],
+                    'open_contracting_id' => $fields['open_contracting_id'][0],
+                    'text'                => strip_tags($text),
+                    "annotation_type"     => $annotationsType,
+                    "type"                => "annotation"
+                ];
+            }
+
+        }
+
+        return $data;
+
+    }
+
+    /**
+     * Text search
+     * @param $contractId
+     * @param $request
+     * @return array
+     */
+    public function textSearch($contractId, $request)
     {
         $params['index'] = $this->index;
         $params['type']  = "pdf_text";
@@ -436,7 +547,7 @@ class APIServices extends Services
             ];
         }
 
-        $params['body']  = [
+        $params['body'] = [
             "query"     => [
                 "filtered" => [
                     "query"  => [
@@ -465,25 +576,25 @@ class APIServices extends Services
                 "open_contracting_id"
             ]
         ];
-        $response        = $this->search($params);
-        $data            = [];
-        $data['total']   = $response['hits']['total'];
-        $data['results'] = [];
+        $response       = $this->search($params);
+        $data           = [];
         foreach ($response['hits']['hits'] as $hit) {
             $fields = $hit['fields'];
             $text   = $hit['highlight']['text'][0];
             if (!empty($text)) {
-                $data['results'][] = [
+                $data[] = [
                     'page_no'             => $fields['page_no'][0],
                     'contract_id'         => $fields['contract_id'][0],
                     'open_contracting_id' => $fields['open_contracting_id'][0],
-                    'text'                => strip_tags($text)
+                    'text'                => strip_tags($text),
+                    "type"                => "text"
                 ];
             }
 
         }
 
         return $data;
+
     }
 
     /**
@@ -1162,10 +1273,36 @@ class APIServices extends Services
      */
     public function downloadAnnotationsAsCSV($contractId)
     {
-        $annotations=$this->getAnnotationPages($contractId,'');
-        $download = new DownloadServices();
-        return $download->downloadAnnotations($annotations);
+        $annotations = $this->getAnnotationPages($contractId, '');
+        $metadata = $this->getMetadata($contractId,'');
+        $download    = new DownloadServices();
 
+        return $download->downloadAnnotations($annotations,$metadata);
+
+    }
+
+    /**
+     * Annotations Type(pdf or text)
+     * @param $annotationId
+     * @return string
+     */
+    private function getAnnotationType($annotationId)
+    {
+        $params['index'] = $this->index;
+        $params['type']  = "annotations";
+        $params['body']  = [
+            "query" => [
+                "term" => [
+                    "_id" => [
+                        "value" => $annotationId
+                    ]
+                ]
+            ]
+        ];
+        $result          = $this->search($params);
+        $result          = $result['hits']['hits'][0]["_source"];
+
+        return isset($result['shapes']) ? "pdf" : "text";
     }
 
 }

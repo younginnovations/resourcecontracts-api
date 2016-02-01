@@ -124,10 +124,10 @@ class APIController extends BaseController
      * Search in Pdf Text
      * @return json response
      */
-    public function pdfSearch($request, $response, $argument)
+    public function search($request, $response, $argument)
     {
         $id       = $argument['id'];
-        $response = $this->api->pdfSearch($id, $this->request->query->all());
+        $response = $this->api->searchAnnotationAndText($id, $this->request->query->all());
 
         return $this->json($response);
     }
