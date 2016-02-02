@@ -7,7 +7,7 @@ $router->addRoute('GET', '/contract/{id}/annotations/search', 'App\Controllers\A
 $router->addRoute('GET', '/contract/{id}/metadata', 'App\Controllers\APIController::getMetadata');
 $router->addRoute('GET', '/contracts', 'App\Controllers\APIController::getAllContract');
 $router->addRoute('GET', '/contracts/count', 'App\Controllers\APIController::getAllContractCount');
-$router->addRoute('GET', '/contract/{id}/searchtext', 'App\Controllers\APIController::pdfSearch');
+$router->addRoute('GET', '/contract/{id}/searchtext', 'App\Controllers\APIController::search');
 $router->addRoute('GET', '/contracts/search', 'App\Controllers\APIController::fullTextSearch');
 
 
