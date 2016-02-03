@@ -296,21 +296,20 @@ class DownloadServices extends Services
      * Annotations Download
      * @param $annotations
      */
-    public function downloadAnnotations($annotations,$metadata)
+    public function downloadAnnotations($annotations, $metadata)
     {
 
-        $data = $this->getAnnotationsData($annotations);
-        $filename = $metadata['name'].date('Y-m-d');
+        $data     = $this->getAnnotationsData($annotations);
+        $filename = $metadata['name'] . date('Y-m-d');
         header('Content-type: text/csv');
         header('Content-Disposition: attachment; filename="' . $filename . '.csv"');
         $file    = fopen('php://output', 'w');
         $heading = [
             'Category',
-            'Cluster',
-            'Quote',
-            'Annotations Text',
-            'Page No',
-            'Annotations Type'
+            'Topic',
+            'Annotation Text',
+            'PDF Page Number',
+
         ];
         fputcsv($file, $heading);
 
@@ -329,18 +328,16 @@ class DownloadServices extends Services
      */
     private function getAnnotationsData($annotations)
     {
-        $data=[];
+        $data = [];
 
-        foreach($annotations['result'] as $annotation)
-        {
-            $type=isset($annotation['shapes'])?"Pdf":"Text";
-            $data[]=[
+        foreach ($annotations['result'] as $annotation) {
+
+            $data[] = [
                 $annotation['category'],
                 $annotation['cluster'],
-                $annotation['quote'],
                 $annotation['text'],
                 $annotation['page_no'],
-                $type
+
             ];
         }
 
