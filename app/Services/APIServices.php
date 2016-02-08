@@ -471,7 +471,7 @@ class APIServices extends Services
             ,
             "highlight" => [
                 "fields" => [
-                    "text"     => [
+                    "text" => [
                         "fragment_size"       => 200,
                         "number_of_fragments" => 1
                     ]
@@ -1189,7 +1189,6 @@ class APIServices extends Services
         $data['publisher_type']         = isset($metadata['disclosure_mode']) ? $metadata['disclosure_mode'] : '';
         $data['retrieved_at']           = isset($metadata['date_retrieval']) ? $metadata['date_retrieval'] : '';
         $data['created_at']             = isset($results['created_at']) ? $results['created_at'] . 'Z' : '';
-        $data['category']               = isset($metadata['category']) ? $metadata['category'] : '';
         $data['note']                   = isset($metadata['contract_note']) ? $metadata['contract_note'] : '';
         $data['is_associated_document'] = isset($metadata['is_supporting_document']) ? $this->getBoolean($metadata['is_supporting_document']) : null;
         $data['deal_number']            = isset($metadata['deal_number']) ? $metadata['deal_number'] : '';
@@ -1274,10 +1273,10 @@ class APIServices extends Services
     public function downloadAnnotationsAsCSV($contractId)
     {
         $annotations = $this->getAnnotationPages($contractId, '');
-        $metadata = $this->getMetadata($contractId,'');
+        $metadata    = $this->getMetadata($contractId, '');
         $download    = new DownloadServices();
 
-        return $download->downloadAnnotations($annotations,$metadata);
+        return $download->downloadAnnotations($annotations, $metadata);
 
     }
 
