@@ -1194,6 +1194,8 @@ class APIServices extends Services
         $data['deal_number']            = isset($metadata['deal_number']) ? $metadata['deal_number'] : '';
         $data['matrix_page']            = isset($metadata['matrix_page']) ? $metadata['matrix_page'] : '';
         $data['is_ocr_reviewed']        = isset($metadata['show_pdf_text']) ? $this->getBoolean($metadata['show_pdf_text']) : null;
+        $data['is_pages_missing']       = isset($metadata['pages_missing']) ? $this->getBoolean($metadata['pages_missing']) : null;
+        $data['is_annexes_missing']     = isset($metadata['annexes_missing']) ? $this->getBoolean($metadata['annexes_missing']) : null;
 
         $data['file']       = [
             [
