@@ -257,15 +257,18 @@ class FulltextSearch extends Services
             $data['results'][$i]['group']       = [];
             $highlight                          = isset($field['highlight']) ? $field['highlight'] : '';
             $data['results'][$i]['text']        = isset($highlight['pdf_text_string'][0]) ? $highlight['pdf_text_string'][0] : '';
-            $data['results'][$i]['annotations'] = isset($highlight['annotations_string'][0]) ? $highlight['annotations_string'][0] : '';
-            $data['results'][$i]['metadata']    = isset($highlight['metadata_string'][0]) ? $highlight['metadata_string'][0] : '';
+            $annotationText                     = isset($highlight['annotations_string'][0]) ? $highlight['annotations_string'][0] : '';
+            $apiSearvice                        = new APIServices();
+            $annotationsResult                  = $apiSearvice->annotationSearch($data['results'][$i]['id'], ["q" => strip_tags($annotationText)]);
+            $data['results'][$i]['annotations'] = $this->getAnnotationsResult($annotationText,$annotationsResult);
+            $data['results'][$i]['metadata'] = isset($highlight['metadata_string'][0]) ? $highlight['metadata_string'][0] : '';
             if (isset($highlight['pdf_text_string']) and in_array('text', $type)) {
                 array_push($data['results'][$i]['group'], "Text");
             }
             if (isset($highlight['metadata_string']) and in_array('metadata', $type)) {
                 array_push($data['results'][$i]['group'], "Metadata");
             }
-            if (isset($highlight['annotations_string']) and in_array('annotations', $type)) {
+            if (isset($highlight['annotations_string']) and in_array('annotations', $type) and !empty($data['results'][$i]['annotations'])) {
                 array_push($data['results'][$i]['group'], "Annotation");
             }
 
@@ -329,6 +332,28 @@ class FulltextSearch extends Services
         if ($param == 1) {
             return true;
         }
+    }
+
+    /**
+     * Annotation result for search
+     * @param $annotationText
+     * @param $annotationsResult
+     * @return array
+     */
+    private function getAnnotationsResult($annotationText, $annotationsResult)
+    {
+
+        $data=[];
+        if(isset($annotationsResult[0]) && !empty($annotationsResult[0]))
+        {
+            $data=[
+                "annotation_text"=>$annotationText,
+                "annotation_id"=>$annotationsResult[0]["annotation_id"],
+                "page_no"=>$annotationsResult[0]["page_no"],
+                "type"=>$annotationsResult[0]["annotation_type"]
+            ];
+        }
+        return $data;
     }
 
 

@@ -1194,6 +1194,8 @@ class APIServices extends Services
         $data['deal_number']            = isset($metadata['deal_number']) ? $metadata['deal_number'] : '';
         $data['matrix_page']            = isset($metadata['matrix_page']) ? $metadata['matrix_page'] : '';
         $data['is_ocr_reviewed']        = isset($metadata['show_pdf_text']) ? $this->getBoolean($metadata['show_pdf_text']) : null;
+        $data['is_pages_missing']       = isset($metadata['pages_missing']) ? $this->getBoolean($metadata['pages_missing']) : null;
+        $data['is_annexes_missing']     = isset($metadata['annexes_missing']) ? $this->getBoolean($metadata['annexes_missing']) : null;
 
         $data['file']       = [
             [
@@ -1211,6 +1213,10 @@ class APIServices extends Services
         $data['parent']     = $parentDocument;
         $document           = isset($results['supporting_contracts']) ? $results['supporting_contracts'] : [];
         $supportingDoc      = $this->getSupportingDocument($document, $category);
+        if(!empty($parentDocument))
+        {
+            $supportingDoc      = $this->getSibblingDocument($parentDocument, $results['contract_id']);
+        }
         $data['associated'] = $supportingDoc;
 
         return $data;
@@ -1304,5 +1310,50 @@ class APIServices extends Services
         return isset($result['shapes']) ? "pdf" : "text";
     }
 
+    /**
+     * Return the associated along with sibling contracts
+     * @param $parentDocument
+     * @param $contractId
+     * @return array
+     */
+    private function getSibblingDocument($parentDocument, $contractId)
+    {
+        $supportingDoc=[];
+
+        if(!empty($parentDocument))
+        {
+            $parentId = $parentDocument[0]['id'];
+
+            $parentMetadata = $this->getMetadata($parentId,'');
+
+            $supportingDoc=$parentMetadata["associated"];
+        }
+
+        foreach($supportingDoc as $key=>$doc)
+        {
+            if($doc['id']==$contractId)
+            {
+                unset($supportingDoc[$key]);
+            }
+        }
+
+        return $this->removeKeys($supportingDoc);
+    }
+
+    /**
+     * Remove keys from the array
+     * @param $items
+     * @return array
+     */
+    protected function removeKeys($items)
+    {
+        $i = [];
+
+        foreach ($items as $items) {
+            $i[] = $items;
+        }
+
+        return $i;
+    }
 }
 
