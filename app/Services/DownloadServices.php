@@ -12,32 +12,37 @@ class DownloadServices extends Services
     public function getMetadataAndAnnotations($data, $request = [])
     {
 
-        $ids             = $this->getMetadataId($data);
-        $params['index'] = $this->index;
-        $params['type']  = "metadata";
-        $params['body']  = [
-            'size'  => 100000,
-            'query' => [
-                "terms" => [
-                    "_id" => $ids
+        $ids         = $this->getMetadataId($data);
+        $contractIds = array_chunk($ids, 500);
+        $data        = [];
+        foreach ($contractIds as $contractId) {
+
+            $params['index'] = $this->index;
+            $params['type']  = "metadata";
+            $params['body']  = [
+                'size'  => 500,
+                'query' => [
+                    "terms" => [
+                        "_id" => $contractId
+                    ]
                 ]
-            ]
-        ];
-        $searchResult    = $this->search($params);
-        $data            = [];
-        if ($searchResult['hits']['total'] > 0) {
+            ];
+            $searchResult    = $this->search($params);
 
-            $results = $searchResult['hits']['hits'];
-            $i       = 0;
-            foreach ($results as $result) {
-                unset($result['_source']['metadata']['amla_url'], $result['_source']['metadata']['file_size'], $result['_source']['metadata']['word_file']);
-                $data[$i] = $result['_source']['metadata'];
-                if (isset($request['annotation_category']) && !empty($request['annotation_category'])) {
-                    $annotations            = $this->getAnnotations($result["_id"], $request['annotation_category']);
-                    $data[$i]['annotation'] = $annotations;
+            if ($searchResult['hits']['total'] > 0) {
+
+                $results = $searchResult['hits']['hits'];
+                $i       = 0;
+                foreach ($results as $result) {
+                    unset($result['_source']['metadata']['amla_url'], $result['_source']['metadata']['file_size'], $result['_source']['metadata']['word_file']);
+                    $data[] = $result['_source']['metadata'];
+                    if (isset($request['annotation_category']) && !empty($request['annotation_category'])) {
+                        $annotations          = $this->getAnnotations($result["_id"], $request['annotation_category']);
+                        $data[]['annotation'] = $annotations;
+                    }
+
+                    $i ++;
                 }
-
-                $i ++;
             }
         }
 
