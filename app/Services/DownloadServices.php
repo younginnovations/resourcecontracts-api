@@ -35,12 +35,12 @@ class DownloadServices extends Services
                 $i       = 0;
                 foreach ($results as $result) {
                     unset($result['_source']['metadata']['amla_url'], $result['_source']['metadata']['file_size'], $result['_source']['metadata']['word_file']);
-                    $data[] = $result['_source']['metadata'];
+                    $tempData = $result['_source']['metadata'];
                     if (isset($request['annotation_category']) && !empty($request['annotation_category'])) {
                         $annotations          = $this->getAnnotations($result["_id"], $request['annotation_category']);
-                        $data[]['annotation'] = $annotations;
+                        $tempData['annotation'] = $annotations;
                     }
-
+                    array_push($data,$tempData);
                     $i ++;
                 }
             }
