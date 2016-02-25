@@ -234,6 +234,6 @@ class APIController extends BaseController
         $id       = $argument['id'];
         $response = $this->api->downloadAnnotationsAsCSV($id);
 
-        return $response;
+        return $this->json($response);
     }
 }
