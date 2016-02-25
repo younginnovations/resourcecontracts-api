@@ -471,7 +471,7 @@ class APIServices extends Services
             ,
             "highlight" => [
                 "fields" => [
-                    "text"     => [
+                    "text" => [
                         "fragment_size"       => 200,
                         "number_of_fragments" => 1
                     ]
@@ -1189,12 +1189,13 @@ class APIServices extends Services
         $data['publisher_type']         = isset($metadata['disclosure_mode']) ? $metadata['disclosure_mode'] : '';
         $data['retrieved_at']           = isset($metadata['date_retrieval']) ? $metadata['date_retrieval'] : '';
         $data['created_at']             = isset($results['created_at']) ? $results['created_at'] . 'Z' : '';
-        $data['category']               = isset($metadata['category']) ? $metadata['category'] : '';
         $data['note']                   = isset($metadata['contract_note']) ? $metadata['contract_note'] : '';
         $data['is_associated_document'] = isset($metadata['is_supporting_document']) ? $this->getBoolean($metadata['is_supporting_document']) : null;
         $data['deal_number']            = isset($metadata['deal_number']) ? $metadata['deal_number'] : '';
         $data['matrix_page']            = isset($metadata['matrix_page']) ? $metadata['matrix_page'] : '';
         $data['is_ocr_reviewed']        = isset($metadata['show_pdf_text']) ? $this->getBoolean($metadata['show_pdf_text']) : null;
+        $data['is_pages_missing']       = isset($metadata['pages_missing']) ? $this->getBoolean($metadata['pages_missing']) : null;
+        $data['is_annexes_missing']     = isset($metadata['annexes_missing']) ? $this->getBoolean($metadata['annexes_missing']) : null;
 
         $data['file']       = [
             [
@@ -1212,6 +1213,10 @@ class APIServices extends Services
         $data['parent']     = $parentDocument;
         $document           = isset($results['supporting_contracts']) ? $results['supporting_contracts'] : [];
         $supportingDoc      = $this->getSupportingDocument($document, $category);
+        if(!empty($parentDocument))
+        {
+            $supportingDoc      = $this->getSibblingDocument($parentDocument, $results['contract_id']);
+        }
         $data['associated'] = $supportingDoc;
 
         return $data;
@@ -1274,10 +1279,10 @@ class APIServices extends Services
     public function downloadAnnotationsAsCSV($contractId)
     {
         $annotations = $this->getAnnotationPages($contractId, '');
-        $metadata = $this->getMetadata($contractId,'');
+        $metadata    = $this->getMetadata($contractId, '');
         $download    = new DownloadServices();
 
-        return $download->downloadAnnotations($annotations,$metadata);
+        return $download->downloadAnnotations($annotations, $metadata);
 
     }
 
@@ -1305,5 +1310,50 @@ class APIServices extends Services
         return isset($result['shapes']) ? "pdf" : "text";
     }
 
+    /**
+     * Return the associated along with sibling contracts
+     * @param $parentDocument
+     * @param $contractId
+     * @return array
+     */
+    private function getSibblingDocument($parentDocument, $contractId)
+    {
+        $supportingDoc=[];
+
+        if(!empty($parentDocument))
+        {
+            $parentId = $parentDocument[0]['id'];
+
+            $parentMetadata = $this->getMetadata($parentId,'');
+
+            $supportingDoc=$parentMetadata["associated"];
+        }
+
+        foreach($supportingDoc as $key=>$doc)
+        {
+            if($doc['id']==$contractId)
+            {
+                unset($supportingDoc[$key]);
+            }
+        }
+
+        return $this->removeKeys($supportingDoc);
+    }
+
+    /**
+     * Remove keys from the array
+     * @param $items
+     * @return array
+     */
+    protected function removeKeys($items)
+    {
+        $i = [];
+
+        foreach ($items as $items) {
+            $i[] = $items;
+        }
+
+        return $i;
+    }
 }
 
