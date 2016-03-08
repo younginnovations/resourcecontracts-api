@@ -56,6 +56,14 @@ class FulltextSearch extends Services
             $contractType = explode(',', $request['contract_type']);
             $filters[]    = ["terms" => ["metadata.contract_type" => $contractType]];
         }
+        if (isset($request['document_type']) and !empty($request['document_type'])) {
+            $contractType = explode(',', $request['document_type']);
+            $filters[]    = ["terms" => ["metadata.document_type.raw" => $contractType]];
+        }
+        if (isset($request['language']) and !empty($request['language'])) {
+            $contractType = explode(',', $request['language']);
+            $filters[]    = ["terms" => ["metadata.language" => $contractType]];
+        }
         if (isset($request['company_name']) and !empty($request['company_name'])) {
             $companyName = explode(',', $request['company_name']);
             $filters[]   = ["terms" => ["metadata.company_name" => $companyName]];
