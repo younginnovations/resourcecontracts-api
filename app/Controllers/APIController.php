@@ -84,6 +84,22 @@ class APIController extends BaseController
     }
 
     /**
+     * Get the annotations page contract
+     * @param $request
+     * @param $response
+     * @param $argument
+     * @return json response
+     */
+    public function getAnnotationGroup($request, $response, $argument)
+    {
+        $id   = $argument['id'];
+        $data = $this->api->getAnnotationGroup($id, $this->request->query->all());
+
+        return $this->json($data);
+    }
+
+
+    /**
      * Get the metadata
      * @param $request
      * @param $response
