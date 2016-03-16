@@ -1,5 +1,8 @@
 <?php namespace App\Services;
 
+use Elasticsearch\Common\Exceptions\BadRequest400Exception;
+use Exception;
+
 
 /**
  * Class FulltextSearch
@@ -93,16 +96,25 @@ class FulltextSearch extends Services
             array_push($fields, "annotations_string");
         }
         if (isset($request['q']) && !empty($request['q'])) {
-
+            /*if (isset($request['fuzzy']) && $request['fuzzy']==1) {
+                $params['body']['query']['query_string'] = [
+                    "fields"              => $fields,
+                    'query'               => $this->addFuzzyOperator($request['q']),
+                    "default_operator"    => "AND",
+                    "fuzzy_prefix_length" => 4,
+                    "fuzziness"           => "AUTO"
+                ];
+            }else{*/
             $params['body']['query']['query_string'] = [
                 "fields"              => $fields,
                 'query'               => $this->addFuzzyOperator($request['q']),
                 "default_operator"    => "AND",
-                "fuzzy_prefix_length" => 4,
+                "fuzzy_prefix_length" => 3,
                 "fuzziness"           => "AUTO"
-
             ];
+            //}
         }
+
 
         if (!empty($filters)) {
             $params['body']['filter'] = [
@@ -207,8 +219,9 @@ class FulltextSearch extends Services
 
             return $download->downloadSearchResult($downloadData);
         }
+
         $data['suggestion'] = [];
-        if (isset($request['q']) && !empty($request['q'])) {
+        if (isset($request['q']) && !empty($request['q']) && isset($request['fuzzy']) && $request['fuzzy'] == 1) {
             $data['suggestion'] = $this->getSuggestionText($params, $request['q']);
         }
 
@@ -223,10 +236,18 @@ class FulltextSearch extends Services
      */
     public function searchText($params, $type, $queryString)
     {
-
-        $results = $this->search($params);
-        $fields                  = $results['hits']['hits'];
         $data                    = [];
+        try {
+            $results = $this->search($params);
+        }
+        catch(BadRequest400Exception $e)
+        {
+            $results['hits']['hits']=[];
+            $results['hits']['total']=0;
+        }
+
+
+        $fields                  = $results['hits']['hits'];
         $data['total']           = $results['hits']['total'];
         $data['country']         = [];
         $data['year']            = [];
@@ -236,10 +257,10 @@ class FulltextSearch extends Services
         $data['company_name']    = [];
         $data['corporate_group'] = [];
 
-
         $i = 0;
 
         foreach ($fields as $field) {
+
             $contractId = $field['_id'];
             if (isset($field['fields']['metadata.country_code'])) {
                 array_push($data['country'], $field['fields']['metadata.country_code'][0]);
@@ -373,13 +394,19 @@ class FulltextSearch extends Services
         }
 
         return $data;
-}
+    }
+
     private function addFuzzyOperator($queryString)
     {
         $queryString = urldecode($queryString);
-        $string      = preg_replace('/[^A-Za-z0-9\-\(\) ]/', '', $queryString);
-        $string      = preg_replace('/\s\s+/', ' ', $string);
-        $string      = str_replace(' ', '~ ', $string) . '~';
+        $quotePos    = strpos($queryString, '"');
+
+        if ($quotePos === 0) {
+            return $queryString;
+        }
+        $string = preg_replace('/[^A-Za-z0-9\-\(\) ]/', '', $queryString);
+        $string = preg_replace('/\s\s+/', ' ', $string);
+        $string = $string . '~4';
 
         return $string;
 
@@ -403,6 +430,7 @@ class FulltextSearch extends Services
 
         return $count['count'];
     }
+
     /*
      * write brief description
      * @param $params
@@ -411,6 +439,7 @@ class FulltextSearch extends Services
      */
     private function getSuggestionText($params, $q)
     {
+
         $params['body']['size'] = 0;
 
         $q           = urldecode($q);
@@ -422,14 +451,14 @@ class FulltextSearch extends Services
                 "term" => [
                     "field"         => "pdf_text_string",
                     "suggest_mode"  => "always",
-                    "prefix_length" => 4
+                    "prefix_length" => 3
                 ]
             ],
             "annotations_suggestion" => [
                 "term" => [
                     "field"         => "annotations_string",
                     "suggest_mode"  => "always",
-                    "prefix_length" => 4
+                    "prefix_length" => 3
                 ]
             ],
         ];
@@ -458,9 +487,15 @@ class FulltextSearch extends Services
         }
 
         $params['body']['suggest'] = $filter;
+        try{
+            $suggestion         = $this->search($params);
+        }
+        catch(BadRequest400Exception $e)
+        {
 
-        $suggestion         = $this->search($params);
-        $suggestions        = $suggestion['suggest'];
+        }
+
+        $suggestions        = isset($suggestion['suggest'])?$suggestion['suggest']:[];
         $annotationsSuggest = $this->formatSuggestedData($suggestions, 'annotations_suggestion');
         $textSuggestion     = $this->formatSuggestedData($suggestions, 'text_suggestion');
         $intersections      = array_intersect_key($annotationsSuggest, $textSuggestion);
@@ -485,16 +520,23 @@ class FulltextSearch extends Services
     private function formatSuggestedData($suggestions, $field)
     {
         $data = [];
+       $pspell_link = pspell_new("en");
+       if(isset($suggestions[$field]))
+       {
+           foreach ($suggestions[$field] as $sugField) {
+               foreach ($sugField['options'] as $suggestion) {
 
-        foreach ($suggestions[$field] as $sugField) {
-            foreach ($sugField['options'] as $suggestion) {
-                $data[$suggestion['text']] = [
-                    'text' => $suggestion['text'],
-                    'freq' => (isset($suggestion['freq']) && !empty($suggestion['freq'])) ? $suggestion['freq'] : 1
-                ];
-            }
+                  if(pspell_check($pspell_link,$suggestion['text']))
+                  {
+                      $data[$suggestion['text']] = [
+                          'text' => $suggestion['text'],
+                          'freq' => (isset($suggestion['freq']) && !empty($suggestion['freq'])) ? $suggestion['freq'] : 1
+                      ];
+                  }
+               }
 
-        }
+           }
+       }
 
         return $data;
     }
