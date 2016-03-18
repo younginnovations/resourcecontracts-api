@@ -236,7 +236,6 @@ class APIServices extends Services
     }
 
 
-
     /**
      * Get Annotations
      *
@@ -1301,7 +1300,7 @@ class APIServices extends Services
                         ]
                     ]
                 ],
-                "is_operator" => $this->getBoolean($company['operator']),
+                "is_operator" => isset($company['operator']) ? $this->getBoolean($company['operator']) : null,
                 "share"       => $this->getShare($company['participation_share'])
             ];
         }
@@ -1372,7 +1371,7 @@ class APIServices extends Services
         if ($operator == 0) {
             return false;
         }
-
+        
     }
 
     /**
@@ -1408,6 +1407,7 @@ class APIServices extends Services
     /**
      * Annotation download
      * @param $contractId
+     * @return array
      */
     public function downloadAnnotationsAsCSV($contractId)
     {
