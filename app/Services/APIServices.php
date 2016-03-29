@@ -995,6 +995,28 @@ class APIServices extends Services
                                     ]
                                 ],
                         ],
+                    'document_type'      =>
+                        [
+                            'terms' =>
+                                [
+                                    'field' => 'metadata.document_type.raw',
+                                    'size'  => 1000,
+                                    'order' => [
+                                        "_term" => "asc"
+                                    ]
+                                ],
+                        ],
+                    'language'           =>
+                        [
+                            'terms' =>
+                                [
+                                    'field' => 'metadata.language',
+                                    'size'  => 1000,
+                                    'order' => [
+                                        "_term" => "asc"
+                                    ]
+                                ],
+                        ],
                 ],
         ];
         if (isset($request['category']) && !empty($request['category'])) {
@@ -1006,6 +1028,8 @@ class APIServices extends Services
         $data['company_name']       = [];
         $data['corporate_grouping'] = [];
         $data['contract_type']      = [];
+        $data['document_type']      = [];
+        $data['language']           = [];
         foreach ($response['aggregations']['company_name']['buckets'] as $companyname) {
             array_push($data['company_name'], $companyname['key']);
         }
@@ -1015,9 +1039,17 @@ class APIServices extends Services
         foreach ($response['aggregations']['contract_type']['buckets'] as $type) {
             array_push($data['contract_type'], $type['key']);
         }
+        foreach ($response['aggregations']['document_type']['buckets'] as $type) {
+            array_push($data['document_type'], $type['key']);
+        }
+        foreach ($response['aggregations']['language']['buckets'] as $type) {
+            array_push($data['language'], $type['key']);
+        }
         $data['company_name']       = array_unique($data['company_name']);
         $data['corporate_grouping'] = array_unique($data['corporate_grouping']);
         $data['contract_type']      = array_unique($data['contract_type']);
+        $data['document_type']      = array_unique($data['document_type']);
+        $data['language']           = array_unique($data['language']);
 
         return $data;
     }
@@ -1197,7 +1229,7 @@ class APIServices extends Services
         $data['is_pages_missing']       = isset($metadata['pages_missing']) ? $this->getBoolean($metadata['pages_missing']) : null;
         $data['is_annexes_missing']     = isset($metadata['annexes_missing']) ? $this->getBoolean($metadata['annexes_missing']) : null;
 
-        $data['file']       = [
+        $data['file']   = [
             [
                 "url"        => isset($metadata['file_url']) ? $metadata['file_url'] : '',
                 "byte_size"  => isset($metadata['file_size']) ? (int) $metadata['file_size'] : '',
@@ -1208,14 +1240,13 @@ class APIServices extends Services
                 "media_type" => "text/plain"
             ]
         ];
-        $translatedFrom     = isset($metadata['translated_from']) ? $metadata['translated_from'] : [];
-        $parentDocument     = $this->getSupportingDocument($translatedFrom, $category);
-        $data['parent']     = $parentDocument;
-        $document           = isset($results['supporting_contracts']) ? $results['supporting_contracts'] : [];
-        $supportingDoc      = $this->getSupportingDocument($document, $category);
-        if(!empty($parentDocument))
-        {
-            $supportingDoc      = $this->getSibblingDocument($parentDocument, $results['contract_id']);
+        $translatedFrom = isset($metadata['translated_from']) ? $metadata['translated_from'] : [];
+        $parentDocument = $this->getSupportingDocument($translatedFrom, $category);
+        $data['parent'] = $parentDocument;
+        $document       = isset($results['supporting_contracts']) ? $results['supporting_contracts'] : [];
+        $supportingDoc  = $this->getSupportingDocument($document, $category);
+        if (!empty($parentDocument)) {
+            $supportingDoc = $this->getSibblingDocument($parentDocument, $results['contract_id']);
         }
         $data['associated'] = $supportingDoc;
 
@@ -1318,21 +1349,18 @@ class APIServices extends Services
      */
     private function getSibblingDocument($parentDocument, $contractId)
     {
-        $supportingDoc=[];
+        $supportingDoc = [];
 
-        if(!empty($parentDocument))
-        {
+        if (!empty($parentDocument)) {
             $parentId = $parentDocument[0]['id'];
 
-            $parentMetadata = $this->getMetadata($parentId,'');
+            $parentMetadata = $this->getMetadata($parentId, '');
 
-            $supportingDoc=$parentMetadata["associated"];
+            $supportingDoc = $parentMetadata["associated"];
         }
 
-        foreach($supportingDoc as $key=>$doc)
-        {
-            if($doc['id']==$contractId)
-            {
+        foreach ($supportingDoc as $key => $doc) {
+            if ($doc['id'] == $contractId) {
                 unset($supportingDoc[$key]);
             }
         }
