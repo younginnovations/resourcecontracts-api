@@ -1383,5 +1383,25 @@ class APIServices extends Services
 
         return $i;
     }
+
+    public function getAnnotationById($id)
+    {
+        $params['index'] = $this->index;
+        $params['type']  = "annotations";
+        $params['body']  = [
+            "query" => [
+                "term" => [
+                    "_id" => [
+                        "value" => $id
+                    ]
+                ]
+            ]
+        ];
+        $result          = $this->search($params);
+        $result          = isset($result['hits']['hits'][0]["_source"])?$result['hits']['hits'][0]["_source"]:[];
+
+        return $result;
+
+    }
 }
 

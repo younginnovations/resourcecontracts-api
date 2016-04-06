@@ -10,6 +10,8 @@ $router->addRoute('GET', '/contracts/count', 'App\Controllers\APIController::get
 $router->addRoute('GET', '/contract/{id}/searchtext', 'App\Controllers\APIController::search');
 $router->addRoute('GET', '/contracts/search', 'App\Controllers\APIController::fullTextSearch');
 
+$router->addRoute('GET', '/annotation/{id}', 'App\Controllers\APIController::getAnnotationById');
+
 
 //Internal API
 $router->addRoute('GET', '/contract/{id}/annotations/download', 'App\Controllers\APIController::downloadAnnotationsAsCSV');

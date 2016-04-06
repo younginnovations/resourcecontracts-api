@@ -236,4 +236,13 @@ class APIController extends BaseController
 
         return $this->json($response);
     }
+
+    public function getAnnotationById($request, $response, $argument)
+    {
+        $id       = $argument['id'];
+        $response = $this->api->getAnnotationById($id);
+
+        return $this->json($response);
+
+    }
 }
