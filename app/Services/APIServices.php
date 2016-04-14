@@ -1371,7 +1371,7 @@ class APIServices extends Services
         if ($operator == 0) {
             return false;
         }
-        
+
     }
 
     /**
@@ -1516,21 +1516,36 @@ class APIServices extends Services
 
     public function getAnnotationById($id)
     {
+        $data=[];
         $params['index'] = $this->index;
         $params['type']  = "annotations";
         $params['body']  = [
             "query" => [
                 "term" => [
-                    "_id" => [
+                    "annotation_id" => [
                         "value" => $id
                     ]
                 ]
             ]
         ];
-        $result          = $this->search($params);
-        $result          = isset($result['hits']['hits'][0]["_source"])?$result['hits']['hits'][0]["_source"]:[];
+        $results          = $this->search($params);
+        $data          = isset($results['hits']['hits'][0]["_source"])?$results['hits']['hits'][0]["_source"]:[];
+        $page=[];
 
-        return $result;
+        foreach ($results['hits']['hits'] as $result) {
+
+            $page[]=[
+                'id'=>$result['_source']['id'],
+                'page'=>$result['_source']['page'],
+                'type'=>(isset($result['_source']['shapes']))?'pdf':'text'
+            ];
+        }
+        if(!empty($data))
+        {
+            $data['page']=$page;
+        }
+
+        return $data;
 
     }
 }
