@@ -253,10 +253,10 @@ class DownloadServices extends Services
     /**
      * Annotations Download
      * @param $annotations
+     * @return array
      */
     public function downloadAnnotations($annotations, $metadata)
     {
-
         $data = $this->getAnnotationsData($annotations);
 
         return $data;
@@ -275,15 +275,26 @@ class DownloadServices extends Services
         foreach ($annotations['result'] as $annotation) {
 
             $data[] = [
-                'Category'        => $annotation['category'],
-                'Topic'           => $annotation['cluster'],
-                'Annotation Text' => $annotation['text'],
-                'PDF Page Number' => $annotation['page_no'],
+                'Category'          => $annotation['category'],
+                'Topic'             => $annotation['cluster'],
+                'Annotation Text'   => $annotation['text'],
+                'PDF Page Number'   => $annotation['page_no'],
+                'Article Reference' => $annotation['article_reference']
 
             ];
+
         }
 
         return $data;
+    }
+
+    private function getPageNumber($pageNumbers)
+    {
+        $pages = [];
+        foreach ($pageNumbers as $key => $pageNumber) {
+            $pages[$key] = implode(',', $pageNumber);
+        }
+        print_r($pages);
     }
 
 }

@@ -3,12 +3,14 @@ $router->addRoute('GET', '/', 'App\Controllers\APIController::home');
 $router->addRoute('GET', '/contracts/summary', 'App\Controllers\APIController::getSummary');
 $router->addRoute('GET', '/contract/{id}/text', 'App\Controllers\APIController::getTextPages');
 $router->addRoute('GET', '/contract/{id}/annotations', 'App\Controllers\APIController::getAnnotationPages');
+$router->addRoute('GET', '/contract/{id}/annotations/group', 'App\Controllers\APIController::getAnnotationGroup');
 $router->addRoute('GET', '/contract/{id}/annotations/search', 'App\Controllers\APIController::getAnnotationPages');
 $router->addRoute('GET', '/contract/{id}/metadata', 'App\Controllers\APIController::getMetadata');
 $router->addRoute('GET', '/contracts', 'App\Controllers\APIController::getAllContract');
 $router->addRoute('GET', '/contracts/count', 'App\Controllers\APIController::getAllContractCount');
 $router->addRoute('GET', '/contract/{id}/searchtext', 'App\Controllers\APIController::search');
 $router->addRoute('GET', '/contracts/search', 'App\Controllers\APIController::fullTextSearch');
+$router->addRoute('GET', '/annotation/{id}', 'App\Controllers\APIController::getAnnotationById');
 
 
 //Internal API

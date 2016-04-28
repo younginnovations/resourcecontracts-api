@@ -84,6 +84,22 @@ class APIController extends BaseController
     }
 
     /**
+     * Get the annotations page contract
+     * @param $request
+     * @param $response
+     * @param $argument
+     * @return json response
+     */
+    public function getAnnotationGroup($request, $response, $argument)
+    {
+        $id   = $argument['id'];
+        $data = $this->api->getAnnotationGroup($id, $this->request->query->all());
+
+        return $this->json($data);
+    }
+
+
+    /**
      * Get the metadata
      * @param $request
      * @param $response
@@ -235,5 +251,14 @@ class APIController extends BaseController
         $response = $this->api->downloadAnnotationsAsCSV($id);
 
         return $this->json($response);
+    }
+
+    public function getAnnotationById($request, $response, $argument)
+    {
+        $id       = $argument['id'];
+        $response = $this->api->getAnnotationById($id);
+
+        return $this->json($response);
+
     }
 }

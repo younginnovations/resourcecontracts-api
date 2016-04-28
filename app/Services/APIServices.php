@@ -158,12 +158,6 @@ class APIServices extends Services
         return $data;
     }
 
-    /**
-     * Return the contract annotations of page
-     * @param $contractId
-     * @param $pageNo
-     * @return array
-     */
     public function getAnnotationPages($contractId, $request)
     {
         $params          = [];
@@ -210,18 +204,23 @@ class APIServices extends Services
             $source = $result['_source'];
 
             if (!in_array($source['category'], $remove)) {
-                $totalAnnotation    = $totalAnnotation + 1;
+                $totalAnnotation = $totalAnnotation + 1;
+
+
                 $data['result'][$i] = [
+
                     'contract_id'         => $source['contract_id'],
                     'open_contracting_id' => $source['open_contracting_id'],
                     'id'                  => $result['_id'],
+                    'annotation_id'       => isset($source['annotation_id']) ? $source['annotation_id'] : null,
                     'quote'               => isset($source['quote']) ? $source['quote'] : null,
                     'text'                => $source['text'],
                     'category'            => $source['category'],
+                    'category_key'        => isset($source['category_key']) ? $source['category_key'] : null,
+                    'article_reference'   => isset($source['article_reference']) ? $source['article_reference'] : null,
                     'page_no'             => $source['page'],
                     'ranges'              => isset($source['ranges']) ? $source['ranges'] : null,
                     'cluster'             => isset($source['cluster']) ? $source['cluster'] : null,
-                    'category_key'        => isset($source['category_key']) ? $source['category_key'] : null,
                 ];
                 if (isset($source['shapes'])) {
                     unset($data['result'][$i]['ranges']);
@@ -236,9 +235,110 @@ class APIServices extends Services
         return $data;
     }
 
+
+    /**
+     * Get Annotations
+     *
+     * @param $contractId
+     * @param $request
+     * @return array
+     */
+    public function getAnnotationGroup($contractId, $request)
+    {
+        $params          = [];
+        $params['index'] = $this->index;
+        $params['type']  = "annotations";
+        $filter          = [];
+
+        $type = $this->getIdType($contractId);
+
+        if ($contractId && $type == "string") {
+            $filter[] = [
+                "term" => ["open_contracting_id" => ["value" => $contractId]]
+            ];
+        }
+        if (!empty($contractId) && $type == "numeric") {
+            $filter[] = [
+                "term" => ["contract_id" => ["value" => $contractId]],
+            ];
+        }
+        if (isset($request['page']) and !empty($request['page'])) {
+            $filter[] = [
+                "term" => ["page" => ["value" => $request['page']]]
+            ];
+        }
+
+        $params['body'] = [
+            'size'  => 10000,
+            'sort'  => ['page' => ["order" => "asc"]],
+            'query' => [
+                'bool' => [
+                    'must' => $filter
+                ]
+            ]
+        ];
+
+        $results        = $this->search($params);
+        $data           = [];
+        $data['total']  = $results['hits']['total'];
+        $data['result'] = [];
+        $remove         = ["Pages missing from  copy//Pages Manquantes de la copie", "Annexes missing from copy//Annexes Manquantes de la copie"];
+
+        $annotations = $results['hits']['hits'];
+        $ann         = [];
+        foreach ($annotations as $annotation) {
+            $annotation = $annotation['_source'];
+            if (in_array($annotation['category'], $remove)) {
+                continue;
+            }
+            $ann[$annotation['annotation_id']][] = $annotation;
+        }
+
+        $final_annotations = [];
+        ksort($ann);
+        foreach ($ann as $id => $annotation) {
+            $pages = [];
+            foreach ($annotation as $page) {
+                $page_array = [
+                    'id'                => $page['id'],
+                    'page_no'           => $page['page'],
+                    'quote'             => isset($page['quote']) ? $page['quote'] : '',
+                    'article_reference' => $page['article_reference']
+                ];
+
+                if (isset($page['shapes'])) {
+                    $page_array['shapes'] = $page['shapes'];
+                }
+
+                if (isset($page['ranges'])) {
+                    $page_array['ranges'] = $page['ranges'];
+                }
+                $pages[] = $page_array;
+            }
+
+            $final_annotations[] = [
+                'id'                  => $annotation[0]['annotation_id'],
+                'contract_id'         => $annotation[0]['contract_id'],
+                'open_contracting_id' => $annotation[0]['open_contracting_id'],
+                'text'                => $annotation[0]['text'],
+                'category_key'        => $annotation[0]['category_key'],
+                'category'            => $annotation[0]['category'],
+                'cluster'             => $annotation[0]['cluster'],
+                'pages'               => $pages
+            ];
+        }
+
+        $data['result'] = $final_annotations;
+        $data['total']  = count($final_annotations);
+
+        return $data;
+
+    }
+
     /**
      * Return the metadata
      * @param $contractId
+     * @param $request
      * @return mixed
      */
     public function getMetadata($contractId, $request)
@@ -291,6 +391,7 @@ class APIServices extends Services
 
     /**
      * Return all contracts
+     * @param $request
      * @return array
      */
     public function getAllContracts($request)
@@ -1199,7 +1300,7 @@ class APIServices extends Services
                         ]
                     ]
                 ],
-                "is_operator" => $this->getBoolean($company['operator']),
+                "is_operator" => isset($company['operator']) ? $this->getBoolean($company['operator']) : null,
                 "share"       => $this->getShare($company['participation_share'])
             ];
         }
@@ -1306,6 +1407,7 @@ class APIServices extends Services
     /**
      * Annotation download
      * @param $contractId
+     * @return array
      */
     public function downloadAnnotationsAsCSV($contractId)
     {
@@ -1382,6 +1484,69 @@ class APIServices extends Services
         }
 
         return $i;
+    }
+
+    private function getAnnotaionDetails($annotation_id)
+    {
+
+        $params          = [];
+        $params['index'] = $this->index;
+        $params['type']  = "annotations";
+        $filter          = [];
+
+        $filter[] = [
+            "term" => ["annotation_id" => ["value" => $annotation_id]],
+        ];
+
+        $params['body'] = [
+            'size'  => 10000,
+            'sort'  => ['page' => ["order" => "asc"]],
+            'query' => [
+                'bool' => [
+                    'must' => $filter
+                ]
+            ]
+        ];
+
+        $results = $this->search($params);
+
+        return $results;
+    }
+
+
+    public function getAnnotationById($id)
+    {
+        $data=[];
+        $params['index'] = $this->index;
+        $params['type']  = "annotations";
+        $params['body']  = [
+            "query" => [
+                "term" => [
+                    "annotation_id" => [
+                        "value" => $id
+                    ]
+                ]
+            ]
+        ];
+        $results          = $this->search($params);
+        $data          = isset($results['hits']['hits'][0]["_source"])?$results['hits']['hits'][0]["_source"]:[];
+        $page=[];
+
+        foreach ($results['hits']['hits'] as $result) {
+
+            $page[]=[
+                'id'=>$result['_source']['id'],
+                'page'=>$result['_source']['page'],
+                'type'=>(isset($result['_source']['shapes']))?'pdf':'text'
+            ];
+        }
+        if(!empty($data))
+        {
+            $data['page']=$page;
+        }
+
+        return $data;
+
     }
 }
 
