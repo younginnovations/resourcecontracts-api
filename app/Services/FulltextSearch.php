@@ -78,7 +78,9 @@ class FulltextSearch extends Services
             $annotationsCategory = explode(',', $request['annotation_category']);
             $filters[]           = ["terms" => ["annotations_category" => $annotationsCategory]];
         }
-
+        if (isset($request['annotated']) and !empty($request['annotated']) and $request['annotated']==1) {
+            $filters[]           = ["bool"=>["must_not"=>["missing"=>["field"=>"annotations_string","existence"=>true]]]];
+        }
 
         $fields = [];
         if (in_array("metadata", $type)) {
