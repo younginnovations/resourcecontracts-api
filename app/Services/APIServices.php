@@ -554,14 +554,14 @@ class APIServices extends Services
                 ]
             ];
         }
-        $q              = urldecode("\"" . $request['q'] . "\"");
+       // $q              = urldecode("\"" . $request['q'] . "\"");
         $params['body'] = [
             "query"     => [
                 "simple_query_string" => [
                     "fields"           => ["text"],
-                    'query'            => $q,
-                    "default_operator" => "AND",
-                    "flags"            => "PHRASE",
+                    'query'            => urldecode($request['q']),
+                    "default_operator" => "OR",
+
                 ]
             ],
             "filter"    => [
@@ -571,9 +571,11 @@ class APIServices extends Services
             ]
             ,
             "highlight" => [
+                "pre_tags"  => ["<span class='search-highlight-word'>"],
+                "post_tags" => ["</span>"],
                 "fields" => [
                     "text" => [
-                        "fragment_size"       => 200,
+                        "fragment_size"       => 100000,
                         "number_of_fragments" => 1
                     ]
                 ]
@@ -600,7 +602,7 @@ class APIServices extends Services
                     'page_no'             => $fields['page'][0],
                     'contract_id'         => $fields['contract_id'][0],
                     'open_contracting_id' => $fields['open_contracting_id'][0],
-                    'text'                => strip_tags($text),
+                    'text'                => strip_tags($text,"<span>"),
                     "annotation_type"     => $annotationsType,
                     "type"                => "annotation"
                 ];
@@ -650,21 +652,21 @@ class APIServices extends Services
 
         $params['body'] = [
             "query"     => [
-                "filtered" => [
-                    "query"  => [
-                        "match_phrase" => [
-                            "text" => $request['q']
-                        ]
-                    ],
-                    "filter" => [
-                        "and" => [
-                            "filters" => $filters
-                        ]
-                    ]
+                'simple_query_string' => [
+                    "fields"           => ["text"],
+                    'query'            => urldecode($request['q']),
+                    "default_operator" => "OR"
+                ]
+            ],
+            "filter"    => [
+                "and" => [
+                    "filters"=>$filters
                 ]
             ],
             "highlight" => [
-                "fields" => [
+                "pre_tags"  => ["<span class='search-highlight-word'>"],
+                "post_tags" => ["</span>"],
+                "fields"    => [
                     "text" => [
                         "fragment_size"       => 200,
                         "number_of_fragments" => 1
@@ -677,8 +679,10 @@ class APIServices extends Services
                 "open_contracting_id"
             ]
         ];
-        $response       = $this->search($params);
-        $data           = [];
+
+        $response = $this->search($params);
+
+        $data     = [];
         foreach ($response['hits']['hits'] as $hit) {
             $fields = $hit['fields'];
             $text   = $hit['highlight']['text'][0];
@@ -687,12 +691,13 @@ class APIServices extends Services
                     'page_no'             => $fields['page_no'][0],
                     'contract_id'         => $fields['contract_id'][0],
                     'open_contracting_id' => $fields['open_contracting_id'][0],
-                    'text'                => strip_tags($text),
+                    'text'                => strip_tags($text, "<span>"),
                     "type"                => "text"
                 ];
             }
 
         }
+
 
         return $data;
 
@@ -1516,7 +1521,7 @@ class APIServices extends Services
 
     public function getAnnotationById($id)
     {
-        $data=[];
+        $data            = [];
         $params['index'] = $this->index;
         $params['type']  = "annotations";
         $params['body']  = [
@@ -1528,21 +1533,20 @@ class APIServices extends Services
                 ]
             ]
         ];
-        $results          = $this->search($params);
-        $data          = isset($results['hits']['hits'][0]["_source"])?$results['hits']['hits'][0]["_source"]:[];
-        $page=[];
+        $results         = $this->search($params);
+        $data            = isset($results['hits']['hits'][0]["_source"]) ? $results['hits']['hits'][0]["_source"] : [];
+        $page            = [];
 
         foreach ($results['hits']['hits'] as $result) {
 
-            $page[]=[
-                'id'=>$result['_source']['id'],
-                'page'=>$result['_source']['page'],
-                'type'=>(isset($result['_source']['shapes']))?'pdf':'text'
+            $page[] = [
+                'id'   => $result['_source']['id'],
+                'page' => $result['_source']['page'],
+                'type' => (isset($result['_source']['shapes'])) ? 'pdf' : 'text'
             ];
         }
-        if(!empty($data))
-        {
-            $data['page']=$page;
+        if (!empty($data)) {
+            $data['page'] = $page;
         }
 
         return $data;
