@@ -1463,7 +1463,7 @@ class APIServices extends Services
 
             $parentMetadata = $this->getMetadata($parentId, '');
 
-            $supportingDoc = $parentMetadata["associated"];
+            $supportingDoc = isset($parentMetadata["associated"])?$parentMetadata["associated"]:[];
         }
 
         foreach ($supportingDoc as $key => $doc) {
