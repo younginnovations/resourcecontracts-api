@@ -32,50 +32,50 @@ class FulltextSearch extends Services
         $params          = [];
         $params['index'] = $this->index;
         $params['type']  = "master";
-        $type            = isset($request['group']) ? array_map('trim', explode(',', $request['group'])) : [];
+        $type            = isset($request['group']) ? array_map('trim', explode('|', $request['group'])) : [];
         $typecheck       = $this->typeCheck($type);
         if (!$typecheck) {
             return [];
         }
         if (isset($request['year']) and !empty($request['year'])) {
-            $year      = explode(',', $request['year']);
+            $year      = explode('|', $request['year']);
             $filters[] = ["terms" => ["metadata.signature_year" => $year]];
         }
         if (isset($request['country_code']) and !empty($request['country_code'])) {
-            $country   = explode(',', $request['country_code']);
+            $country   = explode('|', $request['country_code']);
             $filters[] = ["terms" => ["metadata.country_code" => $country]];
         }
         if (isset($request['resource']) and !empty($request['resource'])) {
-            $resource  = explode(',', $request['resource']);
+            $resource  = explode('|', $request['resource']);
             $filters[] = ["terms" => ["metadata.resource_raw" => $resource]];
         }
         if (isset($request['category']) and !empty($request['category'])) {
             $filters[] = ["term" => ["metadata.category" => $request['category']]];
         }
         if (isset($request['contract_type']) and !empty($request['contract_type'])) {
-            $contractType = explode(',', $request['contract_type']);
+            $contractType = explode('|', $request['contract_type']);
             $filters[]    = ["terms" => ["metadata.contract_type" => $contractType]];
         }
         if (isset($request['document_type']) and !empty($request['document_type'])) {
-            $contractType = explode(',', $request['document_type']);
+            $contractType = explode('|', $request['document_type']);
             $filters[]    = ["terms" => ["metadata.document_type.raw" => $contractType]];
         }
         if (isset($request['language']) and !empty($request['language'])) {
-            $contractType = explode(',', $request['language']);
+            $contractType = explode('|', $request['language']);
             $filters[]    = ["terms" => ["metadata.language" => $contractType]];
         }
         if (isset($request['company_name']) and !empty($request['company_name'])) {
-            $companyName = explode(',', $request['company_name']);
+            $companyName = explode('|', $request['company_name']);
             $filters[]   = ["terms" => ["metadata.company_name" => $companyName]];
         }
         if (isset($request['corporate_group']) and !empty($request['corporate_group'])) {
 
-            $corporateGroup = explode(',', $request['corporate_group']);
+            $corporateGroup = explode('|', $request['corporate_group']);
             $filters[]      = ["terms" => ["metadata.corporate_grouping" => $corporateGroup]];
         }
         if (isset($request['annotation_category']) and !empty($request['annotation_category'])) {
 
-            $annotationsCategory = explode(',', $request['annotation_category']);
+            $annotationsCategory = explode('|', $request['annotation_category']);
             $filters[]           = ["terms" => ["annotations_category" => $annotationsCategory]];
         }
         if (isset($request['annotated']) and !empty($request['annotated']) and $request['annotated']==1) {
