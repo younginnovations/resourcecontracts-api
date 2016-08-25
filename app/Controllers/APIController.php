@@ -3,6 +3,7 @@
 use App\Services\APIServices;
 use App\Services\DownloadServices;
 use App\Services\FulltextSearch;
+use App\Services\StatusService;
 
 /**
  * API Controller for Client site
@@ -23,18 +24,24 @@ class APIController extends BaseController
      * @var DownloadServices
      */
     private $download;
+    /**
+     * @var StatusService
+     */
+    private $status;
 
     /**
      * @param APIServices      $api
      * @param FulltextSearch   $search
      * @param DownloadServices $download
+     * @param StatusService    $status
      */
-    public function __construct(APIServices $api, FulltextSearch $search,DownloadServices $download)
+    public function __construct(APIServices $api, FulltextSearch $search, DownloadServices $download, StatusService $status)
     {
         parent::__construct();
-        $this->api    = $api;
-        $this->search = $search;
+        $this->api      = $api;
+        $this->search   = $search;
         $this->download = $download;
+        $this->status   = $status;
     }
 
     public function home()
@@ -260,5 +267,15 @@ class APIController extends BaseController
 
         return $this->json($response);
 
+    }
+
+    /**
+     * Get the status of element
+     */
+    public function getStatusOfElement()
+    {
+        $response = $this->status->getStatus($this->request->query->all());
+
+        return $this->json($response);
     }
 }
