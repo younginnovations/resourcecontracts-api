@@ -78,8 +78,8 @@ class FulltextSearch extends Services
             $annotationsCategory = explode('|', $request['annotation_category']);
             $filters[]           = ["terms" => ["annotations_category" => $annotationsCategory]];
         }
-        if (isset($request['annotated']) and !empty($request['annotated']) and $request['annotated']==1) {
-            $filters[]           = ["bool"=>["must_not"=>["missing"=>["field"=>"annotations_string","existence"=>true]]]];
+        if (isset($request['annotated']) and !empty($request['annotated']) and $request['annotated'] == 1) {
+            $filters[] = ["bool" => ["must_not" => ["missing" => ["field" => "annotations_string", "existence" => true]]]];
         }
 
         $fields = [];
@@ -189,12 +189,17 @@ class FulltextSearch extends Services
         $params['body']['size'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
         $params['body']['from'] = (isset($request['from']) and !empty($request['from'])) ? $request['from'] : self::FROM;
         if (isset($request['download']) && $request['download']) {
-            $params['body']['size'] = 100000;
+            $params['body']['size'] = $this->countAll();
             $params['body']['from'] = 0;
         }
         $data             = [];
         $data             = $this->searchText($params, $type);
         $data['from']     = isset($request['from']) ? $request['from'] : self::FROM;
+        if(isset($request['all']) && $request['all']==1)
+        {
+            $params['body']['size'] = $this->countAll();
+            $params['body']['from'] = 0;
+        }
         $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
         if (isset($request['download']) && $request['download']) {
             $download     = new DownloadServices();
@@ -270,8 +275,8 @@ class FulltextSearch extends Services
             $annotationText                     = isset($highlight['annotations_string'][0]) ? $highlight['annotations_string'][0] : '';
             $apiSearvice                        = new APIServices();
             $annotationsResult                  = $apiSearvice->annotationSearch($data['results'][$i]['id'], ["q" => strip_tags($annotationText)]);
-            $data['results'][$i]['annotations'] = $this->getAnnotationsResult($annotationText,$annotationsResult);
-            $data['results'][$i]['metadata'] = isset($highlight['metadata_string'][0]) ? $highlight['metadata_string'][0] : '';
+            $data['results'][$i]['annotations'] = $this->getAnnotationsResult($annotationText, $annotationsResult);
+            $data['results'][$i]['metadata']    = isset($highlight['metadata_string'][0]) ? $highlight['metadata_string'][0] : '';
             if (isset($highlight['pdf_text_string']) and in_array('text', $type)) {
                 array_push($data['results'][$i]['group'], "Text");
             }
@@ -353,17 +358,36 @@ class FulltextSearch extends Services
     private function getAnnotationsResult($annotationText, $annotationsResult)
     {
 
-        $data=[];
-        if(isset($annotationsResult[0]) && !empty($annotationsResult[0]))
-        {
-            $data=[
-                "annotation_text"=>$annotationText,
-                "annotation_id"=>$annotationsResult[0]["annotation_id"],
-                "page_no"=>$annotationsResult[0]["page_no"],
-                "type"=>$annotationsResult[0]["annotation_type"]
+        $data = [];
+        if (isset($annotationsResult[0]) && !empty($annotationsResult[0])) {
+            $data = [
+                "annotation_text" => $annotationText,
+                "annotation_id"   => $annotationsResult[0]["annotation_id"],
+                "page_no"         => $annotationsResult[0]["page_no"],
+                "type"            => $annotationsResult[0]["annotation_type"]
             ];
         }
+
         return $data;
+    }
+
+    /**
+     * Return search count
+     * @return mixed
+     */
+    public function countAll()
+    {
+        $params          = [];
+        $params['index'] = $this->index;
+        $params['type']  = "master";
+        $params['body']  = [
+            "query" => [
+                "match_all" => []
+            ]
+        ];
+        $count           = $this->countResult($params);
+
+        return $count['count'];
     }
 
 
