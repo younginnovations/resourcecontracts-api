@@ -188,18 +188,14 @@ class FulltextSearch extends Services
 
         $params['body']['size'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
         $params['body']['from'] = (isset($request['from']) and !empty($request['from'])) ? $request['from'] : self::FROM;
-        if (isset($request['download']) && $request['download']) {
+        if ((isset($request['download']) && $request['download']) || (isset($request['all']) && $request['all'])) {
             $params['body']['size'] = $this->countAll();
             $params['body']['from'] = 0;
         }
         $data             = [];
         $data             = $this->searchText($params, $type);
         $data['from']     = isset($request['from']) ? $request['from'] : self::FROM;
-        if(isset($request['all']) && $request['all']==1)
-        {
-            $params['body']['size'] = $this->countAll();
-            $params['body']['from'] = 0;
-        }
+
         $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
         if (isset($request['download']) && $request['download']) {
             $download     = new DownloadServices();
@@ -221,7 +217,6 @@ class FulltextSearch extends Services
     {
 
         $results = $this->search($params);
-
         $fields                  = $results['hits']['hits'];
         $data                    = [];
         $data['total']           = $results['hits']['total'];
