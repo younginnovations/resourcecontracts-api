@@ -437,6 +437,12 @@ class APIServices extends Services
             $params['body']['from'] = !empty($request['from']) ? $request['from'] : self::FROM;
         }
 
+        if(isset($request['all']) && $request['all']==1)
+        {
+            $params['body']['size'] = $this->countData();
+            $params['body']['from'] = 0;
+        }
+
         if (isset($request['sort_by']) and !empty($request['sort_by'])) {
 
             if ($request['sort_by'] == "country") {
@@ -460,6 +466,7 @@ class APIServices extends Services
         $data             = [];
         $data['total']    = $results['hits']['total'];
         $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? (integer) $request['per_page'] : self::SIZE;
+
         $data['from']     = (isset($request['from']) and !empty($request['from'])) ? $request['from'] : self::FROM;
         $data['results']  = [];
         foreach ($results['hits']['hits'] as $result) {
@@ -1551,6 +1558,21 @@ class APIServices extends Services
 
         return $data;
 
+    }
+
+    public function countData()
+    {
+        $params          = [];
+        $params['index'] = $this->index;
+        $params['type']  = "metadata";
+        $params['body']  = [
+            "query" => [
+                "match_all" => []
+            ]
+        ];
+        $count           = $this->countResult($params);
+
+        return $count['count'];
     }
 }
 

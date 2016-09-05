@@ -40,6 +40,16 @@ class Services
     }
 
     /**
+     * Count the search result
+     * @param $params
+     * @return array
+     */
+    public function countResult($params)
+    {
+        return $this->api->count($params);
+    }
+
+    /**
      * Return the count of search result
      * @param $params
      * @return array
