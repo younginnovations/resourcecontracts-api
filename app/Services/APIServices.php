@@ -564,7 +564,7 @@ class APIServices extends Services
         $params['body'] = [
             "query"     => [
                 "simple_query_string" => [
-                    "fields"           => ["text"],
+                    "fields"           => ["text","category"],
                     'query'            => urldecode($request['q']),
                     "default_operator" => "OR",
 
@@ -583,6 +583,10 @@ class APIServices extends Services
                     "text" => [
                         "fragment_size"       => 100000,
                         "number_of_fragments" => 1
+                    ],
+                    "category" => [
+                        "fragment_size"       => 100000,
+                        "number_of_fragments" => 1
                     ]
                 ]
             ],
@@ -599,6 +603,10 @@ class APIServices extends Services
         foreach ($results['hits']['hits'] as $hit) {
             $fields          = $hit['fields'];
             $text            = isset($hit['highlight']['text']) ? $hit['highlight']['text'][0] : "";
+            if($text=="")
+            {
+                $text = isset($hit['highlight']['category']) ? $hit['highlight']['category'][0] : "";
+            }
             $category        = isset($hit['highlight']['category']) ? $hit['highlight']['category'][0] : "";
             $annotationsType = $this->getAnnotationType($fields['id'][0]);
 
