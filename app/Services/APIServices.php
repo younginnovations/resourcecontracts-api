@@ -437,8 +437,7 @@ class APIServices extends Services
             $params['body']['from'] = !empty($request['from']) ? $request['from'] : self::FROM;
         }
 
-        if(isset($request['all']) && $request['all']==1)
-        {
+        if (isset($request['all']) && $request['all'] == 1) {
             $params['body']['size'] = $this->countData();
             $params['body']['from'] = 0;
         }
@@ -467,8 +466,8 @@ class APIServices extends Services
         $data['total']    = $results['hits']['total'];
         $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? (integer) $request['per_page'] : self::SIZE;
 
-        $data['from']     = (isset($request['from']) and !empty($request['from'])) ? $request['from'] : self::FROM;
-        $data['results']  = [];
+        $data['from']    = (isset($request['from']) and !empty($request['from'])) ? $request['from'] : self::FROM;
+        $data['results'] = [];
         foreach ($results['hits']['hits'] as $result) {
             $source            = $result['_source'];
             $data['results'][] = [
@@ -561,7 +560,7 @@ class APIServices extends Services
                 ]
             ];
         }
-       // $q              = urldecode("\"" . $request['q'] . "\"");
+        // $q              = urldecode("\"" . $request['q'] . "\"");
         $params['body'] = [
             "query"     => [
                 "simple_query_string" => [
@@ -580,7 +579,7 @@ class APIServices extends Services
             "highlight" => [
                 "pre_tags"  => ["<span class='search-highlight-word'>"],
                 "post_tags" => ["</span>"],
-                "fields" => [
+                "fields"    => [
                     "text" => [
                         "fragment_size"       => 100000,
                         "number_of_fragments" => 1
@@ -609,7 +608,7 @@ class APIServices extends Services
                     'page_no'             => $fields['page'][0],
                     'contract_id'         => $fields['contract_id'][0],
                     'open_contracting_id' => $fields['open_contracting_id'][0],
-                    'text'                => strip_tags($text,"<span>"),
+                    'text'                => strip_tags($text, "<span>"),
                     "annotation_type"     => $annotationsType,
                     "type"                => "annotation"
                 ];
@@ -667,7 +666,7 @@ class APIServices extends Services
             ],
             "filter"    => [
                 "and" => [
-                    "filters"=>$filters
+                    "filters" => $filters
                 ]
             ],
             "highlight" => [
@@ -689,7 +688,7 @@ class APIServices extends Services
 
         $response = $this->search($params);
 
-        $data     = [];
+        $data = [];
         foreach ($response['hits']['hits'] as $hit) {
             $fields = $hit['fields'];
             $text   = $hit['highlight']['text'][0];
@@ -1067,13 +1066,37 @@ class APIServices extends Services
      */
     public function getFilterAttributes($request)
     {
+
+
         $params['index'] = $this->index;
         $params['type']  = "master";
         $data            = [];
+        $filter          = [];
+        if (isset($request['country_code']) and !empty($request['country_code'])) {
+            $filter[] = [
+                "term" => [
+                    "metadata.country_code" => $request['country_code']
+                ]
+            ];
+        }
+
+        if (isset($request['category']) and !empty($request['category'])) {
+            $filter[] = [
+                "term" => [
+                    "metadata.category" => $request['category']
+                ]
+            ];
+        }
 
         $params['body'] = [
-            'size' => 0,
-            'aggs' =>
+            'size'  => 0,
+            'query' => [
+                'bool' => [
+                    'must' => $filter
+
+                ]
+            ],
+            'aggs'  =>
                 [
                     'company_name'       =>
                         [
@@ -1132,10 +1155,7 @@ class APIServices extends Services
                         ],
                 ],
         ];
-        if (isset($request['category']) && !empty($request['category'])) {
-            $categoryfilter          = $this->getCategory($request['category']);
-            $params['body']['query'] = $categoryfilter;
-        }
+      
 
         $response                   = $this->search($params);
         $data['company_name']       = [];
@@ -1179,12 +1199,18 @@ class APIServices extends Services
         $filters         = [];
 
         if (isset($request['category']) && !empty($request['category'])) {
-            $filters[]                               = [
+            $filters[] = [
                 "term" => [
                     "metadata.category" => $request['category']
                 ]
             ];
-            $params['body']['query']['bool']['must'] = $filters;
+        }
+        if (isset($request['country_code']) && !empty($request['country_code'])) {
+            $filters[] = [
+                "term" => [
+                    "metadata.country_code" => $request['country_code']
+                ]
+            ];
         }
         $params['body'] = [
             'size'  => 0,
@@ -1470,7 +1496,7 @@ class APIServices extends Services
 
             $parentMetadata = $this->getMetadata($parentId, '');
 
-            $supportingDoc = isset($parentMetadata["associated"])?$parentMetadata["associated"]:[];
+            $supportingDoc = isset($parentMetadata["associated"]) ? $parentMetadata["associated"] : [];
         }
 
         foreach ($supportingDoc as $key => $doc) {
