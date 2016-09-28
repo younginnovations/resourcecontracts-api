@@ -1091,12 +1091,9 @@ class APIServices extends Services
         $params['body'] = [
             'size'  => 0,
             'query' => [
-                'filtered' => [
-                    'filter' => [
-                        'and' => [
-                            'filters' => $filter
-                        ]
-                    ]
+                'bool' => [
+                    'must' => $filter
+
                 ]
             ],
             'aggs'  =>
@@ -1158,10 +1155,7 @@ class APIServices extends Services
                         ],
                 ],
         ];
-        if (isset($request['category']) && !empty($request['category'])) {
-            $categoryfilter          = $this->getCategory($request['category']);
-            $params['body']['query'] = $categoryfilter;
-        }
+      
 
         $response                   = $this->search($params);
         $data['company_name']       = [];
@@ -1205,14 +1199,15 @@ class APIServices extends Services
         $filters         = [];
 
         if (isset($request['category']) && !empty($request['category'])) {
-            $filters[]                               = [
+            $filters[] = [
                 "term" => [
                     "metadata.category" => $request['category']
                 ]
             ];
         }
         if (isset($request['country_code']) && !empty($request['country_code'])) {
-            $filters[]                               = [
+
+            $filters[] = [
                 "term" => [
                     "metadata.country_code" => $request['country_code']
                 ]
