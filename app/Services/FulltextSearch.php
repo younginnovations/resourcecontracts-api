@@ -109,7 +109,7 @@ class FulltextSearch extends Services
                 "fields"              => $fields,
                 'query'               => $this->addFuzzyOperator($request['q']),
                 "default_operator"    => "AND",
-                "fuzzy_prefix_length" => 3,
+                "fuzzy_prefix_length" => 4,
                 "fuzziness"           => "AUTO"
             ];
             //}
