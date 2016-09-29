@@ -1155,7 +1155,7 @@ class APIServices extends Services
                         ],
                 ],
         ];
-      
+
 
         $response                   = $this->search($params);
         $data['company_name']       = [];
@@ -1358,8 +1358,12 @@ class APIServices extends Services
 
         $data['source_url']             = isset($metadata['source_url']) ? $metadata['source_url'] : '';
         $data['amla_url']               = isset($metadata['amla_url']) ? $metadata['amla_url'] : '';
-        $data['publisher_type']         = isset($metadata['disclosure_mode']) ? $metadata['disclosure_mode'] : '';
-        $data['retrieved_at']           = isset($metadata['date_retrieval']) ? $metadata['date_retrieval'] : '';
+        $data['publisher']              = [
+            'type' => isset($metadata['disclosure_mode']) ? $metadata['disclosure_mode'] : '',
+            'note' => isset($metadata['disclosure_mode_text']) ? $metadata['disclosure_mode_text'] : ''
+        ];
+        $data['publisher_type']         =
+        $data['retrieved_at'] = isset($metadata['date_retrieval']) ? $metadata['date_retrieval'] : '';
         $data['created_at']             = isset($results['created_at']) ? $results['created_at'] . 'Z' : '';
         $data['note']                   = isset($metadata['contract_note']) ? $metadata['contract_note'] : '';
         $data['is_associated_document'] = isset($metadata['is_supporting_document']) ? $this->getBoolean($metadata['is_supporting_document']) : null;
