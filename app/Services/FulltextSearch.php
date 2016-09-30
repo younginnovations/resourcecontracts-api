@@ -185,7 +185,7 @@ class FulltextSearch extends Services
             ],
             'fields'    => $highlightField,
         ];
-
+        $queryString = isset($request['q'])?$request['q']:"";
         $params['body']['size'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
         $params['body']['from'] = (isset($request['from']) and !empty($request['from'])) ? $request['from'] : self::FROM;
         if ((isset($request['download']) && $request['download']) || (isset($request['all']) && $request['all'])) {
@@ -193,7 +193,7 @@ class FulltextSearch extends Services
             $params['body']['from'] = 0;
         }
         $data             = [];
-        $data             = $this->searchText($params, $type);
+        $data             = $this->searchText($params, $type,$queryString);
         $data['from']     = isset($request['from']) ? $request['from'] : self::FROM;
 
         $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
@@ -213,7 +213,7 @@ class FulltextSearch extends Services
      * @param $params
      * @return array
      */
-    public function searchText($params, $type)
+    public function searchText($params, $type, $queryString)
     {
 
         $results = $this->search($params);
@@ -269,8 +269,8 @@ class FulltextSearch extends Services
             $data['results'][$i]['text']        = isset($highlight['pdf_text_string'][0]) ? $highlight['pdf_text_string'][0] : '';
             $annotationText                     = isset($highlight['annotations_string'][0]) ? $highlight['annotations_string'][0] : '';
             $apiSearvice                        = new APIServices();
-            $annotationsResult                  = $apiSearvice->annotationSearch($data['results'][$i]['id'], ["q" => strip_tags($annotationText)]);
-            $data['results'][$i]['annotations'] = $this->getAnnotationsResult($annotationText, $annotationsResult);
+            $annotationsResult                  = $apiSearvice->annotationSearch($data['results'][$i]['id'], ["q" => $queryString]);
+            $data['results'][$i]['annotations'] = ($annotationText!="")?$this->getAnnotationsResult( $annotationsResult):[];
             $data['results'][$i]['metadata']    = isset($highlight['metadata_string'][0]) ? $highlight['metadata_string'][0] : '';
             if (isset($highlight['pdf_text_string']) and in_array('text', $type)) {
                 array_push($data['results'][$i]['group'], "Text");
@@ -350,13 +350,13 @@ class FulltextSearch extends Services
      * @param $annotationsResult
      * @return array
      */
-    private function getAnnotationsResult($annotationText, $annotationsResult)
+    private function getAnnotationsResult($annotationsResult)
     {
 
         $data = [];
         if (isset($annotationsResult[0]) && !empty($annotationsResult[0])) {
             $data = [
-                "annotation_text" => $annotationText,
+                "annotation_text" => $annotationsResult[0]["text"],
                 "annotation_id"   => $annotationsResult[0]["annotation_id"],
                 "page_no"         => $annotationsResult[0]["page_no"],
                 "type"            => $annotationsResult[0]["annotation_type"]
