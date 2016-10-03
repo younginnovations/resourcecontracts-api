@@ -1379,7 +1379,7 @@ class APIServices extends Services
         $data['is_ocr_reviewed']        = isset($metadata['show_pdf_text']) ? $this->getBoolean($metadata['show_pdf_text']) : null;
         $data['is_pages_missing']       = isset($metadata['pages_missing']) ? $this->getBoolean($metadata['pages_missing']) : null;
         $data['is_annexes_missing']     = isset($metadata['annexes_missing']) ? $this->getBoolean($metadata['annexes_missing']) : null;
-        $data['is_contract_signed']     = isset($results['is_contract_signed']) ? $results['is_contract_signed'] : 1;
+        $data['is_contract_signed']     = isset($metadata['is_contract_signed']) ? $this->getBoolean($metadata['is_contract_signed']) : true;
 
         $data['file']   = [
             [
