@@ -1381,6 +1381,7 @@ class APIServices extends Services
         $data['is_annexes_missing']     = isset($metadata['annexes_missing']) ? $this->getBoolean($metadata['annexes_missing']) : null;
         $data['is_contract_signed']     = isset($metadata['is_contract_signed']) ? $this->getBoolean($metadata['is_contract_signed']) : true;
 
+
         $data['file']   = [
             [
                 "url"        => isset($metadata['file_url']) ? $metadata['file_url'] : '',
