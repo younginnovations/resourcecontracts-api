@@ -125,11 +125,7 @@ class APIServices extends Services
                 "term" => ["page_no" => ["value" => $request['page']]]
             ];
         }
-        if (isset($request['category']) and !empty($request['category'])) {
-            $filter[] = [
-                "term" => ["metadata.category" => ["value" => $request['category']]]
-            ];
-        }
+
         $params['body'] = [
             'size'  => 10000,
             'query' => [
@@ -359,9 +355,7 @@ class APIServices extends Services
             ];
         }
         if (isset($request['category']) && !empty($request['category'])) {
-            $filters[] = [
-                "term" => ["metadata.category" => ["value" => $request['category']]]
-            ];
+
             $category  = $request['category'];
         }
 
