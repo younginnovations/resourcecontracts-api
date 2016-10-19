@@ -547,13 +547,6 @@ class APIServices extends Services
                 ]
             ];
         }
-        if (isset($request['category']) && !empty($request['category'])) {
-            $filters[] = [
-                "term" => [
-                    "metadata.category" => $request['category']
-                ]
-            ];
-        }
         // $q              = urldecode("\"" . $request['q'] . "\"");
         $params['body'] = [
             "query"     => [
@@ -650,13 +643,7 @@ class APIServices extends Services
                 ]
             ];
         }
-        if (isset($request['category']) && !empty($request['category'])) {
-            $filters[] = [
-                "term" => [
-                    "metadata.category" => $request['category']
-                ]
-            ];
-        }
+
 
         $params['body'] = [
             "query"     => [
