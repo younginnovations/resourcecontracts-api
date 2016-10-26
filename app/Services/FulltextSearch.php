@@ -96,15 +96,6 @@ class FulltextSearch extends Services
             array_push($fields, "annotations_string");
         }
         if (isset($request['q']) && !empty($request['q'])) {
-            /*if (isset($request['fuzzy']) && $request['fuzzy']==1) {
-                $params['body']['query']['query_string'] = [
-                    "fields"              => $fields,
-                    'query'               => $this->addFuzzyOperator($request['q']),
-                    "default_operator"    => "AND",
-                    "fuzzy_prefix_length" => 4,
-                    "fuzziness"           => "AUTO"
-                ];
-            }else{*/
             $params['body']['query']['query_string'] = [
                 "fields"              => $fields,
                 'query'               => $this->addFuzzyOperator($request['q']),
@@ -112,7 +103,6 @@ class FulltextSearch extends Services
                 "fuzzy_prefix_length" => 4,
                 "fuzziness"           => "AUTO"
             ];
-            //}
         }
 
 
@@ -220,10 +210,6 @@ class FulltextSearch extends Services
             return $download->downloadSearchResult($downloadData);
         }
 
-        $data['suggestion'] = [];
-        if (isset($request['q']) && !empty($request['q']) && isset($request['fuzzy']) && $request['fuzzy'] == 1) {
-            $data['suggestion'] = $this->getSuggestionText($params, $request['q']);
-        }
 
         return (array) $data;
     }
@@ -298,7 +284,7 @@ class FulltextSearch extends Services
             $data['results'][$i]['text']        = isset($highlight['pdf_text_string'][0]) ? $highlight['pdf_text_string'][0] : '';
             $annotationText                     = isset($highlight['annotations_string'][0]) ? $highlight['annotations_string'][0] : '';
             $apiSearvice                        = new APIServices();
-            $annotationsResult                  = $apiSearvice->annotationSearch($data['results'][$i]['id'], ["q" => $queryString]);
+            $annotationsResult                  = ($queryString!="")?$apiSearvice->annotationSearch($data['results'][$i]['id'], ["q" => $queryString]):[];
             $data['results'][$i]['annotations'] = ($annotationText!="")?$this->getAnnotationsResult( $annotationsResult):[];
             $data['results'][$i]['metadata']    = isset($highlight['metadata_string'][0]) ? $highlight['metadata_string'][0] : '';
             if (isset($highlight['pdf_text_string']) and in_array('text', $type)) {
@@ -396,21 +382,7 @@ class FulltextSearch extends Services
         return $data;
     }
 
-    private function addFuzzyOperator($queryString)
-    {
-        $queryString = urldecode($queryString);
-        $quotePos    = strpos($queryString, '"');
 
-        if ($quotePos === 0) {
-            return $queryString;
-        }
-        $string = preg_replace('/[^A-Za-z0-9\-\(\) ]/', '', $queryString);
-        $string = preg_replace('/\s\s+/', ' ', $string);
-        $string = $string . '~4';
-
-        return $string;
-
-    }
 
     /**
      * Return search count
