@@ -1,5 +1,8 @@
 <?php namespace App\Services;
 
+use Elasticsearch\Common\Exceptions\BadRequest400Exception;
+use Exception;
+
 
 /**
  * Class FulltextSearch
@@ -93,12 +96,15 @@ class FulltextSearch extends Services
             array_push($fields, "annotations_string");
         }
         if (isset($request['q']) && !empty($request['q'])) {
-            $params['body']['query']['simple_query_string'] = [
-                "fields"           => $fields,
-                'query'            => urldecode($request['q']),
-                "default_operator" => "AND"
+            $params['body']['query']['query_string'] = [
+                "fields"              => $fields,
+                'query'               => $this->addFuzzyOperator($request['q']),
+                "default_operator"    => "AND",
+                "fuzzy_prefix_length" => 4,
+                "fuzziness"           => "AUTO"
             ];
         }
+
 
         if (!empty($filters)) {
             $params['body']['filter'] = [
@@ -204,6 +210,7 @@ class FulltextSearch extends Services
             return $download->downloadSearchResult($downloadData);
         }
 
+
         return (array) $data;
     }
 
@@ -215,10 +222,18 @@ class FulltextSearch extends Services
      */
     public function searchText($params, $type, $queryString)
     {
-
-        $results = $this->search($params);
-        $fields                  = $results['hits']['hits'];
         $data                    = [];
+        try {
+            $results = $this->search($params);
+        }
+        catch(BadRequest400Exception $e)
+        {
+            $results['hits']['hits']=[];
+            $results['hits']['total']=0;
+        }
+
+
+        $fields                  = $results['hits']['hits'];
         $data['total']           = $results['hits']['total'];
         $data['country']         = [];
         $data['year']            = [];
@@ -228,10 +243,10 @@ class FulltextSearch extends Services
         $data['company_name']    = [];
         $data['corporate_group'] = [];
 
-
         $i = 0;
 
         foreach ($fields as $field) {
+
             $contractId = $field['_id'];
             if (isset($field['fields']['metadata.country_code'])) {
                 array_push($data['country'], $field['fields']['metadata.country_code'][0]);
@@ -269,7 +284,7 @@ class FulltextSearch extends Services
             $data['results'][$i]['text']        = isset($highlight['pdf_text_string'][0]) ? $highlight['pdf_text_string'][0] : '';
             $annotationText                     = isset($highlight['annotations_string'][0]) ? $highlight['annotations_string'][0] : '';
             $apiSearvice                        = new APIServices();
-            $annotationsResult                  = $apiSearvice->annotationSearch($data['results'][$i]['id'], ["q" => $queryString]);
+            $annotationsResult                  = ($queryString!="")?$apiSearvice->annotationSearch($data['results'][$i]['id'], ["q" => $queryString]):[];
             $data['results'][$i]['annotations'] = ($annotationText!="")?$this->getAnnotationsResult( $annotationsResult):[];
             $data['results'][$i]['metadata']    = isset($highlight['metadata_string'][0]) ? $highlight['metadata_string'][0] : '';
             if (isset($highlight['pdf_text_string']) and in_array('text', $type)) {
@@ -314,6 +329,7 @@ class FulltextSearch extends Services
 
         return $check;
     }
+
 
     /**
      * Return the values of signature year
@@ -366,6 +382,8 @@ class FulltextSearch extends Services
         return $data;
     }
 
+
+
     /**
      * Return search count
      * @return mixed
@@ -385,5 +403,114 @@ class FulltextSearch extends Services
         return $count['count'];
     }
 
+    /*
+     * write brief description
+     * @param $params
+     * @param $q
+     * @return array
+     */
+    private function getSuggestionText($params, $q)
+    {
+
+        $params['body']['size'] = 0;
+
+        $q           = urldecode($q);
+        $queryLength = str_word_count($q);
+
+        $filter = [
+            "text"                   => $q,
+            "text_suggestion"        => [
+                "term" => [
+                    "field"         => "pdf_text_string",
+                    "suggest_mode"  => "always",
+                    "prefix_length" => 3
+                ]
+            ],
+            "annotations_suggestion" => [
+                "term" => [
+                    "field"         => "annotations_string",
+                    "suggest_mode"  => "always",
+                    "prefix_length" => 3
+                ]
+            ],
+        ];
+        if ($queryLength > 1) {
+            $filter = [
+                "text"                   => $q,
+                "text_suggestion"        => [
+                    "phrase" => [
+                        "field"                      => "pdf_text_string",
+                        "real_word_error_likelihood" => 0.50,
+                        "size"                       => 1,
+                        "max_errors"                 => 0.5,
+                        "gram_size"                  => 2
+                    ]
+                ],
+                "annotations_suggestion" => [
+                    "phrase" => [
+                        "field"                      => "annotations_string",
+                        "real_word_error_likelihood" => 0.50,
+                        "size"                       => 1,
+                        "max_errors"                 => 0.5,
+                        "gram_size"                  => 2
+                    ]
+                ],
+            ];
+        }
+
+        $params['body']['suggest'] = $filter;
+        try{
+            $suggestion         = $this->search($params);
+        }
+        catch(BadRequest400Exception $e)
+        {
+
+        }
+
+        $suggestions        = isset($suggestion['suggest'])?$suggestion['suggest']:[];
+        $annotationsSuggest = $this->formatSuggestedData($suggestions, 'annotations_suggestion');
+        $textSuggestion     = $this->formatSuggestedData($suggestions, 'text_suggestion');
+        $intersections      = array_intersect_key($annotationsSuggest, $textSuggestion);
+        $complement         = array_diff_key($annotationsSuggest, $textSuggestion);
+        foreach ($intersections as $intersection) {
+            $freq                                          = $intersection['freq'];
+            $textSuggestion[$intersection['text']]['freq'] = $freq + $textSuggestion[$intersection['text']]['freq'];
+        }
+        $suggestion = array_merge($textSuggestion, $complement);
+        $data       = array_values($suggestion);
+        usort(
+            $data,
+            function ($a, $b) {
+                return $b['freq'] - $a['freq'];
+            }
+        );
+
+        return $data;
+    }
+
+
+    private function formatSuggestedData($suggestions, $field)
+    {
+        $data = [];
+       $pspell_link = pspell_new("en");
+       if(isset($suggestions[$field]))
+       {
+           foreach ($suggestions[$field] as $sugField) {
+               foreach ($sugField['options'] as $suggestion) {
+
+                  if(pspell_check($pspell_link,$suggestion['text']))
+                  {
+                      $data[$suggestion['text']] = [
+                          'text' => $suggestion['text'],
+                          'freq' => (isset($suggestion['freq']) && !empty($suggestion['freq'])) ? $suggestion['freq'] : 1
+                      ];
+                  }
+               }
+
+           }
+       }
+
+        return $data;
+    }
 
 }

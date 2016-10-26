@@ -527,6 +527,7 @@ class APIServices extends Services
      */
     public function annotationSearch($contractId, $request)
     {
+
         $params['index'] = $this->index;
         $params['type']  = "annotations";
         if ((!isset($request['q']) and empty($request['q']))) {
@@ -550,10 +551,12 @@ class APIServices extends Services
         // $q              = urldecode("\"" . $request['q'] . "\"");
         $params['body'] = [
             "query"     => [
-                "simple_query_string" => [
-                    "fields"           => ["text","category"],
-                    'query'            => urldecode($request['q']),
-                    "default_operator" => "OR",
+                "query_string" => [
+                    "fields"              => ["text", "category"],
+                    'query'               => $this->addFuzzyOperator($request['q']),
+                    "default_operator"    => "OR",
+                    "fuzzy_prefix_length" => 4,
+                    "fuzziness"           => "AUTO"
 
                 ]
             ],
@@ -567,7 +570,7 @@ class APIServices extends Services
                 "pre_tags"  => ["<span class='search-highlight-word'>"],
                 "post_tags" => ["</span>"],
                 "fields"    => [
-                    "text" => [
+                    "text"     => [
                         "fragment_size"       => 100000,
                         "number_of_fragments" => 1
                     ],
@@ -585,13 +588,13 @@ class APIServices extends Services
                 "open_contracting_id"
             ]
         ];
+
         $results        = $this->search($params);
         $data           = [];
         foreach ($results['hits']['hits'] as $hit) {
-            $fields          = $hit['fields'];
-            $text            = isset($hit['highlight']['text']) ? $hit['highlight']['text'][0] : "";
-            if($text=="")
-            {
+            $fields = $hit['fields'];
+            $text   = isset($hit['highlight']['text']) ? $hit['highlight']['text'][0] : "";
+            if ($text == "") {
                 $text = isset($hit['highlight']['category']) ? $hit['highlight']['category'][0] : "";
             }
             $category        = isset($hit['highlight']['category']) ? $hit['highlight']['category'][0] : "";
@@ -647,10 +650,12 @@ class APIServices extends Services
 
         $params['body'] = [
             "query"     => [
-                'simple_query_string' => [
-                    "fields"           => ["text"],
-                    'query'            => urldecode($request['q']),
-                    "default_operator" => "OR"
+                'query_string' => [
+                    "fields"              => ["text"],
+                    'query'               => $this->addFuzzyOperator($request['q']),
+                    "default_operator"    => "OR",
+                    "fuzzy_prefix_length" => 4,
+                    "fuzziness"           => "AUTO"
                 ]
             ],
             "filter"    => [
@@ -1351,7 +1356,7 @@ class APIServices extends Services
             'type' => isset($metadata['disclosure_mode']) ? $metadata['disclosure_mode'] : '',
             'note' => isset($metadata['disclosure_mode_text']) ? $metadata['disclosure_mode_text'] : ''
         ];
-        $data['retrieved_at'] = isset($metadata['date_retrieval']) ? $metadata['date_retrieval'] : '';
+        $data['retrieved_at']           = isset($metadata['date_retrieval']) ? $metadata['date_retrieval'] : '';
         $data['created_at']             = isset($results['created_at']) ? $results['created_at'] . 'Z' : '';
         $data['note']                   = isset($metadata['contract_note']) ? $metadata['contract_note'] : '';
         $data['is_associated_document'] = isset($metadata['is_supporting_document']) ? $this->getBoolean($metadata['is_supporting_document']) : null;

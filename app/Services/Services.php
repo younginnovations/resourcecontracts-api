@@ -85,4 +85,26 @@ class Services
         return is_numeric($id) ? 'numeric' : 'string';
     }
 
+    public function suggest($params)
+    {
+        return $this->api->suggest($params);
+    }
+
+
+    public function addFuzzyOperator($queryString)
+    {
+        $queryString = urldecode($queryString);
+        $quotePos    = strpos($queryString, '"');
+
+        if ($quotePos === 0) {
+            return $queryString;
+        }
+        $string = preg_replace('/[^A-Za-z0-9\-\(\) ]/', '', $queryString);
+        $string = preg_replace('/\s\s+/', ' ', $string);
+        $string = $string . '~4';
+
+        return $string;
+
+    }
+
 }
