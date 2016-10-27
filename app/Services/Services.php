@@ -91,19 +91,45 @@ class Services
     }
 
 
+    /**
+     * Add fuzzy operator
+     * @param $queryString
+     * @return string
+     */
     public function addFuzzyOperator($queryString)
     {
         $queryString = urldecode($queryString);
         $quotePos    = strpos($queryString, '"');
-
         if ($quotePos === 0) {
             return $queryString;
         }
-        $string = preg_replace('/[^A-Za-z0-9\-\(\) ]/', '', $queryString);
-        $string = preg_replace('/\s\s+/', ' ', $string);
-        $string = $string . '~4';
 
-        return $string;
+        if (count($queryString) == 1) {
+            return $queryString . "~4";
+        }
+
+
+        return $queryString;
+
+    }
+
+    /**
+     * If operator exist
+     * @param $queryString
+     * @return bool
+     */
+    public function findOperator($queryString)
+    {
+        $operators = ["+", "-", "|", "*", "(", "~"];
+        $found     = false;
+        foreach ($operators as $op) {
+            if (strpos($queryString, $op)) {
+                $found = true;
+            }
+
+        }
+
+        return $found;
 
     }
 
