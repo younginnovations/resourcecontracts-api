@@ -356,7 +356,7 @@ class APIServices extends Services
         }
         if (isset($request['category']) && !empty($request['category'])) {
 
-            $category  = $request['category'];
+            $category = $request['category'];
         }
 
         $params['body'] = [
@@ -549,17 +549,30 @@ class APIServices extends Services
             ];
         }
         // $q              = urldecode("\"" . $request['q'] . "\"");
-        $params['body'] = [
-            "query"     => [
-                "query_string" => [
-                    "fields"              => ["text", "category"],
-                    'query'               => $this->addFuzzyOperator($request['q']),
-                    "default_operator"    => "OR",
-                    "fuzzy_prefix_length" => 4,
-                    "fuzziness"           => "AUTO"
+        $queryString = isset($request['q'])?$request['q']:'';
+        $foundOperator = $this->findOperator($queryString);
 
+        $fullTquery    = [
+            'query_string' => [
+                "fields"              => ["text"],
+                'query'               => $this->addFuzzyOperator($queryString),
+                "default_operator"    => "OR",
+                "fuzzy_prefix_length" => 4,
+                "fuzziness"           => "AUTO"
+            ]
+        ];
+        if ($foundOperator) {
+            $fullTquery    = [
+                'simple_query_string' => [
+                    "fields"              => ["text"],
+                    'query'               => urldecode($queryString),
+                    "default_operator"    => "OR"
                 ]
-            ],
+            ];
+        }
+
+        $params['body'] = [
+            "query"     => $fullTquery,
             "filter"    => [
                 "and" => [
                     "filters" => $filters
@@ -589,8 +602,8 @@ class APIServices extends Services
             ]
         ];
 
-        $results        = $this->search($params);
-        $data           = [];
+        $results = $this->search($params);
+        $data    = [];
         foreach ($results['hits']['hits'] as $hit) {
             $fields = $hit['fields'];
             $text   = isset($hit['highlight']['text']) ? $hit['highlight']['text'][0] : "";
@@ -646,18 +659,30 @@ class APIServices extends Services
                 ]
             ];
         }
+        $queryString = isset($request['q'])?$request['q']:'';
+        $foundOperator = $this->findOperator($queryString);
 
+        $fullTquery    = [
+            'query_string' => [
+                "fields"              => ["text"],
+                'query'               => $this->addFuzzyOperator($queryString),
+                "default_operator"    => "OR",
+                "fuzzy_prefix_length" => 4,
+                "fuzziness"           => "AUTO"
+            ]
+        ];
+        if ($foundOperator) {
+            $fullTquery    = [
+                'simple_query_string' => [
+                    "fields"              => ["text"],
+                    'query'               => urldecode($queryString),
+                    "default_operator"    => "OR"
+                ]
+            ];
+        }
 
         $params['body'] = [
-            "query"     => [
-                'query_string' => [
-                    "fields"              => ["text"],
-                    'query'               => $this->addFuzzyOperator($request['q']),
-                    "default_operator"    => "OR",
-                    "fuzzy_prefix_length" => 4,
-                    "fuzziness"           => "AUTO"
-                ]
-            ],
+            "query"     => $fullTquery,
             "filter"    => [
                 "and" => [
                     "filters" => $filters

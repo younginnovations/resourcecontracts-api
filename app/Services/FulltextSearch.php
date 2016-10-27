@@ -95,16 +95,29 @@ class FulltextSearch extends Services
         if (in_array("annotations", $type)) {
             array_push($fields, "annotations_string");
         }
-        if (isset($request['q']) && !empty($request['q'])) {
-            $params['body']['query']['query_string'] = [
-                "fields"              => $fields,
-                'query'               => $this->addFuzzyOperator($request['q']),
-                "default_operator"    => "AND",
-                "fuzzy_prefix_length" => 4,
-                "fuzziness"           => "AUTO"
-            ];
-        }
 
+        $queryString = isset($request['q']) ? $request['q'] : "";
+
+        if (!empty($queryString)) {
+            $operatorFound = $this->findOperator($queryString);
+
+            if ($operatorFound) {
+                $params['body']['query']['simple_query_string'] = [
+                    "fields"           => $fields,
+                    'query'            => urldecode($queryString),
+                    "default_operator" => "AND",
+                ];
+            } else {
+                $params['body']['query']['query_string'] = [
+                    "fields"              => $fields,
+                    'query'               => $this->addFuzzyOperator($request['q']),
+                    "default_operator"    => "AND",
+                    "fuzzy_prefix_length" => 4,
+
+                ];
+            }
+
+        }
 
         if (!empty($filters)) {
             $params['body']['filter'] = [
@@ -191,16 +204,16 @@ class FulltextSearch extends Services
             ],
             'fields'    => $highlightField,
         ];
-        $queryString = isset($request['q'])?$request['q']:"";
+
         $params['body']['size'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
         $params['body']['from'] = (isset($request['from']) and !empty($request['from'])) ? $request['from'] : self::FROM;
         if ((isset($request['download']) && $request['download']) || (isset($request['all']) && $request['all'])) {
             $params['body']['size'] = $this->countAll();
             $params['body']['from'] = 0;
         }
-        $data             = [];
-        $data             = $this->searchText($params, $type,$queryString);
-        $data['from']     = isset($request['from']) ? $request['from'] : self::FROM;
+        $data         = [];
+        $data         = $this->searchText($params, $type, $queryString);
+        $data['from'] = isset($request['from']) ? $request['from'] : self::FROM;
 
         $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
         if (isset($request['download']) && $request['download']) {
@@ -222,14 +235,13 @@ class FulltextSearch extends Services
      */
     public function searchText($params, $type, $queryString)
     {
-        $data                    = [];
+        $data = [];
         try {
             $results = $this->search($params);
-        }
-        catch(BadRequest400Exception $e)
-        {
-            $results['hits']['hits']=[];
-            $results['hits']['total']=0;
+
+        } catch (BadRequest400Exception $e) {
+            $results['hits']['hits']  = [];
+            $results['hits']['total'] = 0;
         }
 
 
@@ -284,8 +296,8 @@ class FulltextSearch extends Services
             $data['results'][$i]['text']        = isset($highlight['pdf_text_string'][0]) ? $highlight['pdf_text_string'][0] : '';
             $annotationText                     = isset($highlight['annotations_string'][0]) ? $highlight['annotations_string'][0] : '';
             $apiSearvice                        = new APIServices();
-            $annotationsResult                  = ($queryString!="")?$apiSearvice->annotationSearch($data['results'][$i]['id'], ["q" => $queryString]):[];
-            $data['results'][$i]['annotations'] = ($annotationText!="")?$this->getAnnotationsResult( $annotationsResult):[];
+            $annotationsResult                  = ($queryString != "") ? $apiSearvice->annotationSearch($data['results'][$i]['id'], ["q" => $queryString]) : [];
+            $data['results'][$i]['annotations'] = ($annotationText != "") ? $this->getAnnotationsResult($annotationsResult) : [];
             $data['results'][$i]['metadata']    = isset($highlight['metadata_string'][0]) ? $highlight['metadata_string'][0] : '';
             if (isset($highlight['pdf_text_string']) and in_array('text', $type)) {
                 array_push($data['results'][$i]['group'], "Text");
@@ -383,7 +395,6 @@ class FulltextSearch extends Services
     }
 
 
-
     /**
      * Return search count
      * @return mixed
@@ -459,15 +470,13 @@ class FulltextSearch extends Services
         }
 
         $params['body']['suggest'] = $filter;
-        try{
-            $suggestion         = $this->search($params);
-        }
-        catch(BadRequest400Exception $e)
-        {
+        try {
+            $suggestion = $this->search($params);
+        } catch (BadRequest400Exception $e) {
 
         }
 
-        $suggestions        = isset($suggestion['suggest'])?$suggestion['suggest']:[];
+        $suggestions        = isset($suggestion['suggest']) ? $suggestion['suggest'] : [];
         $annotationsSuggest = $this->formatSuggestedData($suggestions, 'annotations_suggestion');
         $textSuggestion     = $this->formatSuggestedData($suggestions, 'text_suggestion');
         $intersections      = array_intersect_key($annotationsSuggest, $textSuggestion);
@@ -491,26 +500,26 @@ class FulltextSearch extends Services
 
     private function formatSuggestedData($suggestions, $field)
     {
-        $data = [];
-       $pspell_link = pspell_new("en");
-       if(isset($suggestions[$field]))
-       {
-           foreach ($suggestions[$field] as $sugField) {
-               foreach ($sugField['options'] as $suggestion) {
+        $data        = [];
+        $pspell_link = pspell_new("en");
+        if (isset($suggestions[$field])) {
+            foreach ($suggestions[$field] as $sugField) {
+                foreach ($sugField['options'] as $suggestion) {
 
-                  if(pspell_check($pspell_link,$suggestion['text']))
-                  {
-                      $data[$suggestion['text']] = [
-                          'text' => $suggestion['text'],
-                          'freq' => (isset($suggestion['freq']) && !empty($suggestion['freq'])) ? $suggestion['freq'] : 1
-                      ];
-                  }
-               }
+                    if (pspell_check($pspell_link, $suggestion['text'])) {
+                        $data[$suggestion['text']] = [
+                            'text' => $suggestion['text'],
+                            'freq' => (isset($suggestion['freq']) && !empty($suggestion['freq'])) ? $suggestion['freq'] : 1
+                        ];
+                    }
+                }
 
-           }
-       }
+            }
+        }
 
         return $data;
     }
+
+
 
 }
