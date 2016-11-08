@@ -12,6 +12,7 @@ class Services
      * @param index
      */
     public $index;
+    public $lang;
     /**
      * @var ClientBuilder
      */
@@ -27,11 +28,14 @@ class Services
         $this->index = env("INDEX");
         $client      = ClientBuilder::create()->setHosts($hosts);
         $this->api   = $client->build();
+        $this->lang  = "en";
     }
 
     /**
      * Return the search result
+     *
      * @param $params
+     *
      * @return array
      */
     public function search($params)
@@ -41,7 +45,9 @@ class Services
 
     /**
      * Count the search result
+     *
      * @param $params
+     *
      * @return array
      */
     public function countResult($params)
@@ -51,7 +57,9 @@ class Services
 
     /**
      * Return the count of search result
+     *
      * @param $params
+     *
      * @return array
      */
     public function getCount($params)
@@ -61,15 +69,18 @@ class Services
 
     /**
      * Filter according to category
+     *
+     * @param $lang
      * @param $category
+     *
      * @return array
      */
-    public function getCategory($category)
+    public function getCategory($lang, $category)
     {
         $params['term'] = [
-            "metadata.category" => [
-                "value" => $category
-            ]
+            $lang.".category" => [
+                "value" => $category,
+            ],
         ];
 
         return $params;
@@ -77,7 +88,9 @@ class Services
 
     /**
      * Return the type of Id
+     *
      * @param $id
+     *
      * @return string
      */
     public function getIdType($id)
@@ -93,7 +106,9 @@ class Services
 
     /**
      * Add fuzzy operator
+     *
      * @param $queryString
+     *
      * @return string
      */
     public function addFuzzyOperator($queryString)
@@ -105,7 +120,7 @@ class Services
         }
 
         if (count($queryString) == 1) {
-            return $queryString . "~4";
+            return $queryString."~4";
         }
 
 
@@ -115,7 +130,9 @@ class Services
 
     /**
      * If operator exist
+     *
      * @param $queryString
+     *
      * @return bool
      */
     public function findOperator($queryString)
@@ -131,6 +148,16 @@ class Services
 
         return $found;
 
+    }
+
+    public function getLang($request)
+    {
+        $lang = $this->lang;
+        if (isset($request['lang']) && !empty($request['lang'])) {
+            $lang = $request['lang'];
+        }
+
+        return $lang;
     }
 
 }
