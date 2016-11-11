@@ -164,7 +164,7 @@ class APIController extends BaseController
      *
      * @return json response
      */
-    public function getCoutriesContracts()
+    public function getCountriesContracts()
     {
         $response = $this->api->getCountriesContracts($this->request->query->all());
 

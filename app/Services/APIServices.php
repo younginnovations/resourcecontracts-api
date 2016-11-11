@@ -1125,6 +1125,17 @@ class APIServices extends Services
                                     ]
                                 ],
                         ],
+                    'project_name'      =>
+                        [
+                            'terms' =>
+                                [
+                                    'field' => 'metadata.project_name.raw',
+                                    'size'  => 1000,
+                                    'order' => [
+                                        "_term" => "asc"
+                                    ]
+                                ],
+                        ],
                     'document_type'      =>
                         [
                             'terms' =>
@@ -1157,6 +1168,7 @@ class APIServices extends Services
         $data['contract_type']      = [];
         $data['document_type']      = [];
         $data['language']           = [];
+        $data['project_name']       = [];
         foreach ($response['aggregations']['company_name']['buckets'] as $companyname) {
             array_push($data['company_name'], $companyname['key']);
         }
@@ -1172,11 +1184,17 @@ class APIServices extends Services
         foreach ($response['aggregations']['language']['buckets'] as $type) {
             array_push($data['language'], $type['key']);
         }
+        foreach ($response['aggregations']['project_name']['buckets'] as $type) {
+            if ($type['key'] !== ""){
+            array_push($data['project_name'], $type['key']);
+            }
+        }
         $data['company_name']       = array_unique($data['company_name']);
         $data['corporate_grouping'] = array_unique($data['corporate_grouping']);
         $data['contract_type']      = array_unique($data['contract_type']);
         $data['document_type']      = array_unique($data['document_type']);
         $data['language']           = array_unique($data['language']);
+        $data['project_name']       = array_unique($data['project_name']);
 
         return $data;
     }
