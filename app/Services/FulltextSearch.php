@@ -71,6 +71,10 @@ class FulltextSearch extends Services
             $companyName = explode('|', $request['company_name']);
             $filters[]   = ["terms" => ["metadata.company_name" => $companyName]];
         }
+        if (isset($request['project_name']) and !empty($request['project_name'])) {
+            $projectName = explode('|', $request['project_name']);
+            $filters[]   = ["terms" => ["metadata.project_name.raw" => $projectName]];
+        }
         if (isset($request['corporate_group']) and !empty($request['corporate_group'])) {
 
             $corporateGroup = explode('|', $request['corporate_group']);
@@ -80,6 +84,11 @@ class FulltextSearch extends Services
 
             $annotationsCategory = explode('|', $request['annotation_category']);
             $filters[]           = ["terms" => ["annotations_category" => $annotationsCategory]];
+        }
+        if (isset($request['is_supporting_document'])) {
+
+            $isSupportingDocument = explode('|', $request['is_supporting_document']);
+            $filters[]           = ["terms" => ["metadata.is_supporting_document" => $isSupportingDocument]];
         }
         if (isset($request['annotated']) and !empty($request['annotated']) and $request['annotated'] == 1) {
             $filters[] = ["bool" => ["must_not" => ["missing" => ["field" => "annotations_string", "existence" => true]]]];
@@ -126,6 +135,7 @@ class FulltextSearch extends Services
             "metadata.language",
             "metadata.file_size",
             "metadata.company_name",
+            "metadata.project_name",
             "metadata.contract_type",
             "metadata.corporate_grouping",
             "metadata.show_pdf_text",
@@ -241,6 +251,7 @@ class FulltextSearch extends Services
         $data['results']         = [];
         $data['contract_type']   = [];
         $data['company_name']    = [];
+        $data['project_name']    = [];
         $data['corporate_group'] = [];
 
         $i = 0;
@@ -263,6 +274,9 @@ class FulltextSearch extends Services
             if (isset($field['fields']['metadata.company_name'])) {
                 $data['company_name'] = array_merge($data['company_name'], $field['fields']['metadata.company_name']);
             }
+            if (isset($field['fields']['metadata.project_name'])) {
+                $data['project_name'] = array_merge($data['project_name'], $field['fields']['metadata.project_name']);
+            }
             if (isset($field['fields']['metadata.corporate_grouping'])) {
                 $data['corporate_group'] = array_merge($data['corporate_group'], $field['fields']['metadata.corporate_grouping']);
             }
@@ -271,6 +285,7 @@ class FulltextSearch extends Services
                 "id"                  => (int) $contractId,
                 "open_contracting_id" => isset($field['fields']['metadata.open_contracting_id']) ? $field['fields']['metadata.open_contracting_id'][0] : "",
                 "name"                => isset($field['fields']['metadata.contract_name']) ? $field['fields']['metadata.contract_name'][0] : "",
+                "project_name"                => isset($field['fields']['metadata.project_name']) ? $field['fields']['metadata.project_name'][0] : "",
                 "year_signed"         => isset($field['fields']['metadata.signature_year']) ? $this->getSignatureYear($field['fields']['metadata.signature_year'][0]) : "",
                 "contract_type"       => isset($field['fields']['metadata.contract_type']) ? $field['fields']['metadata.contract_type'] : [],
                 "resource"            => isset($field['fields']['metadata.resource']) ? $field['fields']['metadata.resource'] : [],
@@ -310,6 +325,7 @@ class FulltextSearch extends Services
         asort($data['resource']);
         asort($data['contract_type']);
         asort($data['company_name']);
+        asort($data['project_name']);
         asort($data['corporate_group']);
 
         return $data;

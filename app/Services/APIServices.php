@@ -1103,6 +1103,17 @@ class APIServices extends Services
                                     ]
                                 ],
                         ],
+                    'project_name'       =>
+                        [
+                            'terms' =>
+                                [
+                                    'field' => 'metadata.project_name.raw',
+                                    'size'  => 1000,
+                                    'order' => [
+                                        "_term" => "asc"
+                                    ]
+                                ],
+                        ],
                     'corporate_grouping' =>
                         [
                             'terms' =>
@@ -1153,12 +1164,16 @@ class APIServices extends Services
 
         $response                   = $this->search($params);
         $data['company_name']       = [];
+        $data['project_name']       = [];
         $data['corporate_grouping'] = [];
         $data['contract_type']      = [];
         $data['document_type']      = [];
         $data['language']           = [];
         foreach ($response['aggregations']['company_name']['buckets'] as $companyname) {
             array_push($data['company_name'], $companyname['key']);
+        }
+        foreach ($response['aggregations']['project_name']['buckets'] as $projectName) {
+            array_push($data['project_name'], $projectName['key']);
         }
         foreach ($response['aggregations']['corporate_grouping']['buckets'] as $grouping) {
             array_push($data['corporate_grouping'], $grouping['key']);
@@ -1173,6 +1188,7 @@ class APIServices extends Services
             array_push($data['language'], $type['key']);
         }
         $data['company_name']       = array_unique($data['company_name']);
+        $data['project_name']       = array_unique($data['project_name']);
         $data['corporate_grouping'] = array_unique($data['corporate_grouping']);
         $data['contract_type']      = array_unique($data['contract_type']);
         $data['document_type']      = array_unique($data['document_type']);
