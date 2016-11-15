@@ -1173,7 +1173,9 @@ class APIServices extends Services
             array_push($data['company_name'], $companyname['key']);
         }
         foreach ($response['aggregations']['project_name']['buckets'] as $projectName) {
-            array_push($data['project_name'], $projectName['key']);
+            if (!empty($projectName['key'])) {
+                array_push($data['project_name'], $projectName['key']);
+            }
         }
         foreach ($response['aggregations']['corporate_grouping']['buckets'] as $grouping) {
             array_push($data['corporate_grouping'], $grouping['key']);
