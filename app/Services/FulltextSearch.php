@@ -85,10 +85,16 @@ class FulltextSearch extends Services
             $annotationsCategory = explode('|', $request['annotation_category']);
             $filters[]           = ["terms" => ["annotations_category" => $annotationsCategory]];
         }
-        if (isset($request['is_supporting_document'])) {
-
-            $isSupportingDocument = explode('|', $request['is_supporting_document']);
-            $filters[]           = ["terms" => ["metadata.is_supporting_document" => $isSupportingDocument]];
+        if (isset($request['main_contract'])) {
+            $mainContract = $request['main_contract'];
+            if ($mainContract == "1") {
+                $value = ["0"];
+            } else if ($mainContract == "0") {
+                $value = ["1"];
+            } else {
+                $value = explode('|', $request['main_contract']);
+            }
+            $filters[]           = ["terms" => ["metadata.is_supporting_document" => $value]];
         }
         if (isset($request['annotated']) and !empty($request['annotated']) and $request['annotated'] == 1) {
             $filters[] = ["bool" => ["must_not" => ["missing" => ["field" => "annotations_string", "existence" => true]]]];
