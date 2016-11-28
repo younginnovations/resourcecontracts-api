@@ -1122,7 +1122,7 @@ class APIServices extends Services
                             'terms' =>
                                 [
                                     'field' => 'metadata.company_name',
-                                    'size'  => 1000,
+                                    'size'  => 3000,
                                     'order' => [
                                         "_term" => "asc"
                                     ]
