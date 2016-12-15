@@ -9,7 +9,7 @@ class DownloadServices extends Services
      * @param array $request
      * @return array
      */
-    public function getMetadataAndAnnotations($data, $request = [])
+    public function getMetadataAndAnnotations($data, $request = [],$lang)
     {
 
         $ids         = $this->getMetadataId($data);
@@ -35,7 +35,7 @@ class DownloadServices extends Services
                 $i       = 0;
                 foreach ($results as $result) {
                     unset($result['_source']['metadata']['amla_url'], $result['_source']['metadata']['file_size'], $result['_source']['metadata']['word_file']);
-                    $tempData = $result['_source']['metadata'];
+                    $tempData = $result['_source'][$lang];
                     if (isset($request['annotation_category']) && !empty($request['annotation_category'])) {
                         $annotations            = $this->getAnnotations($result["_id"], $request['annotation_category']);
                         $tempData['annotation'] = $annotations;

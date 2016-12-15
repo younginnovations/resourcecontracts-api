@@ -8,8 +8,8 @@
 class APIServices extends Services
 {
     const ORDER = "asc";
-    const FROM  = 0;
-    const SIZE  = 25;
+    const FROM = 0;
+    const SIZE = 25;
 
     /**
      * Return the summary of contracts
@@ -19,6 +19,7 @@ class APIServices extends Services
     {
         $params = $this->getMetadataIndexType();
         $data   = [];
+        $lang   = $this->getLang($request);
 
         $params['body'] = [
             'size' => 0,
@@ -28,53 +29,53 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => 'metadata.country.code',
+                                    'field' => $lang.'.country.code',
                                     'size'  => 252,
                                     'order' => [
-                                        "_term" => "asc"
-                                    ]
+                                        "_term" => "asc",
+                                    ],
                                 ],
                         ],
                     'year_summary'     =>
                         [
                             'terms' =>
                                 [
-                                    'field' => 'metadata.signature_year',
+                                    'field' => $lang.'.signature_year',
                                     'size'  => 1000,
                                     'order' => [
-                                        "_term" => "desc"
-                                    ]
+                                        "_term" => "desc",
+                                    ],
                                 ],
                         ],
                     'resource_summary' =>
                         [
                             'terms' =>
                                 [
-                                    'field' => 'resource_raw',
+                                    'field' => $lang.'.resource.raw',
                                     'size'  => 1000,
                                     'order' => [
-                                        "_term" => "asc"
-                                    ]
+                                        "_term" => "asc",
+                                    ],
                                 ],
                         ],
                 ],
         ];
-        $filters        = [];
+
+        $filters = [];
         if (isset($request['category']) && !empty($request['category'])) {
-            $categoryfilter = $this->getCategory($request['category']);
+            $categoryfilter = $this->getCategory($lang, $request['category']);
             array_push($filters, $categoryfilter);
         }
         if (isset($request['country_code']) && !empty($request['country_code'])) {
             $country['term'] = [
-                "metadata.country.code" => [
-                    "value" => $request['country_code']
-                ]
+                $lang.".country.code" => [
+                    "value" => $request['country_code'],
+                ],
             ];
             array_push($filters, $country);
         }
         $params['body']['query']['bool']['must'] = $filters;
-
-        $response = $this->search($params);
+        $response                                = $this->search($params);
 
         $data['country_summary']  = $response['aggregations']['country_summary']['buckets'];
         $data['year_summary']     = $response['aggregations']['year_summary']['buckets'];
@@ -99,8 +100,10 @@ class APIServices extends Services
 
     /**
      * Return the page of pdf text
+     *
      * @param $contractId
      * @param $pageNo
+     *
      * @return array
      */
     public function getTextPages($contractId, $request)
@@ -112,7 +115,7 @@ class APIServices extends Services
 
         if (!empty($contractId) && $type == "string") {
             $filter[] = [
-                "term" => ["open_contracting_id" => ["value" => $contractId]]
+                "term" => ["open_contracting_id" => ["value" => $contractId]],
             ];
         }
         if (!empty($contractId) && $type == "numeric") {
@@ -122,7 +125,7 @@ class APIServices extends Services
         }
         if (isset($request['page']) and !empty($request['page'])) {
             $filter[] = [
-                "term" => ["page_no" => ["value" => $request['page']]]
+                "term" => ["page_no" => ["value" => $request['page']]],
             ];
         }
 
@@ -130,9 +133,9 @@ class APIServices extends Services
             'size'  => 10000,
             'query' => [
                 'bool' => [
-                    'must' => $filter
-                ]
-            ]
+                    'must' => $filter,
+                ],
+            ],
         ];
 
         $results        = $this->search($params);
@@ -147,7 +150,7 @@ class APIServices extends Services
                 'open_contracting_id' => $source['open_contracting_id'],
                 'text'                => $source['text'],
                 'pdf_url'             => $source['pdf_url'],
-                'page_no'             => $source['page_no']
+                'page_no'             => $source['page_no'],
             ];
         }
 
@@ -165,7 +168,7 @@ class APIServices extends Services
 
         if ($contractId && $type == "string") {
             $filter[] = [
-                "term" => ["open_contracting_id" => ["value" => $contractId]]
+                "term" => ["open_contracting_id" => ["value" => $contractId]],
             ];
         }
         if (!empty($contractId) && $type == "numeric") {
@@ -175,7 +178,7 @@ class APIServices extends Services
         }
         if (isset($request['page']) and !empty($request['page'])) {
             $filter[] = [
-                "term" => ["page" => ["value" => $request['page']]]
+                "term" => ["page" => ["value" => $request['page']]],
             ];
         }
 
@@ -184,9 +187,9 @@ class APIServices extends Services
             'sort'  => ['page' => ["order" => "asc"]],
             'query' => [
                 'bool' => [
-                    'must' => $filter
-                ]
-            ]
+                    'must' => $filter,
+                ],
+            ],
         ];
 
         $results         = $this->search($params);
@@ -194,7 +197,10 @@ class APIServices extends Services
         $data['total']   = $results['hits']['total'];
         $i               = 0;
         $data['result']  = [];
-        $remove          = ["Pages missing from  copy//Pages Manquantes de la copie", "Annexes missing from copy//Annexes Manquantes de la copie"];
+        $remove          = [
+            "Pages missing from  copy//Pages Manquantes de la copie",
+            "Annexes missing from copy//Annexes Manquantes de la copie",
+        ];
         $totalAnnotation = 0;
         foreach ($results['hits']['hits'] as $result) {
             $source = $result['_source'];
@@ -222,7 +228,7 @@ class APIServices extends Services
                     unset($data['result'][$i]['ranges']);
                     $data['result'][$i]['shapes'] = $source['shapes'];
                 }
-                $i ++;
+                $i++;
             }
         }
 
@@ -237,6 +243,7 @@ class APIServices extends Services
      *
      * @param $contractId
      * @param $request
+     *
      * @return array
      */
     public function getAnnotationGroup($contractId, $request)
@@ -250,7 +257,7 @@ class APIServices extends Services
 
         if ($contractId && $type == "string") {
             $filter[] = [
-                "term" => ["open_contracting_id" => ["value" => $contractId]]
+                "term" => ["open_contracting_id" => ["value" => $contractId]],
             ];
         }
         if (!empty($contractId) && $type == "numeric") {
@@ -260,7 +267,7 @@ class APIServices extends Services
         }
         if (isset($request['page']) and !empty($request['page'])) {
             $filter[] = [
-                "term" => ["page" => ["value" => $request['page']]]
+                "term" => ["page" => ["value" => $request['page']]],
             ];
         }
 
@@ -269,16 +276,19 @@ class APIServices extends Services
             'sort'  => ['page' => ["order" => "asc"]],
             'query' => [
                 'bool' => [
-                    'must' => $filter
-                ]
-            ]
+                    'must' => $filter,
+                ],
+            ],
         ];
 
         $results        = $this->search($params);
         $data           = [];
         $data['total']  = $results['hits']['total'];
         $data['result'] = [];
-        $remove         = ["Pages missing from  copy//Pages Manquantes de la copie", "Annexes missing from copy//Annexes Manquantes de la copie"];
+        $remove         = [
+            "Pages missing from  copy//Pages Manquantes de la copie",
+            "Annexes missing from copy//Annexes Manquantes de la copie",
+        ];
 
         $annotations = $results['hits']['hits'];
         $ann         = [];
@@ -299,7 +309,7 @@ class APIServices extends Services
                     'id'                => $page['id'],
                     'page_no'           => $page['page'],
                     'quote'             => isset($page['quote']) ? $page['quote'] : '',
-                    'article_reference' => $page['article_reference']
+                    'article_reference' => $page['article_reference'],
                 ];
 
                 if (isset($page['shapes'])) {
@@ -320,7 +330,7 @@ class APIServices extends Services
                 'category_key'        => $annotation[0]['category_key'],
                 'category'            => $annotation[0]['category'],
                 'cluster'             => $annotation[0]['cluster'],
-                'pages'               => $pages
+                'pages'               => $pages,
             ];
         }
 
@@ -333,8 +343,10 @@ class APIServices extends Services
 
     /**
      * Return the metadata
+     *
      * @param $contractId
      * @param $request
+     *
      * @return mixed
      */
     public function getMetadata($contractId, $request)
@@ -343,15 +355,15 @@ class APIServices extends Services
         $filters  = [];
         $category = '';
         $type     = $this->getIdType($contractId);
-
+        $lang     = $this->getLang($request);
         if ($contractId && $type == "numeric") {
             $filters[] = [
-                "term" => ["_id" => ["value" => $contractId]]
+                "term" => ["_id" => ["value" => $contractId]],
             ];
         }
         if ($contractId && $type == "string") {
             $filters[] = [
-                "term" => ["metadata.open_contracting_id" => ["value" => $contractId]]
+                "term" => [$lang.".open_contracting_id" => ["value" => $contractId]],
             ];
         }
         if (isset($request['category']) && !empty($request['category'])) {
@@ -361,13 +373,19 @@ class APIServices extends Services
 
         $params['body'] = [
             "_source" => [
-                "exclude" => ["updated_user_name", "updated_user_email", "updated_at", "created_user_name", "created_user_email"]
+                "exclude" => [
+                    $lang.".updated_user_name",
+                    $lang.".updated_user_email",
+                    $lang.".updated_at",
+                    $lang.".created_user_name",
+                    $lang.".created_user_email",
+                ],
             ],
             "query"   => [
                 "bool" => [
-                    "must" => $filters
-                ]
-            ]
+                    "must" => $filters,
+                ],
+            ],
         ];
 
 
@@ -377,7 +395,7 @@ class APIServices extends Services
 
         if (!empty($result)) {
             $results = $result[0]['_source'];
-            $data    = $this->formatMetadata($results, $category);
+            $data    = $this->formatMetadata($results, $category, $lang);
         }
 
         return $data;
@@ -385,7 +403,9 @@ class APIServices extends Services
 
     /**
      * Return all contracts
+     *
      * @param $request
+     *
      * @return array
      */
     public function getAllContracts($request)
@@ -393,32 +413,33 @@ class APIServices extends Services
 
         $params = $this->getMetadataIndexType();
         $filter = [];
+        $lang   = $this->getLang($request);
         if (isset($request['country_code']) and !empty($request['country_code'])) {
             $filter[] = [
                 "term" => [
-                    "metadata.country.code" => $request['country_code']
-                ]
+                    $lang.".country.code" => $request['country_code'],
+                ],
             ];
         }
         if (isset($request['year']) and !empty($request['year'])) {
             $filter[] = [
                 "term" => [
-                    "metadata.signature_year" => $request['year'],
-                ]
+                    $lang.".signature_year" => $request['year'],
+                ],
             ];
         }
         if (isset($request['resource']) and !empty($request['resource'])) {
             $filter[] = [
                 "term" => [
-                    "resource_raw" => $request['resource'],
-                ]
+                    $lang.".resource.raw" => $request['resource'],
+                ],
             ];
         }
         if (isset($request['category']) and !empty($request['category'])) {
             $filter[] = [
                 "term" => [
-                    "metadata.category" => $request['category']
-                ]
+                    $lang.".category" => $request['category'],
+                ],
             ];
         }
 
@@ -439,19 +460,25 @@ class APIServices extends Services
         if (isset($request['sort_by']) and !empty($request['sort_by'])) {
 
             if ($request['sort_by'] == "country") {
-                $params['body']['sort']['metadata.country.name.raw']['order'] = (isset($request['order']) and in_array($request['order'], ['desc', 'asc'])) ? $request['order'] : self::ORDER;
+                $params['body']['sort'][$lang.'.country.name.raw']['order'] = (isset($request['order']) and in_array(
+                        $request['order'],
+                        ['desc', 'asc']
+                    )) ? $request['order'] : self::ORDER;
             }
             if ($request['sort_by'] == "year") {
-                $params['body']['sort']['metadata.signature_year']['order'] = (isset($request['order']) and in_array($request['order'], ['desc', 'asc'])) ? $request['order'] : self::ORDER;
+                $params['body']['sort'][$lang.'.signature_year']['order'] = (isset($request['order']) and in_array(
+                        $request['order'],
+                        ['desc', 'asc']
+                    )) ? $request['order'] : self::ORDER;
             }
             if ($request['sort_by'] == "contract_name") {
-                $params['body']['sort']['metadata.contract_name.raw']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
+                $params['body']['sort'][$lang.'.contract_name.raw']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
             }
             if ($request['sort_by'] == "resource") {
                 $params['body']['sort']['resource_raw']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
             }
             if ($request['sort_by'] == "contract_type") {
-                $params['body']['sort']['metadata.type_of_contract.raw']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
+                $params['body']['sort'][$lang.'.type_of_contract.raw']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
             }
         }
         $results = $this->search($params);
@@ -466,22 +493,22 @@ class APIServices extends Services
             $source            = $result['_source'];
             $data['results'][] = [
                 'id'                  => (integer) $source['contract_id'],
-                'open_contracting_id' => $source['metadata']['open_contracting_id'],
-                'name'                => $source['metadata']['contract_name'],
-                'country_code'        => $source['metadata']['country']['code'],
-                'year_signed'         => $this->getSignatureYear($source['metadata']['signature_year']),
-                'date_signed'         => !empty($source['metadata']['signature_date']) ? $source['metadata']['signature_date'] : '',
-                'contract_type'       => $source['metadata']['type_of_contract'],
-                'language'            => $source['metadata']['language'],
-                'resource'            => $source['metadata']['resource'],
-                'category'            => $source['metadata']['category'],
-                'is_ocr_reviewed'     => $this->getBoolean($source['metadata']['show_pdf_text']),
+                'open_contracting_id' => $source[$lang]['open_contracting_id'],
+                'name'                => $source[$lang]['contract_name'],
+                'country_code'        => $source[$lang]['country']['code'],
+                'year_signed'         => $this->getSignatureYear($source[$lang]['signature_year']),
+                'date_signed'         => !empty($source[$lang]['signature_date']) ? $source[$lang]['signature_date'] : '',
+                'contract_type'       => $source[$lang]['type_of_contract'],
+                'language'            => $source[$lang]['language'],
+                'resource'            => $source[$lang]['resource'],
+                'category'            => $source[$lang]['category'],
+                'is_ocr_reviewed'     => $this->getBoolean($source[$lang]['show_pdf_text']),
             ];
         }
 
         if (isset($request['download']) && $request['download']) {
             $download     = new DownloadServices();
-            $downloadData = $download->getMetadataAndAnnotations($data, $request);
+            $downloadData = $download->getMetadataAndAnnotations($data, $request, $lang);
 
             return $download->downloadSearchResult($downloadData);
         }
@@ -504,7 +531,9 @@ class APIServices extends Services
 
     /**
      * PDF Search
+     *
      * @param $request
+     *
      * @return array
      */
     public function searchAnnotationAndText($contractId, $request)
@@ -523,6 +552,7 @@ class APIServices extends Services
      *
      * @param $contractId
      * @param $request
+     *
      * @return array
      */
     public function annotationSearch($contractId, $request)
@@ -538,36 +568,36 @@ class APIServices extends Services
 
         if ($contractId && $type == "string") {
             $filters[] = [
-                "term" => ["open_contracting_id" => ["value" => $contractId]]
+                "term" => ["open_contracting_id" => ["value" => $contractId]],
             ];
         }
         if ($contractId && $type == "numeric") {
             $filters[] = [
                 "term" => [
-                    "contract_id" => $contractId
-                ]
+                    "contract_id" => $contractId,
+                ],
             ];
         }
         // $q              = urldecode("\"" . $request['q'] . "\"");
-        $queryString = isset($request['q'])?$request['q']:'';
+        $queryString   = isset($request['q']) ? $request['q'] : '';
         $foundOperator = $this->findOperator($queryString);
 
-        $fullTquery    = [
+        $fullTquery = [
             'query_string' => [
                 "fields"              => ["text"],
                 'query'               => $this->addFuzzyOperator($queryString),
                 "default_operator"    => "OR",
                 "fuzzy_prefix_length" => 4,
-                "fuzziness"           => "AUTO"
-            ]
+                "fuzziness"           => "AUTO",
+            ],
         ];
         if ($foundOperator) {
-            $fullTquery    = [
+            $fullTquery = [
                 'simple_query_string' => [
-                    "fields"              => ["text"],
-                    'query'               => urldecode($queryString),
-                    "default_operator"    => "OR"
-                ]
+                    "fields"           => ["text"],
+                    'query'            => urldecode($queryString),
+                    "default_operator" => "OR",
+                ],
             ];
         }
 
@@ -575,8 +605,8 @@ class APIServices extends Services
             "query"     => $fullTquery,
             "filter"    => [
                 "and" => [
-                    "filters" => $filters
-                ]
+                    "filters" => $filters,
+                ],
             ]
             ,
             "highlight" => [
@@ -585,21 +615,21 @@ class APIServices extends Services
                 "fields"    => [
                     "text"     => [
                         "fragment_size"       => 100000,
-                        "number_of_fragments" => 1
+                        "number_of_fragments" => 1,
                     ],
                     "category" => [
                         "fragment_size"       => 100000,
-                        "number_of_fragments" => 1
-                    ]
-                ]
+                        "number_of_fragments" => 1,
+                    ],
+                ],
             ],
             "fields"    => [
                 "id",
                 "page",
                 "shapes ",
                 "contract_id",
-                "open_contracting_id"
-            ]
+                "open_contracting_id",
+            ],
         ];
 
         $results = $this->search($params);
@@ -621,7 +651,7 @@ class APIServices extends Services
                     'open_contracting_id' => $fields['open_contracting_id'][0],
                     'text'                => strip_tags($text, "<span>"),
                     "annotation_type"     => $annotationsType,
-                    "type"                => "annotation"
+                    "type"                => "annotation",
                 ];
             }
 
@@ -633,8 +663,10 @@ class APIServices extends Services
 
     /**
      * Text search
+     *
      * @param $contractId
      * @param $request
+     *
      * @return array
      */
     public function textSearch($contractId, $request)
@@ -649,35 +681,35 @@ class APIServices extends Services
 
         if ($contractId && $type == "string") {
             $filters[] = [
-                "term" => ["open_contracting_id" => ["value" => $contractId]]
+                "term" => ["open_contracting_id" => ["value" => $contractId]],
             ];
         }
         if ($contractId && $type == "numeric") {
             $filters[] = [
                 "term" => [
-                    "contract_id" => $contractId
-                ]
+                    "contract_id" => $contractId,
+                ],
             ];
         }
-        $queryString = isset($request['q'])?$request['q']:'';
+        $queryString   = isset($request['q']) ? $request['q'] : '';
         $foundOperator = $this->findOperator($queryString);
 
-        $fullTquery    = [
+        $fullTquery = [
             'query_string' => [
                 "fields"              => ["text"],
                 'query'               => $this->addFuzzyOperator($queryString),
                 "default_operator"    => "OR",
                 "fuzzy_prefix_length" => 4,
-                "fuzziness"           => "AUTO"
-            ]
+                "fuzziness"           => "AUTO",
+            ],
         ];
         if ($foundOperator) {
-            $fullTquery    = [
+            $fullTquery = [
                 'simple_query_string' => [
-                    "fields"              => ["text"],
-                    'query'               => urldecode($queryString),
-                    "default_operator"    => "OR"
-                ]
+                    "fields"           => ["text"],
+                    'query'            => urldecode($queryString),
+                    "default_operator" => "OR",
+                ],
             ];
         }
 
@@ -685,8 +717,8 @@ class APIServices extends Services
             "query"     => $fullTquery,
             "filter"    => [
                 "and" => [
-                    "filters" => $filters
-                ]
+                    "filters" => $filters,
+                ],
             ],
             "highlight" => [
                 "pre_tags"  => ["<span class='search-highlight-word'>"],
@@ -694,15 +726,15 @@ class APIServices extends Services
                 "fields"    => [
                     "text" => [
                         "fragment_size"       => 200,
-                        "number_of_fragments" => 1
-                    ]
-                ]
+                        "number_of_fragments" => 1,
+                    ],
+                ],
             ],
             "fields"    => [
                 "page_no",
                 "contract_id",
-                "open_contracting_id"
-            ]
+                "open_contracting_id",
+            ],
         ];
 
         $response = $this->search($params);
@@ -717,71 +749,12 @@ class APIServices extends Services
                     'contract_id'         => $fields['contract_id'][0],
                     'open_contracting_id' => $fields['open_contracting_id'][0],
                     'text'                => strip_tags($text, "<span>"),
-                    "type"                => "text"
+                    "type"                => "text",
                 ];
             }
 
         }
 
-
-        return $data;
-
-    }
-
-    /**
-     * Return the published supporting document
-     *
-     * @param $document
-     * @return array
-     */
-    private function getSupportingDocument($documents, $category)
-    {
-        $data = [];
-        foreach ($documents as $document) {
-            $filters   = [];
-            $filters[] = [
-                'term' => [
-                    '_id' => [
-                        'value' => (int) $document['id']
-                    ]
-                ]
-            ];
-            if (!empty($category)) {
-                $filters[] = [
-                    'term' => [
-                        'metadata.category' => [
-                            'value' => $category
-                        ]
-                    ]
-                ];
-            }
-            $params         = $this->getMetadataIndexType();
-            $params['body'] = [
-                'fields' => ["metadata.contract_name", "metadata.open_contracting_id"],
-                'query'  => [
-                    'bool' => [
-                        'must' => $filters
-                    ]
-                ]
-            ];
-            $result         = $this->search($params);
-
-            if (!empty($result['hits']['hits'])) {
-                $data[] = [
-                    'id'                  => (int) $result['hits']['hits'][0]['_id'],
-                    'open_contracting_id' => $result['hits']['hits'][0]['fields']['metadata.open_contracting_id'][0],
-                    'name'                => $result['hits']['hits'][0]['fields']['metadata.contract_name'][0],
-                    'is_published'        => true
-                ];
-            } else {
-                $data[] = [
-                    'id'                  => (int) $document['id'],
-                    'open_contracting_id' => '',
-                    'name'                => $document['contract_name'],
-                    'is_published'        => false
-                ];
-            }
-        }
 
         return $data;
 
@@ -795,28 +768,35 @@ class APIServices extends Services
     public function getCountriesContracts($request)
     {
         $params    = $this->getMetadataIndexType();
-        $resources = (isset($request['resource']) && ($request['resource'] != '')) ? array_map('trim', explode(',', $request['resource'])) : [];
+        $lang      = $this->getLang($request);
+        $resources = (isset($request['resource']) && ($request['resource'] != '')) ? array_map(
+            'trim',
+            explode(
+                ',',
+                $request['resource']
+            )
+        ) : [];
         $filters   = [];
         if (!empty($resources)) {
             $filters[] = [
                 'terms' => [
-                    "resource_raw" => $resources
-                ]
+                    $lang.".resource.raw" => $resources,
+                ],
             ];
         }
         if (isset($request['category']) && !empty($request['category'])) {
             $filters[] = [
                 "term" => [
-                    "metadata.category" => $request['category']
-                ]
+                    $lang.".category" => $request['category'],
+                ],
             ];
         }
 
         if (isset($request['country_code']) && !empty($request['country_code'])) {
             $filters[] = [
                 "term" => [
-                    "metadata.country.code" => $request['country_code']
-                ]
+                    $lang.".country.code" => $request['country_code'],
+                ],
             ];
         }
 
@@ -824,8 +804,8 @@ class APIServices extends Services
             'size'  => 0,
             "query" => [
                 "bool" => [
-                    "must" => $filters
-                ]
+                    "must" => $filters,
+                ],
             ],
             'aggs'  =>
                 [
@@ -833,10 +813,10 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => 'metadata.country.code',
-                                    'size'  => 252
+                                    'field' => $lang.'.country.code',
+                                    'size'  => 252,
                                 ],
-                        ]
+                        ],
                 ],
         ];
 
@@ -846,7 +826,7 @@ class APIServices extends Services
         foreach ($results as $result) {
             $data['results'][] = [
                 'code'     => $result['key'],
-                'contract' => $result['doc_count']
+                'contract' => $result['doc_count'],
             ];
         }
 
@@ -857,41 +837,49 @@ class APIServices extends Services
      * Get resource aggregation according to country
      *
      * @param $request
+     *
      * @return array
      */
     public function getResourceContracts($request)
     {
+        $lang    = $this->getLang($request);
         $params  = $this->getMetadataIndexType();
-        $country = (isset($request['country']) && ($request['country'] != '')) ? array_map('trim', explode(',', $request['country'])) : [];
+        $country = (isset($request['country']) && ($request['country'] != '')) ? array_map(
+            'trim',
+            explode(
+                ',',
+                $request['country']
+            )
+        ) : [];
         $filters = [];
         if (!empty($country)) {
             $filters[] = [
                 'terms' => [
-                    "metadata.country.code" => $country
-                ]
+                    $lang.".country.code" => $country,
+                ],
             ];
         }
         if (isset($request['category']) && !empty($request['category'])) {
             $filters[] = [
                 'term' => [
-                    "metadata.category" => $request['category']
-                ]
+                    $lang.".category" => $request['category'],
+                ],
             ];
         }
 
         if (isset($request['country_code']) && !empty($request['country_code'])) {
             $filters[] = [
                 'term' => [
-                    "metadata.country.code" => $request['country_code']
-                ]
+                    $lang.".country.code" => $request['country_code'],
+                ],
             ];
         }
         $params['body'] = [
             'size'  => 0,
             'query' => [
                 'bool' => [
-                    'must' => $filters
-                ]
+                    'must' => $filters,
+                ],
             ],
             'aggs'  =>
                 [
@@ -899,10 +887,10 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => 'resource_raw',
-                                    'size'  => 1000
+                                    'field' => $lang.'.resource.raw',
+                                    'size'  => 1000,
                                 ],
-                        ]
+                        ],
                 ],
         ];
 
@@ -912,7 +900,7 @@ class APIServices extends Services
         foreach ($results as $result) {
             $data['results'][] = [
                 'resource' => $result['key'],
-                'contract' => $result['doc_count']
+                'contract' => $result['doc_count'],
             ];
         }
 
@@ -924,33 +912,41 @@ class APIServices extends Services
      * Get years aggregation according to country
      *
      * @param $request
+     *
      * @return array
      */
     public function getYearsContracts($request)
     {
+        $lang    = $this->getLang($request);
         $params  = $this->getMetadataIndexType();
-        $country = (isset($request['country']) && ($request['country'] != '')) ? array_map('trim', explode(',', $request['country'])) : [];
+        $country = (isset($request['country']) && ($request['country'] != '')) ? array_map(
+            'trim',
+            explode(
+                ',',
+                $request['country']
+            )
+        ) : [];
         $filters = [];
         if (!empty($country)) {
             $filters[] = [
                 'terms' => [
-                    "metadata.country.code" => $country
-                ]
+                    $lang.".country.code" => $country,
+                ],
             ];
         }
         if (isset($request['category']) && !empty($request['category'])) {
             $filters[] = [
                 "term" => [
-                    "metadata.category" => $request['category']
-                ]
+                    $lang.".category" => $request['category'],
+                ],
             ];
         }
 
         if (isset($request['country_code']) && !empty($request['country_code'])) {
             $filters[] = [
                 "term" => [
-                    "metadata.country.code" => $request['country_code']
-                ]
+                    $lang.".country.code" => $request['country_code'],
+                ],
             ];
         }
 
@@ -959,8 +955,8 @@ class APIServices extends Services
             'size'  => 0,
             'query' => [
                 'bool' => [
-                    'must' => $filters
-                ]
+                    'must' => $filters,
+                ],
             ],
             'aggs'  =>
                 [
@@ -968,10 +964,10 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => 'metadata.signature_year',
-                                    'size'  => 1000
+                                    'field' => $lang.'.signature_year',
+                                    'size'  => 1000,
                                 ],
-                        ]
+                        ],
                 ],
         ];
 
@@ -982,7 +978,7 @@ class APIServices extends Services
         foreach ($results as $result) {
             $data['results'][] = [
                 'year'     => $result['key'],
-                'contract' => $result['doc_count']
+                'contract' => $result['doc_count'],
             ];
         }
 
@@ -993,33 +989,35 @@ class APIServices extends Services
      * Get contract aggregation by country and resource
      *
      * @param $request
+     *
      * @return mixed
      */
     public function getContractByCountryAndResource($request)
     {
+        $lang      = $this->getLang($request);
         $params    = $this->getMetadataIndexType();
         $resources = isset($request['resource']) ? array_map('trim', explode(',', $request['resource'])) : [];
         $filters   = [];
         if (!empty($resources)) {
             $filters[] = [
                 'terms' => [
-                    "metadata.resource" => $resources
-                ]
+                    $lang.".resource" => $resources,
+                ],
             ];
         }
         if (isset($request['category']) && !empty($request['category'])) {
             $filters[] = [
                 "term" => [
-                    "metadata.category" => $request['category']
-                ]
+                    $lang.".category" => $request['category'],
+                ],
             ];
         }
 
         if (isset($request['country_code']) && !empty($request['country_code'])) {
             $filters[] = [
                 "term" => [
-                    "metadata.country.code" => $request['country_code']
-                ]
+                    $lang.".country.code" => $request['country_code'],
+                ],
             ];
         }
 
@@ -1028,8 +1026,8 @@ class APIServices extends Services
             'size'  => 0,
             "query" => [
                 "bool" => [
-                    "must" => $filters
-                ]
+                    "must" => $filters,
+                ],
             ],
             'aggs'  =>
                 [
@@ -1037,18 +1035,18 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => 'metadata.country.code',
+                                    'field' => $lang.'.country.code',
                                     'size'  => 1000,
                                 ],
                             "aggs"  => [
                                 "resource_summary" => [
                                     "terms" => [
-                                        "field" => "resource_raw",
-                                        'size'  => 1000
-                                    ]
-                                ]
-                            ]
-                        ]
+                                        "field" => $lang.".resource.raw",
+                                        'size'  => 1000,
+                                    ],
+                                ],
+                            ],
+                        ],
                 ],
         ];
 
@@ -1062,17 +1060,17 @@ class APIServices extends Services
                 $data['results'][] = [
                     'code'     => $result['key'],
                     'resource' => '',
-                    'contract' => $result['doc_count']
+                    'contract' => $result['doc_count'],
                 ];
             }
             foreach ($resourceAggs as $bucket) {
                 $data['results'][] = [
                     'code'     => $result['key'],
                     'resource' => $bucket['key'],
-                    'contract' => $bucket['doc_count']
+                    'contract' => $bucket['doc_count'],
                 ];
             }
-            $i ++;
+            $i++;
         }
 
         return $data;
@@ -1086,7 +1084,7 @@ class APIServices extends Services
     public function getFilterAttributes($request)
     {
 
-
+        $lang            = $this->getLang($request);
         $params['index'] = $this->index;
         $params['type']  = "master";
         $data            = [];
@@ -1094,16 +1092,16 @@ class APIServices extends Services
         if (isset($request['country_code']) and !empty($request['country_code'])) {
             $filter[] = [
                 "term" => [
-                    "metadata.country_code" => $request['country_code']
-                ]
+                    $lang.".country_code" => $request['country_code'],
+                ],
             ];
         }
 
         if (isset($request['category']) and !empty($request['category'])) {
             $filter[] = [
                 "term" => [
-                    "metadata.category" => $request['category']
-                ]
+                    $lang.".category" => $request['category'],
+                ],
             ];
         }
 
@@ -1111,9 +1109,9 @@ class APIServices extends Services
             'size'  => 0,
             'query' => [
                 'bool' => [
-                    'must' => $filter
+                    'must' => $filter,
 
-                ]
+                ],
             ],
             'aggs'  =>
                 [
@@ -1121,55 +1119,55 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => 'metadata.company_name',
+                                    'field' => $lang.'.company_name',
                                     'size'  => 3000,
                                     'order' => [
-                                        "_term" => "asc"
-                                    ]
+                                        "_term" => "asc",
+                                    ],
                                 ],
                         ],
                     'corporate_grouping' =>
                         [
                             'terms' =>
                                 [
-                                    'field' => 'metadata.corporate_grouping',
+                                    'field' => $lang.'.corporate_grouping',
                                     'size'  => 1000,
                                     'order' => [
-                                        "_term" => "asc"
-                                    ]
+                                        "_term" => "asc",
+                                    ],
                                 ],
                         ],
                     'contract_type'      =>
                         [
                             'terms' =>
                                 [
-                                    'field' => 'metadata.contract_type',
+                                    'field' => $lang.'.contract_type',
                                     'size'  => 1000,
                                     'order' => [
-                                        "_term" => "asc"
-                                    ]
+                                        "_term" => "asc",
+                                    ],
                                 ],
                         ],
                     'document_type'      =>
                         [
                             'terms' =>
                                 [
-                                    'field' => 'metadata.document_type.raw',
+                                    'field' => $lang.'.document_type.raw',
                                     'size'  => 1000,
                                     'order' => [
-                                        "_term" => "asc"
-                                    ]
+                                        "_term" => "asc",
+                                    ],
                                 ],
                         ],
                     'language'           =>
                         [
                             'terms' =>
                                 [
-                                    'field' => 'metadata.language',
+                                    'field' => $lang.'.language',
                                     'size'  => 1000,
                                     'order' => [
-                                        "_term" => "asc"
-                                    ]
+                                        "_term" => "asc",
+                                    ],
                                 ],
                         ],
                 ],
@@ -1208,11 +1206,12 @@ class APIServices extends Services
 
     /**
      * Get all the annotations category
+     *
      * @param $request
      */
     public function getAnnotationsCategory($request)
     {
-
+        $lang            = $this->getLang($request);
         $params['index'] = $this->index;
         $params['type']  = "master";
         $filters         = [];
@@ -1220,24 +1219,24 @@ class APIServices extends Services
         if (isset($request['category']) && !empty($request['category'])) {
             $filters[] = [
                 "term" => [
-                    "metadata.category" => $request['category']
-                ]
+                    $lang.".category" => $request['category'],
+                ],
             ];
         }
         if (isset($request['country_code']) && !empty($request['country_code'])) {
 
             $filters[] = [
                 "term" => [
-                    "metadata.country_code" => $request['country_code']
-                ]
+                    $lang.".country_code" => $request['country_code'],
+                ],
             ];
         }
         $params['body'] = [
             'size'  => 0,
             'query' => [
                 'bool' => [
-                    'must' => $filters
-                ]
+                    'must' => $filters,
+                ],
             ],
             'aggs'  =>
                 [
@@ -1245,9 +1244,9 @@ class APIServices extends Services
                         [
                             "terms" => [
                                 "field" => "annotations_category",
-                                "size"  => 1000
-                            ]
-                        ]
+                                "size"  => 1000,
+                            ],
+                        ],
                 ],
         ];
 
@@ -1261,7 +1260,10 @@ class APIServices extends Services
         }
 
         $data   = array_unique($data);
-        $remove = ["Pages missing from  copy//Pages Manquantes de la copie", "Annexes missing from copy//Annexes Manquantes de la copie"];
+        $remove = [
+            "Pages missing from  copy//Pages Manquantes de la copie",
+            "Annexes missing from copy//Annexes Manquantes de la copie",
+        ];
         array_walk(
             $data['results'],
             function ($value, $key) use ($data, $remove) {
@@ -1276,11 +1278,14 @@ class APIServices extends Services
 
     /**
      * Get all the metadata of given id
+     *
      * @param $request
+     *
      * @return array
      */
     public function downloadMetadtaAsCSV($request)
     {
+        $lang            = $this->getLang($request);
         $params['index'] = $this->index;
         $params['type']  = "metadata";
         $filters         = [];
@@ -1292,17 +1297,17 @@ class APIServices extends Services
             'size'  => 100000,
             'query' => [
                 "terms" => [
-                    "_id" => $filters
-                ]
-            ]
+                    "_id" => $filters,
+                ],
+            ],
         ];
         $searchResult   = $this->search($params);
         $data           = [];
         if ($searchResult['hits']['total'] > 0) {
             $results = $searchResult['hits']['hits'];
             foreach ($results as $result) {
-                unset($result['_source']['metadata']['amla_url'], $result['_source']['metadata']['file_size'], $result['_source']['metadata']['word_file']);
-                $data[] = $result['_source']['metadata'];
+                unset($result['_source'][$lang]['amla_url'], $result['_source'][$lang]['file_size'], $result['_source'][$lang]['word_file']);
+                $data[] = $result['_source'][$lang];
             }
         }
 
@@ -1310,17 +1315,180 @@ class APIServices extends Services
     }
 
     /**
+     * Return the signature value
+     *
+     * @param $signatureYear
+     *
+     * @return int|string
+     */
+    public function getSignatureYear($signatureYear)
+    {
+        if (empty($signatureYear)) {
+            return null;
+        }
+
+        return (int) $signatureYear;
+
+    }
+
+    /**
+     * Annotation download
+     *
+     * @param $contractId
+     *
+     * @return array
+     */
+    public function downloadAnnotationsAsCSV($contractId)
+    {
+        $annotations = $this->getAnnotationPages($contractId, '');
+        $metadata    = $this->getMetadata($contractId, '');
+        $download    = new DownloadServices();
+
+        return $download->downloadAnnotations($annotations, $metadata);
+
+    }
+
+    public function getAnnotationById($id)
+    {
+        $data            = [];
+        $params['index'] = $this->index;
+        $params['type']  = "annotations";
+        $params['body']  = [
+            "query" => [
+                "term" => [
+                    "annotation_id" => [
+                        "value" => $id,
+                    ],
+                ],
+            ],
+        ];
+        $results         = $this->search($params);
+        $data            = isset($results['hits']['hits'][0]["_source"]) ? $results['hits']['hits'][0]["_source"] : [];
+        $page            = [];
+
+        foreach ($results['hits']['hits'] as $result) {
+
+            $page[] = [
+                'id'   => $result['_source']['id'],
+                'page' => $result['_source']['page'],
+                'type' => (isset($result['_source']['shapes'])) ? 'pdf' : 'text',
+            ];
+        }
+        if (!empty($data)) {
+            $data['page'] = $page;
+        }
+
+        return $data;
+
+    }
+
+    public function countData()
+    {
+        $params          = [];
+        $params['index'] = $this->index;
+        $params['type']  = "metadata";
+        $params['body']  = [
+            "query" => [
+                "match_all" => [],
+            ],
+        ];
+        $count           = $this->countResult($params);
+
+        return $count['count'];
+    }
+
+    /**
+     * Remove keys from the array
+     *
+     * @param $items
+     *
+     * @return array
+     */
+    protected function removeKeys($items)
+    {
+        $i = [];
+
+        foreach ($items as $items) {
+            $i[] = $items;
+        }
+
+        return $i;
+    }
+
+    /**
+     * Return the published supporting document
+     *
+     * @param $document
+     *
+     * @return array
+     */
+    private function getSupportingDocument($documents, $category, $lang)
+    {
+        $data = [];
+        foreach ($documents as $document) {
+            $filters   = [];
+            $filters[] = [
+                'term' => [
+                    '_id' => [
+                        'value' => (int) $document['id'],
+                    ],
+                ],
+            ];
+            if (!empty($category)) {
+                $filters[] = [
+                    'term' => [
+                        $lang.'.category' => [
+                            'value' => $category,
+                        ],
+                    ],
+                ];
+            }
+            $params         = $this->getMetadataIndexType();
+            $params['body'] = [
+                'fields' => [$lang.".contract_name", $lang.".open_contracting_id"],
+                'query'  => [
+                    'bool' => [
+                        'must' => $filters,
+                    ],
+                ],
+            ];
+            $result         = $this->search($params);
+
+            if (!empty($result['hits']['hits'])) {
+                $data[] = [
+                    'id'                  => (int) $result['hits']['hits'][0]['_id'],
+                    'open_contracting_id' => $result['hits']['hits'][0]['fields'][$lang.'.open_contracting_id'][0],
+                    'name'                => $result['hits']['hits'][0]['fields'][$lang.'.contract_name'][0],
+                    'is_published'        => true,
+                ];
+            } else {
+                $data[] = [
+                    'id'                  => (int) $document['id'],
+                    'open_contracting_id' => '',
+                    'name'                => $document['contract_name'],
+                    'is_published'        => false,
+                ];
+            }
+        }
+
+        return $data;
+
+    }
+
+    /**
      * Format metadata
      *
      * @param $results
      * @param $category
+     *
      * @return array
      */
-    private function formatMetadata($results, $category)
+    private function formatMetadata($results, $category, $lang)
     {
 
-        $data                        = [];
-        $metadata                    = $results['metadata'];
+        $data     = [];
+        $metadata = $results[$lang];
+
         $data['id']                  = (int) $results['contract_id'];
         $data['open_contracting_id'] = isset($metadata['open_contracting_id']) ? $metadata['open_contracting_id'] : '';
         $data['name']                = isset($metadata['contract_name']) ? $metadata['contract_name'] : '';
@@ -1333,12 +1501,14 @@ class APIServices extends Services
         foreach ($metadata['government_entity'] as $government) {
             $data['government_entity'][] = [
                 "name"       => $government['entity'],
-                "identifier" => $government['identifier']
+                "identifier" => $government['identifier'],
             ];
         }
         $data['contract_type'] = isset($metadata['type_of_contract']) ? $metadata['type_of_contract'] : '';
         $data['date_signed']   = isset($metadata['signature_date']) ? $metadata['signature_date'] : '';
-        $data['year_signed']   = isset($metadata['signature_year']) ? $this->getSignatureYear($metadata['signature_year']) : '';
+        $data['year_signed']   = isset($metadata['signature_year']) ? $this->getSignatureYear(
+            $metadata['signature_year']
+        ) : '';
         $data['type']          = isset($metadata['document_type']) ? $metadata['document_type'] : '';
 
 
@@ -1355,11 +1525,11 @@ class APIServices extends Services
                         "creator" => [
                             "name"    => isset($company['registration_agency']) ? $company['registration_agency'] : '',
                             "spatial" => isset($company['jurisdiction_of_incorporation']) ? $company['jurisdiction_of_incorporation'] : '',
-                        ]
-                    ]
+                        ],
+                    ],
                 ],
                 "is_operator" => isset($company['operator']) ? $this->getBoolean($company['operator']) : null,
-                "share"       => $this->getShare($company['participation_share'])
+                "share"       => $this->getShare($company['participation_share']),
             ];
         }
 
@@ -1371,7 +1541,7 @@ class APIServices extends Services
         foreach ($metadata['concession'] as $concession) {
             $data['concession'][] = [
                 "name"       => !empty($concession['license_name']) ? $concession['license_name'] : "",
-                "identifier" => $concession['license_identifier']
+                "identifier" => $concession['license_identifier'],
             ];
         }
 
@@ -1379,36 +1549,46 @@ class APIServices extends Services
         $data['amla_url']               = isset($metadata['amla_url']) ? $metadata['amla_url'] : '';
         $data['publisher']              = [
             'type' => isset($metadata['disclosure_mode']) ? $metadata['disclosure_mode'] : '',
-            'note' => isset($metadata['disclosure_mode_text']) ? $metadata['disclosure_mode_text'] : ''
+            'note' => isset($metadata['disclosure_mode_text']) ? $metadata['disclosure_mode_text'] : '',
         ];
         $data['retrieved_at']           = isset($metadata['date_retrieval']) ? $metadata['date_retrieval'] : '';
-        $data['created_at']             = isset($results['created_at']) ? $results['created_at'] . 'Z' : '';
+        $data['created_at']             = isset($results['created_at']) ? $results['created_at'].'Z' : '';
         $data['note']                   = isset($metadata['contract_note']) ? $metadata['contract_note'] : '';
-        $data['is_associated_document'] = isset($metadata['is_supporting_document']) ? $this->getBoolean($metadata['is_supporting_document']) : null;
+        $data['is_associated_document'] = isset($metadata['is_supporting_document']) ? $this->getBoolean(
+            $metadata['is_supporting_document']
+        ) : null;
         $data['deal_number']            = isset($metadata['deal_number']) ? $metadata['deal_number'] : '';
         $data['matrix_page']            = isset($metadata['matrix_page']) ? $metadata['matrix_page'] : '';
-        $data['is_ocr_reviewed']        = isset($metadata['show_pdf_text']) ? $this->getBoolean($metadata['show_pdf_text']) : null;
-        $data['is_pages_missing']       = isset($metadata['pages_missing']) ? $this->getBoolean($metadata['pages_missing']) : null;
-        $data['is_annexes_missing']     = isset($metadata['annexes_missing']) ? $this->getBoolean($metadata['annexes_missing']) : null;
-        $data['is_contract_signed']     = isset($metadata['is_contract_signed']) ? $this->getBoolean($metadata['is_contract_signed']) : true;
+        $data['is_ocr_reviewed']        = isset($metadata['show_pdf_text']) ? $this->getBoolean(
+            $metadata['show_pdf_text']
+        ) : null;
+        $data['is_pages_missing']       = isset($metadata['pages_missing']) ? $this->getBoolean(
+            $metadata['pages_missing']
+        ) : null;
+        $data['is_annexes_missing']     = isset($metadata['annexes_missing']) ? $this->getBoolean(
+            $metadata['annexes_missing']
+        ) : null;
+        $data['is_contract_signed']     = isset($metadata['is_contract_signed']) ? $this->getBoolean(
+            $metadata['is_contract_signed']
+        ) : true;
 
 
         $data['file']   = [
             [
                 "url"        => isset($metadata['file_url']) ? $metadata['file_url'] : '',
                 "byte_size"  => isset($metadata['file_size']) ? (int) $metadata['file_size'] : '',
-                "media_type" => "application/pdf"
+                "media_type" => "application/pdf",
             ],
             [
                 "url"        => isset($metadata['word_file']) ? $metadata['word_file'] : '',
-                "media_type" => "text/plain"
-            ]
+                "media_type" => "text/plain",
+            ],
         ];
         $translatedFrom = isset($metadata['translated_from']) ? $metadata['translated_from'] : [];
-        $parentDocument = $this->getSupportingDocument($translatedFrom, $category);
+        $parentDocument = $this->getSupportingDocument($translatedFrom, $category, $lang);
         $data['parent'] = $parentDocument;
         $document       = isset($results['supporting_contracts']) ? $results['supporting_contracts'] : [];
-        $supportingDoc  = $this->getSupportingDocument($document, $category);
+        $supportingDoc  = $this->getSupportingDocument($document, $category, $lang);
         if (!empty($parentDocument)) {
             $supportingDoc = $this->getSibblingDocument($parentDocument, $results['contract_id']);
         }
@@ -1421,11 +1601,12 @@ class APIServices extends Services
      * Return Boolean values(true or false)
      *
      * @param $operator
+     *
      * @return int|string
      */
     private function getBoolean($operator)
     {
-        if ($operator == - 1) {
+        if ($operator == -1) {
             return null;
         }
         if ($operator == 1) {
@@ -1441,6 +1622,7 @@ class APIServices extends Services
      * Return participation share values
      *
      * @param $participationShare
+     *
      * @return float|string
      */
     private function getShare($participationShare)
@@ -1453,38 +1635,10 @@ class APIServices extends Services
     }
 
     /**
-     * Return the signature value
-     * @param $signatureYear
-     * @return int|string
-     */
-    public function getSignatureYear($signatureYear)
-    {
-        if (empty($signatureYear)) {
-            return null;
-        }
-
-        return (int) $signatureYear;
-
-    }
-
-    /**
-     * Annotation download
-     * @param $contractId
-     * @return array
-     */
-    public function downloadAnnotationsAsCSV($contractId)
-    {
-        $annotations = $this->getAnnotationPages($contractId, '');
-        $metadata    = $this->getMetadata($contractId, '');
-        $download    = new DownloadServices();
-
-        return $download->downloadAnnotations($annotations, $metadata);
-
-    }
-
-    /**
      * Annotations Type(pdf or text)
+     *
      * @param $annotationId
+     *
      * @return string
      */
     private function getAnnotationType($annotationId)
@@ -1495,10 +1649,10 @@ class APIServices extends Services
             "query" => [
                 "term" => [
                     "_id" => [
-                        "value" => $annotationId
-                    ]
-                ]
-            ]
+                        "value" => $annotationId,
+                    ],
+                ],
+            ],
         ];
         $result          = $this->search($params);
         $result          = $result['hits']['hits'][0]["_source"];
@@ -1508,8 +1662,10 @@ class APIServices extends Services
 
     /**
      * Return the associated along with sibling contracts
+     *
      * @param $parentDocument
      * @param $contractId
+     *
      * @return array
      */
     private function getSibblingDocument($parentDocument, $contractId)
@@ -1533,22 +1689,6 @@ class APIServices extends Services
         return $this->removeKeys($supportingDoc);
     }
 
-    /**
-     * Remove keys from the array
-     * @param $items
-     * @return array
-     */
-    protected function removeKeys($items)
-    {
-        $i = [];
-
-        foreach ($items as $items) {
-            $i[] = $items;
-        }
-
-        return $i;
-    }
-
     private function getAnnotaionDetails($annotation_id)
     {
 
@@ -1566,9 +1706,9 @@ class APIServices extends Services
             'sort'  => ['page' => ["order" => "asc"]],
             'query' => [
                 'bool' => [
-                    'must' => $filter
-                ]
-            ]
+                    'must' => $filter,
+                ],
+            ],
         ];
 
         $results = $this->search($params);
@@ -1577,53 +1717,5 @@ class APIServices extends Services
     }
 
 
-    public function getAnnotationById($id)
-    {
-        $data            = [];
-        $params['index'] = $this->index;
-        $params['type']  = "annotations";
-        $params['body']  = [
-            "query" => [
-                "term" => [
-                    "annotation_id" => [
-                        "value" => $id
-                    ]
-                ]
-            ]
-        ];
-        $results         = $this->search($params);
-        $data            = isset($results['hits']['hits'][0]["_source"]) ? $results['hits']['hits'][0]["_source"] : [];
-        $page            = [];
-
-        foreach ($results['hits']['hits'] as $result) {
-
-            $page[] = [
-                'id'   => $result['_source']['id'],
-                'page' => $result['_source']['page'],
-                'type' => (isset($result['_source']['shapes'])) ? 'pdf' : 'text'
-            ];
-        }
-        if (!empty($data)) {
-            $data['page'] = $page;
-        }
-
-        return $data;
-
-    }
-
-    public function countData()
-    {
-        $params          = [];
-        $params['index'] = $this->index;
-        $params['type']  = "metadata";
-        $params['body']  = [
-            "query" => [
-                "match_all" => []
-            ]
-        ];
-        $count           = $this->countResult($params);
-
-        return $count['count'];
-    }
 }
 
