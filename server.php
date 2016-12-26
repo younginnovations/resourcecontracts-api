@@ -1,6 +1,6 @@
 <?php
 $dotenv = new Dotenv\Dotenv(__DIR__);
-$dotenv->load();
+$dotenv->overload();
 
 /**
  * Get Environment variable
