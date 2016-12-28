@@ -410,7 +410,6 @@ class APIServices extends Services
      */
     public function getAllContracts($request)
     {
-
         $params = $this->getMetadataIndexType();
         $filter = [];
         $lang   = $this->getLang($request);
@@ -475,12 +474,13 @@ class APIServices extends Services
                 $params['body']['sort'][$lang.'.contract_name.raw']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
             }
             if ($request['sort_by'] == "resource") {
-                $params['body']['sort']['resource_raw']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
+                $params['body']['sort'][$lang.'.resource']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
             }
             if ($request['sort_by'] == "contract_type") {
                 $params['body']['sort'][$lang.'.type_of_contract.raw']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
             }
         }
+
         $results = $this->search($params);
 
         $data             = [];
