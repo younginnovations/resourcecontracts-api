@@ -578,7 +578,6 @@ class APIServices extends Services
                 ],
             ];
         }
-        // $q              = urldecode("\"" . $request['q'] . "\"");
         $queryString   = isset($request['q']) ? $request['q'] : '';
         $foundOperator = $this->findOperator($queryString);
 
@@ -1294,7 +1293,7 @@ class APIServices extends Services
             $filters = explode(',', $request['id']);
         }
         $params['body'] = [
-            'size'  => 100000,
+            'size'  => 10000,
             'query' => [
                 "terms" => [
                     "_id" => $filters,
