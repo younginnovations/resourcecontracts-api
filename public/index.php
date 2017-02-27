@@ -2,10 +2,10 @@
 /*
  * Composer Autoload
  */
-require 'vendor/autoload.php';
+require '../vendor/autoload.php';
 
 /*
  * Bootstrap application
  */
-require 'bootstrap.php';
+require '../bootstrap.php';
 
