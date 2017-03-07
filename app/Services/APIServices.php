@@ -624,6 +624,7 @@ class APIServices extends Services
             ],
             "fields"    => [
                 "id",
+                "annotation_id",
                 "page",
                 "shapes ",
                 "contract_id",
@@ -644,7 +645,8 @@ class APIServices extends Services
 
             if (!empty($text)) {
                 $data[] = [
-                    'annotation_id'       => $fields['id'][0],
+                    'id'                  => $fields['id'][0],
+                    'annotation_id'       => $fields['annotation_id'][0],
                     'page_no'             => $fields['page'][0],
                     'contract_id'         => $fields['contract_id'][0],
                     'open_contracting_id' => $fields['open_contracting_id'][0],
@@ -657,7 +659,6 @@ class APIServices extends Services
         }
 
         return $data;
-
     }
 
     /**

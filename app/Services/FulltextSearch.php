@@ -383,7 +383,6 @@ class FulltextSearch extends Services
      */
     private function getAnnotationsResult($annotationsResult)
     {
-
         $data = [];
         if (isset($annotationsResult[0]) && !empty($annotationsResult[0])) {
             $data = [
