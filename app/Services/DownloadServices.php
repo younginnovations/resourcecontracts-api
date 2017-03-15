@@ -1,6 +1,8 @@
 <?php
 namespace App\Services;
 
+use Symfony\Component\HttpFoundation\Request;
+
 /**
  * Class DownloadServices
  * @package App\Services
@@ -134,9 +136,12 @@ class DownloadServices extends Services
             ],
         ];
         $searchResult    = $this->search($params);
+        $request         = Request::createFromGlobals();
+        $lang            = $this->getLang($request->query->get('lang'));
+
         foreach ($searchResult['hits']['hits'] as $result) {
             $temp['annotation_category'] = $result['_source']['category'];
-            $temp['text']                = $result['_source']['text'];
+            $temp['text']                = $result['_source']['annotation_text'][$lang];
             $data[]                      = $temp;
         }
 
@@ -247,59 +252,78 @@ class DownloadServices extends Services
             'Contract Type'                 => implode(';', $contract->type_of_contract),
             'Signature Date'                => $contract->signature_date,
             'Document Type'                 => $contract->document_type,
-            'Government Entity'             => implode(';', $this->makeSemicolonSeparated($contract->government_entity, 'entity')),
-            'Government Identifier'         => implode(';', $this->makeSemicolonSeparated($contract->government_entity, 'identifier')),
+            'Government Entity'             => implode(
+                ';',
+                $this->makeSemicolonSeparated($contract->government_entity, 'entity')
+            ),
+            'Government Identifier'         => implode(
+                ';',
+                $this->makeSemicolonSeparated($contract->government_entity, 'identifier')
+            ),
             'Company Name'                  => implode(';', $this->makeSemicolonSeparated($contract->company, 'name')),
-            'Company Address'               => implode(';', $this->makeSemicolonSeparated($contract->company, 'company_address')),
-            'Jurisdiction of Incorporation' => implode(';', $this->makeSemicolonSeparated(
+            'Company Address'               => implode(
+                ';',
+                $this->makeSemicolonSeparated($contract->company, 'company_address')
+            ),
+            'Jurisdiction of Incorporation' => implode(
+                ';',
+                $this->makeSemicolonSeparated(
                     $contract->company,
                     'jurisdiction_of_incorporation'
                 )
             ),
-            'Registration Agency'           => implode(';',
+            'Registration Agency'           => implode(
+                ';',
                 $this->makeSemicolonSeparated(
                     $contract->company,
                     'registration_agency'
                 )
             ),
-            'Company Number'                => implode(';',
+            'Company Number'                => implode(
+                ';',
                 $this->makeSemicolonSeparated(
                     $contract->company,
                     'company_number'
                 )
             ),
-            'Corporate Grouping'            => implode(';',
+            'Corporate Grouping'            => implode(
+                ';',
                 $this->makeSemicolonSeparated(
                     $contract->company,
                     'parent_company'
                 )
             ),
-            'Participation Share'           => implode(';',
+            'Participation Share'           => implode(
+                ';',
                 $this->makeSemicolonSeparated(
                     $contract->company,
                     'participation_share'
                 )
             ),
-            'Open Corporates Link'          => implode(';',
+            'Open Corporates Link'          => implode(
+                ';',
                 $this->makeSemicolonSeparated(
                     $contract->company,
                     'open_corporate_id'
                 )
             ),
-            'Incorporation Date'            => implode(';',
+            'Incorporation Date'            => implode(
+                ';',
                 $this->makeSemicolonSeparated(
                     $contract->company,
                     'company_founding_date'
                 )
             ),
             'Operator'                      => implode(';', $this->getOperator($contract->company)),
-            'Project Title'                 => implode(';',
+            'Project Title'                 => implode(
+                ';',
                 $this->makeSemicolonSeparated(
                     $contract->concession,
                     'license_name'
                 )
             ),
-            'Project Identifier'            => implode(';',
+            'Project Identifier'            => implode(
+                ';',
                 $this->makeSemicolonSeparated(
                     $contract->concession,
                     'license_identifier'
@@ -315,7 +339,7 @@ class DownloadServices extends Services
             'Contract Note'                 => $contract->contract_note,
             'Matrix Page'                   => $contract->matrix_page,
             'Annotation Category'           => isset($annotations->annotation_category) ? $annotations->annotation_category : '',
-            'Annotation Text'               => isset($annotations->text) ? $annotations->text : '',
+            'Annotation Text'               => isset($annotations->annotation_text) ? $annotations->annotation_text : '',
         ];
     }
 
@@ -334,7 +358,7 @@ class DownloadServices extends Services
             $data[] = [
                 'Category'          => $annotation['category'],
                 'Topic'             => $annotation['cluster'],
-                'Annotation Text'   => $annotation['text'],
+                'Annotation Text'   => $annotation['annotation_text'],
                 'PDF Page Number'   => $annotation['page_no'],
                 'Article Reference' => $annotation['article_reference'],
             ];
