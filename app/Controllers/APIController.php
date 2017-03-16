@@ -29,14 +29,19 @@ class APIController extends BaseController
      * @param FulltextSearch   $search
      * @param DownloadServices $download
      */
-    public function __construct(APIServices $api, FulltextSearch $search,DownloadServices $download)
+    public function __construct(APIServices $api, FulltextSearch $search, DownloadServices $download)
     {
         parent::__construct();
-        $this->api    = $api;
-        $this->search = $search;
+        $this->api      = $api;
+        $this->search   = $search;
         $this->download = $download;
     }
 
+    /**
+     * Home page
+     *
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
     public function home()
     {
         return $this->view('home');
@@ -55,9 +60,11 @@ class APIController extends BaseController
 
     /**
      * Get the text page of contract
+     *
      * @param $request
      * @param $response
      * @param $argument
+     *
      * @return json response
      */
     public function getTextPages($request, $response, $argument)
@@ -70,9 +77,11 @@ class APIController extends BaseController
 
     /**
      * Get the annotations page contract
+     *
      * @param $request
      * @param $response
      * @param $argument
+     *
      * @return json response
      */
     public function getAnnotationPages($request, $response, $argument)
@@ -85,9 +94,11 @@ class APIController extends BaseController
 
     /**
      * Get the annotations page contract
+     *
      * @param $request
      * @param $response
      * @param $argument
+     *
      * @return json response
      */
     public function getAnnotationGroup($request, $response, $argument)
@@ -101,9 +112,11 @@ class APIController extends BaseController
 
     /**
      * Get the metadata
+     *
      * @param $request
      * @param $response
      * @param $argument
+     *
      * @return json response
      */
     public function getMetadata($request, $response, $argument)
@@ -253,10 +266,19 @@ class APIController extends BaseController
         return $this->json($response);
     }
 
-    public function getAnnotationById($request, $response, $argument)
+    /**
+     * Get Annotation detail by ID
+     *
+     * @param $request
+     * @param $response
+     * @param $argument
+     *
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function getAnnotationById($request, $response = null, $argument)
     {
         $id       = $argument['id'];
-        $response = $this->api->getAnnotationById($id);
+        $response = $this->api->getAnnotationById($id, $request->query->all());
 
         return $this->json($response);
 
