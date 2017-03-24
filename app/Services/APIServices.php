@@ -462,12 +462,17 @@ class APIServices extends Services
         }
 
         $params['body']['query']['filtered']['filter']['and']['filters'] = $filter;
-        $params['body']['size']                                          = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
+
+        $perPage = (isset($request['per_page']) && !empty($request['per_page'])) ? (integer) $request['per_page'] : self::SIZE;
+        $perPage = ($perPage < 100) ? $perPage : 100;
+        $from    = (isset($request['from']) && !empty($request['from'])) ? (integer) $request['from'] : self::FROM;
+        $from    = ($from < 9900) ? $from : 9900;
+
+        $params['body']['size'] = $perPage;
+        $params['body']['from'] = $from;
+
         if (isset($request['download']) && $request['download']) {
             $params['body']['size'] = 10000;
-        }
-        if (isset($request['from'])) {
-            $params['body']['from'] = !empty($request['from']) ? $request['from'] : self::FROM;
         }
 
         if (isset($request['all']) && $request['all'] == 1) {
@@ -504,10 +509,10 @@ class APIServices extends Services
 
         $data             = [];
         $data['total']    = $results['hits']['total'];
-        $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? (integer) $request['per_page'] : self::SIZE;
+        $data['per_page'] = $perPage;
+        $data['from']     = $from;
+        $data['results']  = [];
 
-        $data['from']    = (isset($request['from']) and !empty($request['from'])) ? $request['from'] : self::FROM;
-        $data['results'] = [];
         foreach ($results['hits']['hits'] as $result) {
             $source            = $result['_source'];
             $data['results'][] = [
