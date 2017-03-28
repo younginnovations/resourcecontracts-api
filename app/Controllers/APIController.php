@@ -49,13 +49,14 @@ class APIController extends BaseController
 
     /**
      * Return all the summary of contract
-     * @return json response
+     *
+     * @return \Symfony\Component\HttpFoundation\Response
      */
     public function getSummary()
     {
-        $reponse = $this->api->getSummary($this->request->query->all());
+        $response = $this->api->getSummary($this->request->query->all());
 
-        return $this->json($reponse);
+        return $this->json($response);
     }
 
     /**
@@ -65,7 +66,7 @@ class APIController extends BaseController
      * @param $response
      * @param $argument
      *
-     * @return json response
+     * @return \Symfony\Component\HttpFoundation\Response
      */
     public function getTextPages($request, $response, $argument)
     {
@@ -82,7 +83,7 @@ class APIController extends BaseController
      * @param $response
      * @param $argument
      *
-     * @return json response
+     * @return \Symfony\Component\HttpFoundation\Response
      */
     public function getAnnotationPages($request, $response, $argument)
     {
@@ -99,7 +100,7 @@ class APIController extends BaseController
      * @param $response
      * @param $argument
      *
-     * @return json response
+     * @return \Symfony\Component\HttpFoundation\Response
      */
     public function getAnnotationGroup($request, $response, $argument)
     {
@@ -108,7 +109,6 @@ class APIController extends BaseController
 
         return $this->json($data);
     }
-
 
     /**
      * Get the metadata
@@ -139,8 +139,9 @@ class APIController extends BaseController
     }
 
     /**
-     * Retunrs the contract count
-     * @return json response
+     * Returns the contract count
+     *
+     * @return \Symfony\Component\HttpFoundation\Response
      */
     public function getAllContractCount()
     {
@@ -151,7 +152,12 @@ class APIController extends BaseController
 
     /**
      * Search in Pdf Text
-     * @return json response
+     *
+     * @param $request
+     * @param $response
+     * @param $argument
+     *
+     * @return \Symfony\Component\HttpFoundation\Response
      */
     public function search($request, $response, $argument)
     {
@@ -163,7 +169,8 @@ class APIController extends BaseController
 
     /**
      * Full text search
-     * @return json response
+     *
+     * @return \Symfony\Component\HttpFoundation\Response
      */
     public function fullTextSearch()
     {
@@ -175,7 +182,7 @@ class APIController extends BaseController
     /**
      * Get all the contracts according to countries
      *
-     * @return json response
+     * @return \Symfony\Component\HttpFoundation\Response
      */
     public function getCoutriesContracts()
     {
@@ -185,9 +192,9 @@ class APIController extends BaseController
     }
 
     /**
-     *Get aggregation of resource according to country
+     * Get aggregation of resource according to country
      *
-     * @return json response
+     * @return \Symfony\Component\HttpFoundation\Response
      */
     public function getResourceContracts()
     {
@@ -199,7 +206,7 @@ class APIController extends BaseController
     /**
      * Get aggregation of years according to country
      *
-     * @return json response
+     * @return \Symfony\Component\HttpFoundation\Response
      */
     public function getYearsContracts()
     {
@@ -211,7 +218,7 @@ class APIController extends BaseController
     /**
      * Get Contract aggregation by Country and Resource
      *
-     * @return json response
+     * @return \Symfony\Component\HttpFoundation\Response
      */
     public function getContractByCountryAndResource()
     {
@@ -223,7 +230,7 @@ class APIController extends BaseController
     /**
      * Get all the unique filter attributes for search
      *
-     * @return json response
+     * @return \Symfony\Component\HttpFoundation\Response
      */
     public function getFilterAttributes()
     {
@@ -234,6 +241,7 @@ class APIController extends BaseController
 
     /**
      * Get all the annotations category
+     *
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function getAnnotationsCategory()
@@ -245,6 +253,7 @@ class APIController extends BaseController
 
     /**
      * Download metadata as csv
+     *
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function downloadMetadtaAsCSV()
@@ -256,6 +265,11 @@ class APIController extends BaseController
 
     /**
      * Download Annotations As CSV
+     *
+     * @param $request
+     * @param $response
+     * @param $argument
+     *
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function downloadAnnotationsAsCSV($request, $response, $argument)
@@ -281,6 +295,5 @@ class APIController extends BaseController
         $response = $this->api->getAnnotationById($id, $request->query->all());
 
         return $this->json($response);
-
     }
 }

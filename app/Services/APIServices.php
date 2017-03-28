@@ -236,10 +236,10 @@ class APIServices extends Services
                     'id'                  => $result['_id'],
                     'annotation_id'       => isset($source['annotation_id']) ? $source['annotation_id'] : null,
                     'quote'               => isset($source['quote']) ? $source['quote'] : null,
-                    'text'                => $source['text'],
+                    'text'                => isset($source['annotation_text'][$lang]) ? $source['annotation_text'][$lang] : null,
                     'category'            => $source['category'],
                     'category_key'        => isset($source['category_key']) ? $source['category_key'] : null,
-                    'article_reference'   => isset($source['article_reference']) ? $source['article_reference'] : null,
+                    'article_reference'   => isset($source['article_reference'][$lang]) ? $source['article_reference'][$lang] : null,
                     'page_no'             => $source['page'],
                     'ranges'              => isset($source['ranges']) ? $source['ranges'] : null,
                     'cluster'             => isset($source['cluster']) ? $source['cluster'] : null,
@@ -319,6 +319,8 @@ class APIServices extends Services
             $ann[$annotation['annotation_id']][] = $annotation;
         }
 
+        $lang = $this->getLang($request);
+
         $final_annotations = [];
         ksort($ann);
         foreach ($ann as $id => $annotation) {
@@ -328,7 +330,7 @@ class APIServices extends Services
                     'id'                => $page['id'],
                     'page_no'           => $page['page'],
                     'quote'             => isset($page['quote']) ? $page['quote'] : '',
-                    'article_reference' => $page['article_reference'],
+                    'article_reference' => $page['article_reference'][$lang],
                 ];
 
                 if (isset($page['shapes'])) {
@@ -346,7 +348,7 @@ class APIServices extends Services
                 'annotation_id'       => $annotation[0]['annotation_id'],
                 'contract_id'         => $annotation[0]['contract_id'],
                 'open_contracting_id' => $annotation[0]['open_contracting_id'],
-                'text'                => $annotation[0]['text'],
+                'text'                => $annotation[0]['annotation_text'][$lang],
                 'category_key'        => $annotation[0]['category_key'],
                 'category'            => $annotation[0]['category'],
                 'cluster'             => $annotation[0]['cluster'],
@@ -582,7 +584,7 @@ class APIServices extends Services
      */
     public function annotationSearch($contractId, $request)
     {
-
+        $params          = [];
         $params['index'] = $this->index;
         $params['type']  = "annotations";
         if ((!isset($request['q']) and empty($request['q']))) {
@@ -606,9 +608,11 @@ class APIServices extends Services
         $queryString   = isset($request['q']) ? $request['q'] : '';
         $foundOperator = $this->findOperator($queryString);
 
+        $lang = $this->getLang($request);
+
         $fullTquery = [
             'query_string' => [
-                "fields"              => ["text"],
+                "fields"              => ["annotation_text.".$lang],
                 'query'               => $this->addFuzzyOperator($queryString),
                 "default_operator"    => "OR",
                 "fuzzy_prefix_length" => 4,
@@ -618,7 +622,7 @@ class APIServices extends Services
         if ($foundOperator) {
             $fullTquery = [
                 'simple_query_string' => [
-                    "fields"           => ["text"],
+                    "fields"           => ["annotation_text.".$lang],
                     'query'            => urldecode($queryString),
                     "default_operator" => "OR",
                 ],
@@ -637,11 +641,11 @@ class APIServices extends Services
                 "pre_tags"  => ["<span class='search-highlight-word'>"],
                 "post_tags" => ["</span>"],
                 "fields"    => [
-                    "text"     => [
+                    "annotation_text.".$lang => [
                         "fragment_size"       => 100000,
                         "number_of_fragments" => 1,
                     ],
-                    "category" => [
+                    "category"               => [
                         "fragment_size"       => 100000,
                         "number_of_fragments" => 1,
                     ],
@@ -661,7 +665,7 @@ class APIServices extends Services
         $data    = [];
         foreach ($results['hits']['hits'] as $hit) {
             $fields = $hit['fields'];
-            $text   = isset($hit['highlight']['text']) ? $hit['highlight']['text'][0] : "";
+            $text   = isset($hit['highlight']["annotation_text.".$lang]) ? $hit['highlight']["annotation_text.".$lang][0] : "";
             if ($text == "") {
                 $text = isset($hit['highlight']['category']) ? $hit['highlight']['category'][0] : "";
             }
@@ -680,7 +684,6 @@ class APIServices extends Services
                     "type"                => "annotation",
                 ];
             }
-
         }
 
         return $data;
@@ -1379,7 +1382,7 @@ class APIServices extends Services
      */
     public function getAnnotationById($id, $request)
     {
-        $data            = [];
+        $params          = [];
         $params['index'] = $this->index;
         $params['type']  = "annotations";
         $params['body']  = [
@@ -1394,18 +1397,22 @@ class APIServices extends Services
         $results         = $this->search($params);
         $data            = isset($results['hits']['hits'][0]["_source"]) ? $results['hits']['hits'][0]["_source"] : [];
         $page            = [];
+        $lang            = $this->getLang($request);
 
         foreach ($results['hits']['hits'] as $result) {
             $page[] = [
                 'id'                => $result['_source']['id'],
                 'page'              => $result['_source']['page'],
                 'type'              => (isset($result['_source']['shapes'])) ? 'pdf' : 'text',
-                'article_reference' => $result['_source']['article_reference'],
+                'article_reference' => isset($result['_source']['article_reference'][$lang]) ? $result['_source']['article_reference'][$lang] : '',
             ];
         }
         if (!empty($data)) {
             $data['page'] = $page;
         }
+
+        $data['text'] = isset($data['annotation_text'][$lang]) ? $data['annotation_text'][$lang] : null;
+        unset($data['article_reference']);
 
         return $data;
     }
@@ -1441,8 +1448,8 @@ class APIServices extends Services
     {
         $i = [];
 
-        foreach ($items as $items) {
-            $i[] = $items;
+        foreach ($items as $item) {
+            $i[] = $item;
         }
 
         return $i;

@@ -32,14 +32,13 @@ class FulltextSearch extends Services
      */
     public function searchInMaster($request)
     {
-
         $params          = [];
         $lang            = $this->getLang($request);
         $params['index'] = $this->index;
         $params['type']  = "master";
         $type            = isset($request['group']) ? array_map('trim', explode('|', $request['group'])) : [];
-        $typecheck       = $this->typeCheck($type);
-        if (!$typecheck) {
+        $typeCheck       = $this->typeCheck($type);
+        if (!$typeCheck) {
             return [];
         }
         if (isset($request['year']) and !empty($request['year'])) {
@@ -74,12 +73,10 @@ class FulltextSearch extends Services
             $filters[]   = ["terms" => [$lang.".company_name" => $companyName]];
         }
         if (isset($request['corporate_group']) and !empty($request['corporate_group'])) {
-
             $corporateGroup = explode('|', $request['corporate_group']);
             $filters[]      = ["terms" => [$lang.".corporate_grouping" => $corporateGroup]];
         }
         if (isset($request['annotation_category']) and !empty($request['annotation_category'])) {
-
             $annotationsCategory = explode('|', $request['annotation_category']);
             $filters[]           = ["terms" => ["annotations_category" => $annotationsCategory]];
         }
@@ -88,7 +85,7 @@ class FulltextSearch extends Services
                 "bool" => [
                     "must_not" => [
                         "missing" => [
-                            "field"     => "annotations_string",
+                            "field"     => "annotations_string.".$lang,
                             "existence" => true,
                         ],
                     ],
@@ -104,7 +101,7 @@ class FulltextSearch extends Services
             array_push($fields, "pdf_text_string");
         }
         if (in_array("annotations", $type)) {
-            array_push($fields, "annotations_string");
+            array_push($fields, "annotations_string.".$lang);
         }
 
         $queryString = isset($request['q']) ? $request['q'] : "";
@@ -124,10 +121,8 @@ class FulltextSearch extends Services
                     'query'               => $this->addFuzzyOperator($request['q']),
                     "default_operator"    => "AND",
                     "fuzzy_prefix_length" => 4,
-
                 ];
             }
-
         }
 
         if (!empty($filters)) {
@@ -171,17 +166,9 @@ class FulltextSearch extends Services
             if ($request['sort_by'] == "contract_type") {
                 $params['body']['sort'][$lang.'.contract_type']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
             }
-
         }
 
         $highlightField = [];
-        if (in_array('metadata', $type)) {
-            $highlightField['metadata_string'] = [
-                'fragment_size'       => 200,
-                'number_of_fragments' => 1,
-            ];
-
-        }
 
         if (in_array('text', $type)) {
             $highlightField['pdf_text_string'] = [
@@ -192,18 +179,18 @@ class FulltextSearch extends Services
         }
 
         if (in_array('annotations', $type)) {
-            $highlightField['annotations_string'] = [
+            $highlightField['annotations_string.'.$lang] = [
                 'fragment_size'       => 50,
                 'number_of_fragments' => 1,
             ];
 
         }
+
         if (in_array('metadata', $type)) {
-            $highlightField['metadata_string'] = [
+            $highlightField['metadata_string.'.$lang] = [
                 'fragment_size'       => 50,
                 'number_of_fragments' => 1,
             ];
-
         }
 
         $params['body']['highlight'] = [
@@ -230,7 +217,6 @@ class FulltextSearch extends Services
             $params['body']['from'] = 0;
         }
 
-        $data         = [];
         $data         = $this->searchText($params, $type, $queryString, $lang);
         $data['from'] = isset($request['from']) ? $request['from'] : self::FROM;
 
@@ -265,7 +251,6 @@ class FulltextSearch extends Services
             $results['hits']['total'] = 0;
         }
 
-
         $fields                  = $results['hits']['hits'];
         $data['total']           = $results['hits']['total'];
         $data['country']         = [];
@@ -279,7 +264,6 @@ class FulltextSearch extends Services
         $i = 0;
 
         foreach ($fields as $field) {
-
             $contractId = $field['_id'];
             if (isset($field['fields'][$lang.'.country_code'])) {
                 array_push($data['country'], $field['fields'][$lang.'.country_code'][0]);
@@ -303,7 +287,7 @@ class FulltextSearch extends Services
                 );
             }
 
-            $data['results'][$i]                = [
+            $data['results'][$i]          = [
                 "id"                  => (int) $contractId,
                 "open_contracting_id" => isset($field['fields'][$lang.'.open_contracting_id']) ? $field['fields'][$lang.'.open_contracting_id'][0] : "",
                 "name"                => isset($field['fields'][$lang.'.contract_name']) ? $field['fields'][$lang.'.contract_name'][0] : "",
@@ -319,15 +303,19 @@ class FulltextSearch extends Services
                     (int) $field['fields'][$lang.'.show_pdf_text'][0]
                 ) : null,
             ];
-            $data['results'][$i]['group']       = [];
-            $highlight                          = isset($field['highlight']) ? $field['highlight'] : '';
-            $data['results'][$i]['text']        = isset($highlight['pdf_text_string'][0]) ? $highlight['pdf_text_string'][0] : '';
-            $annotationText                     = isset($highlight['annotations_string'][0]) ? $highlight['annotations_string'][0] : '';
-            $apiSearvice                        = new APIServices();
-            $annotationsResult                  = ($queryString != "") ? $apiSearvice->annotationSearch(
+            $data['results'][$i]['group'] = [];
+            $highlight                    = isset($field['highlight']) ? $field['highlight'] : '';
+            $data['results'][$i]['text']  = isset($highlight['pdf_text_string'][0]) ? $highlight['pdf_text_string'][0] : '';
+            $annotationText               = isset($highlight['annotations_string.'.$lang][0]) ? $highlight['annotations_string.'.$lang][0] : '';
+            $apiService                   = new APIServices();
+            $annotationsResult            = ($queryString != "") ? $apiService->annotationSearch(
                 $data['results'][$i]['id'],
-                ["q" => $queryString]
+                [
+                    "q"    => $queryString,
+                    'lang' => $lang,
+                ]
             ) : [];
+
             $data['results'][$i]['annotations'] = ($annotationText != "") ? $this->getAnnotationsResult(
                 $annotationsResult
             ) : [];
@@ -434,6 +422,8 @@ class FulltextSearch extends Services
      * Return boolean
      *
      * @param $param
+     *
+     * @return bool
      */
     private function getBoolean($param)
     {
@@ -448,7 +438,6 @@ class FulltextSearch extends Services
     /**
      * Annotation result for search
      *
-     * @param $annotationText
      * @param $annotationsResult
      *
      * @return array
@@ -458,6 +447,7 @@ class FulltextSearch extends Services
         $data = [];
         if (isset($annotationsResult[0]) && !empty($annotationsResult[0])) {
             $data = [
+                "id"              => $annotationsResult[0]["id"],
                 "annotation_text" => $annotationsResult[0]["text"],
                 "annotation_id"   => $annotationsResult[0]["annotation_id"],
                 "page_no"         => $annotationsResult[0]["page_no"],
@@ -469,7 +459,8 @@ class FulltextSearch extends Services
     }
 
     /*
-     * write brief description
+     * Get Suggestion Text
+     *
      * @param $params
      * @param $q
      * @return array
