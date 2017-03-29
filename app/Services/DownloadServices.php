@@ -358,7 +358,7 @@ class DownloadServices extends Services
             $data[] = [
                 'Category'          => $annotation['category'],
                 'Topic'             => $annotation['cluster'],
-                'Annotation Text'   => $annotation['annotation_text'],
+                'Annotation Text'   => $annotation['text'],
                 'PDF Page Number'   => $annotation['page_no'],
                 'Article Reference' => $annotation['article_reference'],
             ];
