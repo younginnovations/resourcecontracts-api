@@ -118,7 +118,7 @@ class APIServices extends Services
      *
      * @return array
      */
-    public function getTextPages($contractId, $request)
+    public function getTextPages($contractId, array $request = [])
     {
         $params['index'] = $this->index;
         $params['type']  = "pdf_text";
@@ -565,11 +565,32 @@ class APIServices extends Services
      */
     public function searchAnnotationAndText($contractId, $request)
     {
+        $allText           = $this->getTextPages($contractId);
         $textResult        = $this->textSearch($contractId, $request);
         $annotationsResult = $this->annotationSearch($contractId, $request);
-        $result            = array_merge($textResult, $annotationsResult);
-        $data['total']     = count($result);
-        $data['results']   = $result;
+        $results           = array_merge($textResult, $annotationsResult);
+        $sum               = 0;
+
+        foreach ($results as $key => &$result) {
+            foreach ($allText['result'] as $text) {
+                if ($text['page_no'] == $result['page_no'] && $result['type'] == 'text') {
+                    $result['count'] = 0;
+
+                    if (false !== strpos(strtolower($text['text']), $request['q'])) {
+                        $subCount        = substr_count(strtolower($text['text']), strtolower($request['q']));
+                        $result['count'] = $subCount;
+                        $sum += $subCount;
+                    }
+                }
+                if ($text['page_no'] == $result['page_no'] && $result['type'] == 'annotation') {
+                    $result['count'] = 0;
+                }
+            }
+        }
+
+        $data['total']              = count($results);
+        $data['total_search_count'] = $sum;
+        $data['results']            = $results;
 
         return $data;
     }
