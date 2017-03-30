@@ -571,19 +571,39 @@ class APIServices extends Services
         $results           = array_merge($textResult, $annotationsResult);
         $sum               = 0;
 
-        foreach ($results as $key => &$result) {
-            foreach ($allText['result'] as $text) {
-                if ($text['page_no'] == $result['page_no'] && $result['type'] == 'text') {
-                    $result['count'] = 0;
+        function getTextBetweenTags($string, $tagname)
+        {
+            $pattern = "#<$tagname.*?>([^<]+)</$tagname>#";
+            preg_match_all($pattern, $string, $matches);
+            $matches = array_map(
+                function ($v) {
+                    return strtolower($v);
+                },
+                $matches[1]
+            );
 
-                    if (false !== strpos(strtolower($text['text']), $request['q'])) {
-                        $subCount        = substr_count(strtolower($text['text']), strtolower($request['q']));
-                        $result['count'] = $subCount;
-                        $sum += $subCount;
+            return array_unique($matches);
+        }
+
+        foreach ($results as $key => &$result) {
+            $result['search_text'] = getTextBetweenTags($result['text'], 'span');
+            $result['count']       = 0;
+
+            if ($result['type'] == 'text') {
+                foreach ($allText['result'] as $text) {
+                    if ($text['page_no'] == $result['page_no']) {
+                        foreach ($result['search_text'] as $search) {
+                            $subCount = substr_count(strtolower($text['text']), strtolower($search));
+                            $result['count'] += $subCount;
+                            $sum += $subCount;
+                        }
                     }
                 }
-                if ($text['page_no'] == $result['page_no'] && $result['type'] == 'annotation') {
-                    $result['count'] = 0;
+            } else {
+                foreach ($result['search_text'] as $search) {
+                    $subCount = substr_count(strtolower($result['text']), strtolower($search));
+                    $result['count'] += $subCount;
+                    $sum += $subCount;
                 }
             }
         }
