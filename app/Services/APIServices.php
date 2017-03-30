@@ -576,7 +576,7 @@ class APIServices extends Services
                 if ($text['page_no'] == $result['page_no'] && $result['type'] == 'text') {
                     $result['count'] = 0;
 
-                    if (false !== strpos(strtolower($text['text']), $request['q'])) {
+                    if (false !== strpos(strtolower($text['text']), strtolower($request['q']))) {
                         $subCount        = substr_count(strtolower($text['text']), strtolower($request['q']));
                         $result['count'] = $subCount;
                         $sum += $subCount;
