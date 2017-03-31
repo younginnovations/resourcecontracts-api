@@ -580,15 +580,24 @@ class APIServices extends Services
         }
 
         foreach ($results as $key => &$result) {
-            $result['search_text'] = getTextBetweenTags($result['text'], 'span');
+            $result['search_text'] = array_unique(getTextBetweenTags($result['text'], 'span'));
             $result['count']       = 0;
-            foreach ($allText['result'] as $text) {
-                if ($text['page_no'] == $result['page_no'] && $result['type'] == 'text') {
-                    foreach ($result['search_text'] as $search) {
-                        $subCount = substr_count(strtolower($text['text']), strtolower($search));
-                        $result['count'] += $subCount;
-                        $sum += $subCount;
+
+            if ($result['type'] == 'text') {
+                foreach ($allText['result'] as $text) {
+                    if ($text['page_no'] == $result['page_no']) {
+                        foreach ($result['search_text'] as $search) {
+                            $subCount = substr_count(strtolower($text['text']), strtolower($search));
+                            $result['count'] += $subCount;
+                            $sum += $subCount;
+                        }
                     }
+                }
+            } else {
+                foreach ($result['search_text'] as $search) {
+                    $subCount = substr_count(strtolower($result['text']), strtolower($search));
+                    $result['count'] += $subCount;
+                    $sum += $subCount;
                 }
             }
         }
