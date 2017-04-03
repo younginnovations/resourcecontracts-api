@@ -575,12 +575,18 @@ class APIServices extends Services
         {
             $pattern = "#<$tagname.*?>([^<]+)</$tagname>#";
             preg_match_all($pattern, $string, $matches);
+            $matches = array_map(
+                function ($v) {
+                    return strtolower($v);
+                },
+                $matches[1]
+            );
 
-            return $matches[1];
+            return array_unique($matches);
         }
 
         foreach ($results as $key => &$result) {
-            $result['search_text'] = array_unique(getTextBetweenTags($result['text'], 'span'));
+            $result['search_text'] = getTextBetweenTags($result['text'], 'span');
             $result['count']       = 0;
 
             if ($result['type'] == 'text') {
