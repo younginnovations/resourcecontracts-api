@@ -23,7 +23,7 @@ class Services
 
     public function __construct()
     {
-        $hosts       = [env('ELASTICSEARCH_SERVER')];
+        $hosts       = explode(",",env('ELASTICSEARCH_SERVER'));
         $this->index = env("INDEX");
         $client      = ClientBuilder::create()->setHosts($hosts);
         $this->api   = $client->build();
