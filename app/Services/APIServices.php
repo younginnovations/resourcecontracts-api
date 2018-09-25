@@ -463,7 +463,7 @@ class APIServices extends Services
             ];
         }
 
-        $params['body']['query']['filtered']['filter']['and']['filters'] = $filter;
+        $params['body']['query']["bool"]['filter'] = $filter;
 
         $perPage = (isset($request['per_page']) && !empty($request['per_page'])) ? (integer) $request['per_page'] : self::SIZE;
         $perPage = ($perPage < 100) ? $perPage : 100;

@@ -4,6 +4,7 @@ use App\Services\APIServices;
 use App\Services\DownloadServices;
 use App\Services\FulltextSearch;
 
+
 /**
  * API Controller for Client site
  * Class APIController
@@ -23,6 +24,7 @@ class APIController extends BaseController
      * @var DownloadServices
      */
     private $download;
+
 
     /**
      * @param APIServices      $api
