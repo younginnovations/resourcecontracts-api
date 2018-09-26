@@ -1541,8 +1541,8 @@ class APIServices extends Services
                 $first_hit_fields = $first_hit['_source'][$lang];
                 $data[] = [
                     'id' => (int)$first_hit['_id'],
-                    'open_contracting_id' => $first_hit_fields['open_contracting_id'][0],
-                    'name' => $first_hit_fields['contract_name'][0],
+                    'open_contracting_id' => $this->getValueOfField($first_hit_fields, 'open_contracting_id'),
+                    'name' => $this->getValueOfField($first_hit_fields,'contract_name'),
                     'is_published' => true,
                 ];
             } else {
