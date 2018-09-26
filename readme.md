@@ -24,8 +24,8 @@ The app can be run with the command below:
 
 ### For Linux
 
-* Download Elasticsearch- `wget https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/deb/elasticsearch/2.4.0/elasticsearch-2.4.0.deb`
-* `sudo dpkg -i elasticsearch-2.4.0.deb `
+* Download Elasticsearch- `wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.6.12.deb`
+* `sudo dpkg -i elasticsearch-5.6.12.deb `
 * `cd /usr/share/elasticsearch`
 * `sudo bin/plugin install delete-by-query`
 * Start Elasticsearch Service `sudo service elasticsearch restart`
