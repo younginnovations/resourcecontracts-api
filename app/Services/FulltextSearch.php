@@ -110,13 +110,13 @@ class FulltextSearch extends Services
             $operatorFound = $this->findOperator($queryString);
 
             if ($operatorFound) {
-                $params['body']['query']['simple_query_string'] = [
+                $params['body']['query']['bool']['must']['simple_query_string'] = [
                     "fields"           => $fields,
                     'query'            => urldecode($queryString),
                     "default_operator" => "AND",
                 ];
             } else {
-                $params['body']['query']['query_string'] = [
+                $params['body']['query']['bool']['must']['query_string'] = [
                     "fields"              => $fields,
                     'query'               => $this->addFuzzyOperator($request['q']),
                     "default_operator"    => "AND",
@@ -563,39 +563,6 @@ class FulltextSearch extends Services
         }
 
         return $data;
-    }
-
-    /**
-     * @param $source
-     * @param $field_name
-     * @return mixed
-     */
-    private function getValueOfField($source, $field_name)
-    {
-        $field_value = $source[$field_name];
-        if (isset($field_value)) {
-            if (is_array($field_value))
-                return $field_value[0];
-            else {
-                return $field_value;
-            }
-        }
-        return "";
-    }
-
-    /**
-     * @param $source
-     * @param $field_name
-     * @return mixed
-     */
-    private function getValuesOfField($source, $field_name)
-    {
-        $field_value = $source[$field_name];
-        if (isset($field_value)) {
-
-            return $field_value;
-        }
-        return [];
     }
 
 }
