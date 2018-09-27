@@ -1721,7 +1721,6 @@ class APIServices extends Services
      */
     private function getAnnotationType($annotationId)
     {
-        var_dump($annotationId);
         $params['index'] = $this->index;
         $params['type'] = "annotations";
         $params['body'] = [
