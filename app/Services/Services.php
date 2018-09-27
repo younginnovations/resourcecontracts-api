@@ -216,8 +216,8 @@ class Services
     protected function getValueOfField($source, $field_name)
     {
         $field_value = $source[$field_name];
-        if (isset($field_value)) {
-            if (is_array($field_value))
+        if (isset($field_value) && !empty($field_value) ) {
+            if ( is_array($field_value) )
                 return $field_value[0];
             else {
                 return $field_value;
