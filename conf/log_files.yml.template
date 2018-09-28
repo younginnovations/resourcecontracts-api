@@ -1,10 +1,6 @@
 files:
-  - path: /var/log/apache2/access.log
-    tag: ecs-rc-api-$DEPLOYMENT_TYPE-apache2-access.log
-  - path: /var/log/apache2/error.log
-    tag: ecs-rc-api-$DEPLOYMENT_TYPE-apache2-error.log
-  - path: /var/log/apache2/other_vhosts_access.log
-    tag: ecs-rc-api-$DEPLOYMENT_TYPE-apache2-other_vhosts_access.log
+  - path: /var/log/supervisor/apache*.log
+    tag: ecs-rc-api-$DEPLOYMENT_TYPE-apache2.log
   - path: /var/log/supervisor/supervisord.log
     tag: ecs-rc-api-$DEPLOYMENT_TYPE-supervisor-supervisord.log
   - path: /var/log/supervisor/remote-syslog.log
