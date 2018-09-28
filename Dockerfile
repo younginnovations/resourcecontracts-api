@@ -49,5 +49,5 @@ RUN php composer.phar dump-autoload --optimize \
  && chown -R www-data: /var/www/rc-api
 
 EXPOSE 80
-CMD cd /var/container_init && ./init.sh && /usr/bin/supervisord -c /etc/supervisord.conf && /usr/sbin/apache2ctl -D FOREGROUND
+CMD cd /var/container_init && ./init.sh
 
