@@ -5,6 +5,8 @@ files:
     tag: ecs-rc-api-$DEPLOYMENT_TYPE-supervisor-supervisord.log
   - path: /var/log/supervisor/remote-syslog.log
     tag: ecs-rc-api-$DEPLOYMENT_TYPE-supervisor-remote-syslog.log
+  - path: /var/log/rc-api.log
+    tag: ecs-rc-api-$DEPLOYMENT_TYPE-elasticsearch.log
 destination:
   host: logs2.papertrailapp.com
   port: 39824
