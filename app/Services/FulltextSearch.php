@@ -104,27 +104,30 @@ class FulltextSearch extends Services
             array_push($fields, "annotations_string.".$lang);
         }
 
+
         $queryString = isset($request['q']) ? $request['q'] : "";
 
         if (!empty($queryString)) {
             $operatorFound = $this->findOperator($queryString);
 
             if ($operatorFound) {
-                $params['body']['query']['bool']['must']['simple_query_string'] = [
+                $simpleQuery =
+                    ['simple_query_string' => [
                     "fields"           => $fields,
                     'query'            => urldecode($queryString),
                     "default_operator" => "AND",
-                ];
+                ]];
+                array_push($filters, $simpleQuery);
             } else {
-                $params['body']['query']['bool']['must']['query_string'] = [
+                $queryStringFilter = ['query_string' => [
                     "fields"              => $fields,
                     'query'               => $this->addFuzzyOperator($request['q']),
                     "default_operator"    => "AND",
                     "fuzzy_prefix_length" => 4,
-                ];
+                ]];
+                array_push($filters, $queryStringFilter);
             }
         }
-
         if (!empty($filters)) {
             $params['body']['query'] = [
                 "bool" => [
