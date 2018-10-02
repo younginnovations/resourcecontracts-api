@@ -549,7 +549,7 @@ class APIServices extends Services
     public function getAllContractCount()
     {
         $params = $this->getMetadataIndexType();
-        $params['body']["query"]["match_all"] = [];
+        $params['body']["query"]["match_all"] = json_decode("{}");
         $response = $this->getCount($params);
 
         return $response['count'];
