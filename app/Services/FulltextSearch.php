@@ -412,7 +412,7 @@ class FulltextSearch extends Services
         $params['type']  = "master";
         $params['body']  = [
             "query" => [
-                "match_all" => [],
+                "match_all" => new class{},
             ],
         ];
         $count           = $this->countResult($params);
