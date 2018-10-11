@@ -436,34 +436,34 @@ class APIServices extends Services
         $lang = $this->getLang($request);
         if (isset($request['country_code']) and !empty($request['country_code'])) {
             $filter[] = [
-                "term" => [
-                    $lang . ".country.code" => $request['country_code'],
+                'term' => [
+                    $lang . '.country.code' => $request['country_code'],
                 ],
             ];
         }
         if (isset($request['year']) and !empty($request['year'])) {
             $filter[] = [
-                "term" => [
-                    $lang . ".signature_year" => $request['year'],
+                'term' => [
+                    $lang . '.signature_year' => $request['year'],
                 ],
             ];
         }
         if (isset($request['resource']) and !empty($request['resource'])) {
             $filter[] = [
-                "term" => [
-                    $lang . ".resource.raw" => $request['resource'],
+                'term' => [
+                    $lang . '.resource.raw' => $request['resource'],
                 ],
             ];
         }
         if (isset($request['category']) and !empty($request['category'])) {
             $filter[] = [
-                "term" => [
-                    $lang . ".category" => $request['category'],
+                'term' => [
+                    $lang . '.category' => $request['category'],
                 ],
             ];
         }
 
-        $params['body']['query']["bool"]['filter'] = $filter;
+        $params['body']['query']['bool']['filter'] = $filter;
 
         $perPage = (isset($request['per_page']) && !empty($request['per_page'])) ? (integer)$request['per_page'] : self::SIZE;
         $perPage = ($perPage < 100) ? $perPage : 100;
@@ -484,25 +484,25 @@ class APIServices extends Services
 
         if (isset($request['sort_by']) and !empty($request['sort_by'])) {
 
-            if ($request['sort_by'] == "country") {
+            if ($request['sort_by'] == 'country') {
                 $params['body']['sort'][$lang . '.country.name.raw']['order'] = (isset($request['order']) and in_array(
                         $request['order'],
                         ['desc', 'asc']
                     )) ? $request['order'] : self::ORDER;
             }
-            if ($request['sort_by'] == "year") {
+            if ($request['sort_by'] == 'year') {
                 $params['body']['sort'][$lang . '.signature_year']['order'] = (isset($request['order']) and in_array(
                         $request['order'],
                         ['desc', 'asc']
                     )) ? $request['order'] : self::ORDER;
             }
-            if ($request['sort_by'] == "contract_name") {
+            if ($request['sort_by'] == 'contract_name') {
                 $params['body']['sort'][$lang . '.contract_name.raw']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
             }
-            if ($request['sort_by'] == "resource") {
+            if ($request['sort_by'] == 'resource') {
                 $params['body']['sort'][$lang . '.resource']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
             }
-            if ($request['sort_by'] == "contract_type") {
+            if ($request['sort_by'] == 'contract_type') {
                 $params['body']['sort'][$lang . '.type_of_contract.raw']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
             }
         }
