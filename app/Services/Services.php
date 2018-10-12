@@ -1,6 +1,7 @@
 <?php namespace App\Services;
 
 use Elasticsearch\ClientBuilder;
+use Monolog\Logger;
 
 /**
  * Class Services
@@ -25,7 +26,8 @@ class Services
     {
         $hosts       = explode(",",env('ELASTICSEARCH_SERVER'));
         $this->index = env("INDEX");
-        $client      = ClientBuilder::create()->setHosts($hosts);
+        $logger      = ClientBuilder::defaultLogger('/var/log/rc-api.log');
+        $client      = ClientBuilder::create()->setHosts($hosts)->setLogger($logger);
         $this->api   = $client->build();
         $this->lang  = "en";
     }
@@ -204,5 +206,38 @@ class Services
     public function setApi($api)
     {
         $this->api = $api;
+    }
+
+    /**
+     * @param $source
+     * @param $field_name
+     * @return mixed
+     */
+    protected function getValueOfField($source, $field_name)
+    {
+        $field_value = $source[$field_name];
+        if (isset($field_value) && !empty($field_value) ) {
+            if ( is_array($field_value) )
+                return $field_value[0];
+            else {
+                return $field_value;
+            }
+        }
+        return "";
+    }
+
+    /**
+     * @param $source
+     * @param $field_name
+     * @return mixed
+     */
+    protected function getValuesOfField($source, $field_name)
+    {
+        $field_value = $source[$field_name];
+        if (isset($field_value)) {
+
+            return $field_value;
+        }
+        return [];
     }
 }

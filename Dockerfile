@@ -1,18 +1,20 @@
-FROM ubuntu:14.04
+FROM php:7.1.22-apache-jessie
 MAINTAINER Anjesh Tuladhar <anjesh@yipl.com.np>
 
 RUN apt-get update && apt-get install -y \
     curl \
     git \
     wget \
-    apache2 \
-    php5 \
-    php5-cli \
-    php5-curl \
-    php5-mcrypt \
-    php5-readline \
-    supervisor \    
-    gettext \    
+    zip \
+    unzip \
+    gcc \
+    make \
+    autoconf \
+    libc-dev \
+    pkg-config \
+    libmcrypt-dev \
+    supervisor \
+    gettext \
  && rm -rf /var/lib/apt/lists/* \
  && curl -O -L https://github.com/papertrail/remote_syslog2/releases/download/v0.19/remote_syslog_linux_amd64.tar.gz \
  && tar -zxf remote_syslog_linux_amd64.tar.gz \
@@ -26,9 +28,6 @@ RUN ln -s /etc/apache2/sites-available/rc-api.conf /etc/apache2/sites-enabled/rc
 
 RUN a2enmod rewrite \
  && a2enmod headers \
- && a2enmod php5 \
- && ln -s /etc/php5/mods-available/mcrypt.ini /etc/php5/apache2/conf.d/20-mcrypt.ini \
- && ln -s /etc/php5/mods-available/mcrypt.ini /etc/php5/cli/conf.d/20-mcrypt.ini \
  && mkdir -p /var/container_init \
  && mkdir -p /var/www/rc-api \
  && mkdir -p /var/log/supervisor
@@ -50,5 +49,5 @@ RUN php composer.phar dump-autoload --optimize \
  && chown -R www-data: /var/www/rc-api
 
 EXPOSE 80
-CMD cd /var/container_init && ./init.sh && /usr/bin/supervisord -c /etc/supervisord.conf && /usr/sbin/apache2ctl -D FOREGROUND
+CMD cd /var/container_init && ./init.sh
 

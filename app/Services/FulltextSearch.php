@@ -104,36 +104,39 @@ class FulltextSearch extends Services
             array_push($fields, "annotations_string.".$lang);
         }
 
+
         $queryString = isset($request['q']) ? $request['q'] : "";
 
         if (!empty($queryString)) {
             $operatorFound = $this->findOperator($queryString);
 
             if ($operatorFound) {
-                $params['body']['query']['simple_query_string'] = [
+                $simpleQuery =
+                    ['simple_query_string' => [
                     "fields"           => $fields,
                     'query'            => urldecode($queryString),
                     "default_operator" => "AND",
-                ];
+                ]];
+                array_push($filters, $simpleQuery);
             } else {
-                $params['body']['query']['query_string'] = [
+                $queryStringFilter = ['query_string' => [
                     "fields"              => $fields,
                     'query'               => $this->addFuzzyOperator($request['q']),
                     "default_operator"    => "AND",
                     "fuzzy_prefix_length" => 4,
-                ];
+                ]];
+                array_push($filters, $queryStringFilter);
             }
         }
-
         if (!empty($filters)) {
-            $params['body']['filter'] = [
-                "and" => [
-                    "filters" => $filters,
+            $params['body']['query'] = [
+                "bool" => [
+                    "must" => $filters,
                 ],
             ];
         }
 
-        $params['body']['fields'] = [
+        $params['body']['_source'] = [
             $lang.".contract_name",
             $lang.".signature_year",
             $lang.".open_contracting_id",
@@ -265,42 +268,41 @@ class FulltextSearch extends Services
 
         foreach ($fields as $field) {
             $contractId = $field['_id'];
-            if (isset($field['fields'][$lang.'.country_code'])) {
-                array_push($data['country'], $field['fields'][$lang.'.country_code'][0]);
+            $source = $field['_source'][$lang];
+            if (isset($source['country_code'])) {
+                array_push($data['country'], $this->getValueOfField($source,'country_code'));
             }
-            if (isset($field['fields'][$lang.'.signature_year'])) {
-                array_push($data['year'], (int) $field['fields'][$lang.'.signature_year'][0]);
+            if (isset($source['signature_year'])) {
+                array_push($data['year'], (int) $this->getValueOfField($source,'signature_year'));
             }
-            if (isset($field['fields'][$lang.'.contract_type'])) {
-                array_push($data['contract_type'], $field['fields'][$lang.'.contract_type'][0]);
+            if (isset($source['contract_type'])) {
+                array_push($data['contract_type'], $this->getValueOfField($source,'contract_type'));
             }
-            if (isset($field['fields'][$lang.'.resource'])) {
-                $data['resource'] = array_merge($data['resource'], $field['fields'][$lang.'.resource']);
+            if (isset($source['resource'])) {
+                $data['resource'] = array_merge($data['resource'], $this->getValuesOfField($source,'resource'));
             }
-            if (isset($field['fields'][$lang.'.company_name'])) {
-                $data['company_name'] = array_merge($data['company_name'], $field['fields'][$lang.'.company_name']);
+            if (isset($source['company_name'])) {
+                $data['company_name'] = array_merge($data['company_name'], $this->getValuesOfField($source,'company_name'));
             }
-            if (isset($field['fields'][$lang.'.corporate_grouping'])) {
+            if (isset($source['corporate_grouping'])) {
                 $data['corporate_group'] = array_merge(
                     $data['corporate_group'],
-                    $field['fields'][$lang.'.corporate_grouping']
+                    $this->getValuesOfField($source,'corporate_grouping')
                 );
             }
 
             $data['results'][$i]          = [
                 "id"                  => (int) $contractId,
-                "open_contracting_id" => isset($field['fields'][$lang.'.open_contracting_id']) ? $field['fields'][$lang.'.open_contracting_id'][0] : "",
-                "name"                => isset($field['fields'][$lang.'.contract_name']) ? $field['fields'][$lang.'.contract_name'][0] : "",
-                "year_signed"         => isset($field['fields'][$lang.'.signature_year']) ? $this->getSignatureYear(
-                    $field['fields'][$lang.'.signature_year'][0]
-                ) : "",
-                "contract_type"       => isset($field['fields'][$lang.'.contract_type']) ? $field['fields'][$lang.'.contract_type'] : [],
-                "resource"            => isset($field['fields'][$lang.'.resource']) ? $field['fields'][$lang.'.resource'] : [],
-                'country_code'        => isset($field['fields'][$lang.'.country_code']) ? $field['fields'][$lang.'.country_code'][0] : "",
-                "language"            => isset($field['fields'][$lang.'.language']) ? $field['fields'][$lang.'.language'][0] : "",
-                "category"            => isset($field['fields'][$lang.'.category']) ? $field['fields'][$lang.'.category'] : [],
-                "is_ocr_reviewed"     => isset($field['fields'][$lang.'.show_pdf_text']) ? $this->getBoolean(
-                    (int) $field['fields'][$lang.'.show_pdf_text'][0]
+                "open_contracting_id" => $this->getValueOfField($source,'open_contracting_id'),
+                "name"                => $this->getValueOfField($source,'contract_name'),
+                "year_signed"         => $this->getValueOfField($source,'signature_year'),
+                "contract_type"       => $this->getValuesOfField($source,'contract_type'),
+                "resource"            => $this->getValuesOfField($source,'resource'),
+                'country_code'        => $this->getValueOfField($source,'country_code'),
+                "language"            => $this->getValueOfField($source,'language'),
+                "category"            => $this->getValuesOfField($source,'category'),
+                "is_ocr_reviewed"     => isset($source['show_pdf_text']) ? $this->getBoolean(
+                    (int) $this->getValueOfField($source,'show_pdf_text')
                 ) : null,
             ];
             $data['results'][$i]['group'] = [];
@@ -410,7 +412,7 @@ class FulltextSearch extends Services
         $params['type']  = "master";
         $params['body']  = [
             "query" => [
-                "match_all" => [],
+                "match_all" => new class{},
             ],
         ];
         $count           = $this->countResult($params);
@@ -565,6 +567,5 @@ class FulltextSearch extends Services
 
         return $data;
     }
-
 
 }
