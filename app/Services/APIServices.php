@@ -467,7 +467,7 @@ class APIServices extends Services
 
         $perPage = (isset($request['per_page']) && !empty($request['per_page'])) ? (integer)$request['per_page'] : self::SIZE;
         $perPage = ($perPage < 100) ? $perPage : 100;
-        $from = (isset($request['from']) && !empty($request['from'])) ? (integer)$request['from'] : self::FROM;
+        $from = (isset($request['from']) && !empty($request['from'] && (integer)$request['from']>-1 )) ? (integer)$request['from'] : self::FROM;
         $from = ($from < 9900) ? $from : 9900;
 
         $params['body']['size'] = $perPage;
