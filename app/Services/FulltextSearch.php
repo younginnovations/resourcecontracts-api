@@ -83,10 +83,9 @@ class FulltextSearch extends Services
         if (isset($request['annotated']) and !empty($request['annotated']) and $request['annotated'] == 1) {
             $filters[] = [
                 "bool" => [
-                    "must_not" => [
-                        "missing" => [
-                            "field"     => "annotations_string.".$lang,
-                            "existence" => true,
+                    "must" => [
+                        "exists" => [
+                            "field"     => "annotations_string.".$lang
                         ],
                     ],
                 ],
@@ -155,19 +154,19 @@ class FulltextSearch extends Services
         ];
         if (isset($request['sort_by']) and !empty($request['sort_by'])) {
             if ($request['sort_by'] == "country") {
-                $params['body']['sort'][$lang.'.country_name']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
+                $params['body']['sort'][$lang.'.country_name']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == "year") {
-                $params['body']['sort'][$lang.'.signature_year']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
+                $params['body']['sort'][$lang.'.signature_year']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == "contract_name") {
-                $params['body']['sort'][$lang.'.contract_name.raw']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
+                $params['body']['sort'][$lang.'.contract_name.raw']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == "resource") {
-                $params['body']['sort'][$lang.'.resource_raw']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
+                $params['body']['sort'][$lang.'.resource_raw']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == "contract_type") {
-                $params['body']['sort'][$lang.'.contract_type']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
+                $params['body']['sort'][$lang.'.contract_type']['order'] = $this->getSortOrder($request);
             }
         }
 
@@ -208,7 +207,7 @@ class FulltextSearch extends Services
 
         $perPage = (isset($request['per_page']) && !empty($request['per_page'])) ? (integer) $request['per_page'] : self::SIZE;
         $perPage = ($perPage < 100) ? $perPage : 100;
-        $from    = (isset($request['from']) && !empty($request['from'])) ? (integer) $request['from'] : self::FROM;
+        $from    = (isset($request['from']) && !empty($request['from'])) && (integer) $request['from']>-1? (integer) $request['from'] : self::FROM;
         $from    = ($from < 9900) ? $from : 9900;
 
         $params['body']['size'] = $perPage;
@@ -221,7 +220,7 @@ class FulltextSearch extends Services
         }
 
         $data         = $this->searchText($params, $type, $queryString, $lang);
-        $data['from'] = isset($request['from']) ? $request['from'] : self::FROM;
+        $data['from'] = isset($request['from']) and !empty($request['form']) and (integer)$request['form']>-1 ? $request['from'] : self::FROM;
 
         $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
         if (isset($request['download']) && $request['download']) {
@@ -566,6 +565,18 @@ class FulltextSearch extends Services
         }
 
         return $data;
+    }
+
+    /**
+     * @param $request
+     * @return string
+     */
+    private function getSortOrder($request)
+    {
+        return (isset($request['order']) and in_array(
+                $request['order'],
+                ['desc', 'asc']
+            )) ? $request['order'] : self::ORDER;
     }
 
 }
