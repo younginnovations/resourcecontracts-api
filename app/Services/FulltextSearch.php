@@ -83,10 +83,9 @@ class FulltextSearch extends Services
         if (isset($request['annotated']) and !empty($request['annotated']) and $request['annotated'] == 1) {
             $filters[] = [
                 "bool" => [
-                    "must_not" => [
-                        "missing" => [
-                            "field"     => "annotations_string.".$lang,
-                            "existence" => true,
+                    "must" => [
+                        "exists" => [
+                            "field"     => "annotations_string.".$lang
                         ],
                     ],
                 ],
