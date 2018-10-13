@@ -207,7 +207,7 @@ class FulltextSearch extends Services
 
         $perPage = (isset($request['per_page']) && !empty($request['per_page'])) ? (integer) $request['per_page'] : self::SIZE;
         $perPage = ($perPage < 100) ? $perPage : 100;
-        $from    = (isset($request['from']) && !empty($request['from'])) ? (integer) $request['from'] : self::FROM;
+        $from    = (isset($request['from']) && !empty($request['from'])) && (integer) $request['from']>-1? (integer) $request['from'] : self::FROM;
         $from    = ($from < 9900) ? $from : 9900;
 
         $params['body']['size'] = $perPage;
@@ -220,7 +220,7 @@ class FulltextSearch extends Services
         }
 
         $data         = $this->searchText($params, $type, $queryString, $lang);
-        $data['from'] = isset($request['from']) ? $request['from'] : self::FROM;
+        $data['from'] = isset($request['from']) and !empty($request['form']) and (integer)$request['form']>-1 ? $request['from'] : self::FROM;
 
         $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
         if (isset($request['download']) && $request['download']) {
