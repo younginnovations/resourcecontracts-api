@@ -391,7 +391,7 @@ class APIServices extends Services
 
         $params['body'] = [
             "_source" => [
-                "exclude" => [
+                "excludes" => [
                     $lang . ".updated_user_name",
                     $lang . ".updated_user_email",
                     $lang . ".updated_at",
