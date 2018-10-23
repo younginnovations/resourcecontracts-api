@@ -7,10 +7,7 @@
  */
 class APIServices extends Services
 {
-    /**
-     * string Sorting order default is ascending
-     */
-    const ORDER = "asc";
+
     /**
      * int Start from default is 0
      */
@@ -394,7 +391,7 @@ class APIServices extends Services
 
         $params['body'] = [
             "_source" => [
-                "exclude" => [
+                "excludes" => [
                     $lang . ".updated_user_name",
                     $lang . ".updated_user_email",
                     $lang . ".updated_at",
@@ -485,25 +482,19 @@ class APIServices extends Services
         if (isset($request['sort_by']) and !empty($request['sort_by'])) {
 
             if ($request['sort_by'] == 'country') {
-                $params['body']['sort'][$lang . '.country.name.raw']['order'] = (isset($request['order']) and in_array(
-                        $request['order'],
-                        ['desc', 'asc']
-                    )) ? $request['order'] : self::ORDER;
+                $params['body']['sort'][$lang . '.country.name.raw']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == 'year') {
-                $params['body']['sort'][$lang . '.signature_year']['order'] = (isset($request['order']) and in_array(
-                        $request['order'],
-                        ['desc', 'asc']
-                    )) ? $request['order'] : self::ORDER;
+                $params['body']['sort'][$lang . '.signature_year']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == 'contract_name') {
-                $params['body']['sort'][$lang . '.contract_name.raw']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
+                $params['body']['sort'][$lang . '.contract_name.raw']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == 'resource') {
-                $params['body']['sort'][$lang . '.resource']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
+                $params['body']['sort'][$lang . '.resource']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == 'contract_type') {
-                $params['body']['sort'][$lang . '.type_of_contract.raw']['order'] = (isset($request['order']) and !empty($request['order'])) ? $request['order'] : self::ORDER;
+                $params['body']['sort'][$lang . '.type_of_contract.raw']['order'] = $this->getSortOrder($request);
             }
         }
 
