@@ -10,6 +10,10 @@ use Monolog\Logger;
 class Services
 {
     /**
+     * string Sorting order default is ascending
+     */
+    const ORDER = "asc";
+    /**
      * @param index
      */
     public $index;
@@ -26,7 +30,7 @@ class Services
     {
         $hosts       = explode(",",env('ELASTICSEARCH_SERVER'));
         $this->index = env("INDEX");
-        $logger      = ClientBuilder::defaultLogger('/var/log/rc-api.log');
+        $logger      = ClientBuilder::defaultLogger('/var/log/rc-api.log', Logger::WARNING);
         $client      = ClientBuilder::create()->setHosts($hosts)->setLogger($logger);
         $this->api   = $client->build();
         $this->lang  = "en";
@@ -239,5 +243,17 @@ class Services
             return $field_value;
         }
         return [];
+    }
+
+    /**
+     * @param $request
+     * @return string
+     */
+    protected function getSortOrder($request)
+    {
+        return (isset($request['order']) and in_array(
+                $request['order'],
+                ['desc', 'asc']
+            )) ? $request['order'] : self::ORDER;
     }
 }

@@ -17,7 +17,6 @@ class FulltextSearch extends Services
 
     const FROM = 0;
     const SIZE = 25;
-    const ORDER = "asc";
     /**
      * @var APIRepositoryInterface
      */
@@ -565,18 +564,6 @@ class FulltextSearch extends Services
         }
 
         return $data;
-    }
-
-    /**
-     * @param $request
-     * @return string
-     */
-    private function getSortOrder($request)
-    {
-        return (isset($request['order']) and in_array(
-                $request['order'],
-                ['desc', 'asc']
-            )) ? $request['order'] : self::ORDER;
     }
 
 }
