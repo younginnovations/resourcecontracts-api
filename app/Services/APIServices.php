@@ -38,7 +38,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.country.code',
+                                    'field' => $lang . '.country.code.raw',
                                     'size' => 252,
                                     'order' => [
                                         "_term" => "asc",
@@ -49,7 +49,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.signature_year',
+                                    'field' => $lang . '.signature_year.raw',
                                     'size' => 1000,
                                     'order' => [
                                         "_term" => "desc",
@@ -872,7 +872,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.country.code',
+                                    'field' => $lang . '.country.code.raw',
                                     'size' => 252,
                                 ],
                         ],
@@ -1021,7 +1021,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.signature_year',
+                                    'field' => $lang . '.signature_year.raw',
                                     'size' => 1000,
                                 ],
                         ],
@@ -1091,7 +1091,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.country.code',
+                                    'field' => $lang . '.country.code.raw',
                                     'size' => 1000,
                                 ],
                             "aggs" => [
