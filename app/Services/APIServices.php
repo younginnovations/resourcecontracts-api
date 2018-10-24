@@ -884,7 +884,7 @@ class APIServices extends Services
         $results = $searchResult['aggregations']['country_summary']['buckets'];
         foreach ($results as $result) {
             $data['results'][] = [
-                'code' => $result['key'],
+                'code' => strtolower($result['key']),
                 'contract' => $result['doc_count'],
             ];
         }
