@@ -1174,7 +1174,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.company_name',
+                                    'field' => $lang . '.company_name.keyword',
                                     'size' => 3000,
                                     'order' => [
                                         "_term" => "asc",
@@ -1185,7 +1185,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.corporate_grouping',
+                                    'field' => $lang . '.corporate_grouping.keyword',
                                     'size' => 1000,
                                     'order' => [
                                         "_term" => "asc",
@@ -1196,7 +1196,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.contract_type',
+                                    'field' => $lang . '.contract_type.keyword',
                                     'size' => 1000,
                                     'order' => [
                                         "_term" => "asc",
@@ -1207,7 +1207,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.document_type.raw',
+                                    'field' => $lang . '.document_type.keyword',
                                     'size' => 1000,
                                     'order' => [
                                         "_term" => "asc",
@@ -1218,7 +1218,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.language',
+                                    'field' => $lang . '.language.keyword',
                                     'size' => 1000,
                                     'order' => [
                                         "_term" => "asc",
@@ -1300,7 +1300,7 @@ class APIServices extends Services
                     'category_summary' =>
                         [
                             "terms" => [
-                                "field" => "annotations_category",
+                                "field" => "annotations_category.keyword",
                                 "size" => 1000,
                             ],
                         ],
