@@ -45,8 +45,8 @@ class FulltextSearch extends Services
             $filters[] = ["terms" => [$lang.".signature_year.keyword" => $year]];
         }
         if (isset($request['country_code']) and !empty($request['country_code'])) {
-            $country   = explode('|', $request['country_code.keyword']);
-            $filters[] = ["terms" => [$lang.".country_code" => $country]];
+            $country   = explode('|', $request['country_code']);
+            $filters[] = ["terms" => [$lang.".country_code.keyword" => $country]];
         }
         if (isset($request['resource']) and !empty($request['resource'])) {
             $resource  = explode('|', $request['resource']);
