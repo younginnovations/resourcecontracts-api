@@ -124,7 +124,7 @@ class APIServices extends Services
 
         if (!empty($contractId) && $type == "string") {
             $filter[] = [
-                "term" => ["open_contracting_id" => ["value" => $contractId]],
+                "term" => ["open_contracting_id.keyword" => ["value" => $contractId]],
             ];
         }
         if (!empty($contractId) && $type == "numeric") {
@@ -187,7 +187,7 @@ class APIServices extends Services
 
         if (!empty($contractId) && $type == "string") {
             $filter[] = [
-                "term" => ["open_contracting_id" => ["value" => $contractId]],
+                "term" => ["open_contracting_id.keyword" => ["value" => $contractId]],
             ];
         }
         if (!empty($contractId) && $type == "numeric") {
@@ -273,7 +273,7 @@ class APIServices extends Services
 
         if (!empty($contractId) && $type == "string") {
             $filter[] = [
-                "term" => ["open_contracting_id" => ["value" => $contractId]],
+                "term" => ["open_contracting_id.keyword" => ["value" => $contractId]],
             ];
         }
         if (!empty($contractId) && $type == "numeric") {
