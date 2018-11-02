@@ -485,13 +485,13 @@ class APIServices extends Services
                 $params['body']['sort'][$lang . '.country.name.raw']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == 'year') {
-                $params['body']['sort'][$lang . '.signature_year']['order'] = $this->getSortOrder($request);
+                $params['body']['sort'][$lang . '.signature_year.keyword']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == 'contract_name') {
                 $params['body']['sort'][$lang . '.contract_name.raw']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == 'resource') {
-                $params['body']['sort'][$lang . '.resource']['order'] = $this->getSortOrder($request);
+                $params['body']['sort'][$lang . '.resource.keyword']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == 'contract_type') {
                 $params['body']['sort'][$lang . '.type_of_contract.raw']['order'] = $this->getSortOrder($request);

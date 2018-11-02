@@ -154,19 +154,19 @@ class FulltextSearch extends Services
         ];
         if (isset($request['sort_by']) and !empty($request['sort_by'])) {
             if ($request['sort_by'] == "country") {
-                $params['body']['sort'][$lang.'.country_name']['order'] = $this->getSortOrder($request);
+                $params['body']['sort'][$lang.'.country_name.keyword']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == "year") {
-                $params['body']['sort'][$lang.'.signature_year']['order'] = $this->getSortOrder($request);
+                $params['body']['sort'][$lang.'.signature_year.keyword']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == "contract_name") {
                 $params['body']['sort'][$lang.'.contract_name.raw']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == "resource") {
-                $params['body']['sort'][$lang.'.resource_raw']['order'] = $this->getSortOrder($request);
+                $params['body']['sort'][$lang.'.resource_raw.keyword']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == "contract_type") {
-                $params['body']['sort'][$lang.'.contract_type']['order'] = $this->getSortOrder($request);
+                $params['body']['sort'][$lang.'.contract_type.keyword']['order'] = $this->getSortOrder($request);
             }
         }
 
