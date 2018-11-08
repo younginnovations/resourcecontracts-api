@@ -30,7 +30,7 @@ class Services
     {
         $hosts       = explode(",",env('ELASTICSEARCH_SERVER'));
         $this->index = env("INDEX");
-        $logger      = ClientBuilder::defaultLogger('/var/log/rc-api.log', Logger::WARNING);
+        $logger      = ClientBuilder::defaultLogger('/var/log/rc-api.log', Logger::DEBUG);
         $client      = ClientBuilder::create()->setHosts($hosts)->setLogger($logger);
         $this->api   = $client->build();
         $this->lang  = "en";

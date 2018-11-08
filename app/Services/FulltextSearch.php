@@ -42,42 +42,43 @@ class FulltextSearch extends Services
         }
         if (isset($request['year']) and !empty($request['year'])) {
             $year      = explode('|', $request['year']);
-            $filters[] = ["terms" => [$lang.".signature_year" => $year]];
+            $filters[] = ["terms" => [$lang.".signature_year.keyword" => $year]];
         }
         if (isset($request['country_code']) and !empty($request['country_code'])) {
-            $country   = explode('|', $request['country_code']);
-            $filters[] = ["terms" => [$lang.".country_code" => $country]];
+            $country   = explode('|', strtoupper($request['country_code']));
+            $filters[] = ["terms" => [$lang.".country_code.keyword" => $country]];
         }
         if (isset($request['resource']) and !empty($request['resource'])) {
             $resource  = explode('|', $request['resource']);
-            $filters[] = ["terms" => [$lang.".resource_raw" => $resource]];
+            $filters[] = ["terms" => [$lang.".resource_raw.keyword" => $resource]];
         }
         if (isset($request['category']) and !empty($request['category'])) {
-            $filters[] = ["term" => [$lang.".category" => $request['category']]];
+            $filters[] = ["term" => [$lang.".category.keyword" => $request['category']]];
         }
         if (isset($request['contract_type']) and !empty($request['contract_type'])) {
             $contractType = explode('|', $request['contract_type']);
-            $filters[]    = ["terms" => [$lang.".contract_type" => $contractType]];
+            $filters[]    = ["terms" => [$lang.".contract_type.keyword" => $contractType]];
         }
         if (isset($request['document_type']) and !empty($request['document_type'])) {
             $contractType = explode('|', $request['document_type']);
-            $filters[]    = ["terms" => [$lang.".document_type.raw" => $contractType]];
+            $filters[]    = ["terms" => [$lang.".document_type.keyword" => $contractType]];
         }
         if (isset($request['language']) and !empty($request['language'])) {
             $contractType = explode('|', $request['language']);
-            $filters[]    = ["terms" => [$lang.".language" => $contractType]];
+            $filters[]    = ["terms" => [$lang.".language.keyword" => $contractType]];
         }
         if (isset($request['company_name']) and !empty($request['company_name'])) {
             $companyName = explode('|', $request['company_name']);
-            $filters[]   = ["terms" => [$lang.".company_name" => $companyName]];
+            $filters[]   = ["terms" => [$lang.".company_name.keyword" => $companyName]];
         }
         if (isset($request['corporate_group']) and !empty($request['corporate_group'])) {
             $corporateGroup = explode('|', $request['corporate_group']);
-            $filters[]      = ["terms" => [$lang.".corporate_grouping" => $corporateGroup]];
+            $filters[]      = ["terms" => [$lang.".corporate_grouping.keyword" => $corporateGroup]];
+            $filters[]      = ["terms" => [$lang.".corporate_grouping.keyword" => $corporateGroup]];
         }
         if (isset($request['annotation_category']) and !empty($request['annotation_category'])) {
             $annotationsCategory = explode('|', $request['annotation_category']);
-            $filters[]           = ["terms" => ["annotations_category" => $annotationsCategory]];
+            $filters[]           = ["terms" => ["annotations_category.keyword" => $annotationsCategory]];
         }
         if (isset($request['annotated']) and !empty($request['annotated']) and $request['annotated'] == 1) {
             $filters[] = [
@@ -153,19 +154,19 @@ class FulltextSearch extends Services
         ];
         if (isset($request['sort_by']) and !empty($request['sort_by'])) {
             if ($request['sort_by'] == "country") {
-                $params['body']['sort'][$lang.'.country_name']['order'] = $this->getSortOrder($request);
+                $params['body']['sort'][$lang.'.country_name.keyword']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == "year") {
-                $params['body']['sort'][$lang.'.signature_year']['order'] = $this->getSortOrder($request);
+                $params['body']['sort'][$lang.'.signature_year.keyword']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == "contract_name") {
                 $params['body']['sort'][$lang.'.contract_name.raw']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == "resource") {
-                $params['body']['sort'][$lang.'.resource_raw']['order'] = $this->getSortOrder($request);
+                $params['body']['sort'][$lang.'.resource_raw.keyword']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == "contract_type") {
-                $params['body']['sort'][$lang.'.contract_type']['order'] = $this->getSortOrder($request);
+                $params['body']['sort'][$lang.'.contract_type.keyword']['order'] = $this->getSortOrder($request);
             }
         }
 

@@ -38,7 +38,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.country.code',
+                                    'field' => $lang . '.country.code.raw',
                                     'size' => 252,
                                     'order' => [
                                         "_term" => "asc",
@@ -49,7 +49,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.signature_year',
+                                    'field' => $lang . '.signature_year.raw',
                                     'size' => 1000,
                                     'order' => [
                                         "_term" => "desc",
@@ -124,7 +124,7 @@ class APIServices extends Services
 
         if (!empty($contractId) && $type == "string") {
             $filter[] = [
-                "term" => ["open_contracting_id" => ["value" => $contractId]],
+                "term" => ["open_contracting_id.keyword" => ["value" => $contractId]],
             ];
         }
         if (!empty($contractId) && $type == "numeric") {
@@ -187,7 +187,7 @@ class APIServices extends Services
 
         if (!empty($contractId) && $type == "string") {
             $filter[] = [
-                "term" => ["open_contracting_id" => ["value" => $contractId]],
+                "term" => ["open_contracting_id.keyword" => ["value" => $contractId]],
             ];
         }
         if (!empty($contractId) && $type == "numeric") {
@@ -273,7 +273,7 @@ class APIServices extends Services
 
         if (!empty($contractId) && $type == "string") {
             $filter[] = [
-                "term" => ["open_contracting_id" => ["value" => $contractId]],
+                "term" => ["open_contracting_id.keyword" => ["value" => $contractId]],
             ];
         }
         if (!empty($contractId) && $type == "numeric") {
@@ -485,13 +485,13 @@ class APIServices extends Services
                 $params['body']['sort'][$lang . '.country.name.raw']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == 'year') {
-                $params['body']['sort'][$lang . '.signature_year']['order'] = $this->getSortOrder($request);
+                $params['body']['sort'][$lang . '.signature_year.keyword']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == 'contract_name') {
                 $params['body']['sort'][$lang . '.contract_name.raw']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == 'resource') {
-                $params['body']['sort'][$lang . '.resource']['order'] = $this->getSortOrder($request);
+                $params['body']['sort'][$lang . '.resource.keyword']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == 'contract_type') {
                 $params['body']['sort'][$lang . '.type_of_contract.raw']['order'] = $this->getSortOrder($request);
@@ -872,7 +872,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.country.code',
+                                    'field' => $lang . '.country.code.raw',
                                     'size' => 252,
                                 ],
                         ],
@@ -884,7 +884,7 @@ class APIServices extends Services
         $results = $searchResult['aggregations']['country_summary']['buckets'];
         foreach ($results as $result) {
             $data['results'][] = [
-                'code' => $result['key'],
+                'code' => strtolower($result['key']),
                 'contract' => $result['doc_count'],
             ];
         }
@@ -1021,7 +1021,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.signature_year',
+                                    'field' => $lang . '.signature_year.raw',
                                     'size' => 1000,
                                 ],
                         ],
@@ -1091,7 +1091,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.country.code',
+                                    'field' => $lang . '.country.code.raw',
                                     'size' => 1000,
                                 ],
                             "aggs" => [
@@ -1174,7 +1174,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.company_name',
+                                    'field' => $lang . '.company_name.keyword',
                                     'size' => 3000,
                                     'order' => [
                                         "_term" => "asc",
@@ -1185,7 +1185,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.corporate_grouping',
+                                    'field' => $lang . '.corporate_grouping.keyword',
                                     'size' => 1000,
                                     'order' => [
                                         "_term" => "asc",
@@ -1196,7 +1196,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.contract_type',
+                                    'field' => $lang . '.contract_type.keyword',
                                     'size' => 1000,
                                     'order' => [
                                         "_term" => "asc",
@@ -1207,7 +1207,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.document_type.raw',
+                                    'field' => $lang . '.document_type.keyword',
                                     'size' => 1000,
                                     'order' => [
                                         "_term" => "asc",
@@ -1218,7 +1218,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.language',
+                                    'field' => $lang . '.language.keyword',
                                     'size' => 1000,
                                     'order' => [
                                         "_term" => "asc",
@@ -1300,7 +1300,7 @@ class APIServices extends Services
                     'category_summary' =>
                         [
                             "terms" => [
-                                "field" => "annotations_category",
+                                "field" => "annotations_category.keyword",
                                 "size" => 1000,
                             ],
                         ],
