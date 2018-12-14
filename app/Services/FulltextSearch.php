@@ -37,6 +37,7 @@ class FulltextSearch extends Services
         $params['type']  = "master";
         $type            = isset($request['group']) ? array_map('trim', explode('|', $request['group'])) : [];
         $typeCheck       = $this->typeCheck($type);
+
         if (!$typeCheck) {
             return [];
         }
@@ -44,9 +45,24 @@ class FulltextSearch extends Services
             $year      = explode('|', $request['year']);
             $filters[] = ["terms" => [$lang.".signature_year.keyword" => $year]];
         }
+        $no_hydrocarbons = false;
+
+        if((isset($request['download']) && $request['download'])
+            && (isset($request['country']) && !empty($request['country']))
+            && (isset($request['country_code']) && empty($request['country_code'])))
+        {
+            $request['country_code'] = $request['country'];
+        }
+
         if (isset($request['country_code']) and !empty($request['country_code'])) {
             $country   = explode('|', strtoupper($request['country_code']));
             $filters[] = ["terms" => [$lang.".country_code.keyword" => $country]];
+            /*$country   = explode('|', $request['country_code']);
+            $filters[] = ["terms" => [$lang.".country_code" => $country]];*/
+
+            if (count($country) == 1 && in_array('GN', $country)) {
+                $no_hydrocarbons = true;
+            }
         }
         if (isset($request['resource']) and !empty($request['resource'])) {
             $resource  = explode('|', $request['resource']);
@@ -85,7 +101,7 @@ class FulltextSearch extends Services
                 "bool" => [
                     "must" => [
                         "exists" => [
-                            "field"     => "annotations_string.".$lang
+                            "field" => "annotations_string.".$lang,
                         ],
                     ],
                 ],
@@ -111,19 +127,23 @@ class FulltextSearch extends Services
 
             if ($operatorFound) {
                 $simpleQuery =
-                    ['simple_query_string' => [
-                    "fields"           => $fields,
-                    'query'            => urldecode($queryString),
-                    "default_operator" => "AND",
-                ]];
+                    [
+                        'simple_query_string' => [
+                            "fields"           => $fields,
+                            'query'            => urldecode($queryString),
+                            "default_operator" => "AND",
+                        ],
+                    ];
                 array_push($filters, $simpleQuery);
             } else {
-                $queryStringFilter = ['query_string' => [
-                    "fields"              => $fields,
-                    'query'               => $this->addFuzzyOperator($request['q']),
-                    "default_operator"    => "AND",
-                    "fuzzy_prefix_length" => 4,
-                ]];
+                $queryStringFilter = [
+                    'query_string' => [
+                        "fields"              => $fields,
+                        'query'               => $this->addFuzzyOperator($request['q']),
+                        "default_operator"    => "AND",
+                        "fuzzy_prefix_length" => 4,
+                    ],
+                ];
                 array_push($filters, $queryStringFilter);
             }
         }
@@ -207,7 +227,7 @@ class FulltextSearch extends Services
 
         $perPage = (isset($request['per_page']) && !empty($request['per_page'])) ? (integer) $request['per_page'] : self::SIZE;
         $perPage = ($perPage < 100) ? $perPage : 100;
-        $from    = (isset($request['from']) && !empty($request['from'])) && (integer) $request['from']>-1? (integer) $request['from'] : self::FROM;
+        $from    = (isset($request['from']) && !empty($request['from'])) && (integer) $request['from'] > -1 ? (integer) $request['from'] : self::FROM;
         $from    = ($from < 9900) ? $from : 9900;
 
         $params['body']['size'] = $perPage;
@@ -219,8 +239,16 @@ class FulltextSearch extends Services
             $params['body']['from'] = 0;
         }
 
-        $data         = $this->searchText($params, $type, $queryString, $lang);
-        $data['from'] = isset($request['from']) and !empty($request['form']) and (integer)$request['form']>-1 ? $request['from'] : self::FROM;
+        if ($no_hydrocarbons) {
+            $params['body']['query']['bool']['must_not']['term'] = $this->excludeResource(
+                'resource_raw',
+                'Hydrocarbons',
+                $lang
+            );
+        }
+
+        $data = $this->searchText($params, $type, $queryString, $lang);
+        $data['from'] = isset($request['from']) and !empty($request['from']) and (integer) $request['from'] > -1 ? $request['from'] : self::FROM;
 
         $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
         if (isset($request['download']) && $request['download']) {
@@ -267,41 +295,44 @@ class FulltextSearch extends Services
 
         foreach ($fields as $field) {
             $contractId = $field['_id'];
-            $source = $field['_source'][$lang];
+            $source     = $field['_source'][$lang];
             if (isset($source['country_code'])) {
-                array_push($data['country'], $this->getValueOfField($source,'country_code'));
+                array_push($data['country'], $this->getValueOfField($source, 'country_code'));
             }
             if (isset($source['signature_year'])) {
-                array_push($data['year'], (int) $this->getValueOfField($source,'signature_year'));
+                array_push($data['year'], (int) $this->getValueOfField($source, 'signature_year'));
             }
             if (isset($source['contract_type'])) {
-                array_push($data['contract_type'], $this->getValueOfField($source,'contract_type'));
+                array_push($data['contract_type'], $this->getValueOfField($source, 'contract_type'));
             }
             if (isset($source['resource'])) {
-                $data['resource'] = array_merge($data['resource'], $this->getValuesOfField($source,'resource'));
+                $data['resource'] = array_merge($data['resource'], $this->getValuesOfField($source, 'resource'));
             }
             if (isset($source['company_name'])) {
-                $data['company_name'] = array_merge($data['company_name'], $this->getValuesOfField($source,'company_name'));
+                $data['company_name'] = array_merge(
+                    $data['company_name'],
+                    $this->getValuesOfField($source, 'company_name')
+                );
             }
             if (isset($source['corporate_grouping'])) {
                 $data['corporate_group'] = array_merge(
                     $data['corporate_group'],
-                    $this->getValuesOfField($source,'corporate_grouping')
+                    $this->getValuesOfField($source, 'corporate_grouping')
                 );
             }
 
             $data['results'][$i]          = [
                 "id"                  => (int) $contractId,
-                "open_contracting_id" => $this->getValueOfField($source,'open_contracting_id'),
-                "name"                => $this->getValueOfField($source,'contract_name'),
-                "year_signed"         => $this->getValueOfField($source,'signature_year'),
-                "contract_type"       => $this->getValuesOfField($source,'contract_type'),
-                "resource"            => $this->getValuesOfField($source,'resource'),
-                'country_code'        => $this->getValueOfField($source,'country_code'),
-                "language"            => $this->getValueOfField($source,'language'),
-                "category"            => $this->getValuesOfField($source,'category'),
+                "open_contracting_id" => $this->getValueOfField($source, 'open_contracting_id'),
+                "name"                => $this->getValueOfField($source, 'contract_name'),
+                "year_signed"         => $this->getValueOfField($source, 'signature_year'),
+                "contract_type"       => $this->getValuesOfField($source, 'contract_type'),
+                "resource"            => $this->getValuesOfField($source, 'resource'),
+                'country_code'        => $this->getValueOfField($source, 'country_code'),
+                "language"            => $this->getValueOfField($source, 'language'),
+                "category"            => $this->getValuesOfField($source, 'category'),
                 "is_ocr_reviewed"     => isset($source['show_pdf_text']) ? $this->getBoolean(
-                    (int) $this->getValueOfField($source,'show_pdf_text')
+                    (int) $this->getValueOfField($source, 'show_pdf_text')
                 ) : null,
             ];
             $data['results'][$i]['group'] = [];
@@ -411,7 +442,9 @@ class FulltextSearch extends Services
         $params['type']  = "master";
         $params['body']  = [
             "query" => [
-                "match_all" => new class{},
+                "match_all" => new class
+                {
+                },
             ],
         ];
         $count           = $this->countResult($params);
