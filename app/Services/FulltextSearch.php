@@ -55,6 +55,7 @@ class FulltextSearch extends Services
         }
 
         if (isset($request['country_code']) and !empty($request['country_code'])) {
+
             $country   = explode('|', strtoupper($request['country_code']));
             $filters[] = ["terms" => [$lang.".country_code.keyword" => $country]];
             /*$country   = explode('|', $request['country_code']);

@@ -998,6 +998,7 @@ class APIServices extends Services
                 ],
             ];
 
+
             if (count($country)==1 && in_array('gn', $country)) {
                 $no_hydrocarbon = true;
             }
