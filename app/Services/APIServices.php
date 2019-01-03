@@ -1,4 +1,5 @@
-<?php namespace App\Services;
+<?php
+namespace App\Services;
 
 /**
  * API Service for client site
