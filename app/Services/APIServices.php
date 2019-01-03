@@ -72,6 +72,7 @@ class APIServices extends Services
 
         $filters        = [];
         $no_hydrocarbon = false;
+        $isCountrySite =  (isset($request['is_country_site']) && $request['is_country_site']) ? true : false;
 
         if (isset($request['category']) && !empty($request['category'])) {
             $categoryFilter = $this->getCategory($lang, $request['category']);
@@ -85,7 +86,7 @@ class APIServices extends Services
             ];
             array_push($filters, $country);
 
-            if ($request['country_code'] == 'gn') {
+            if ($request['country_code'] == 'gn' && $isCountrySite) {
                 $no_hydrocarbon = true;
             }
         }
@@ -471,6 +472,8 @@ class APIServices extends Services
         $lang           = $this->getLang($request);
         $no_hydrocarbon = false;
 
+        $isCountrySite =  (isset($request['is_country_site']) && $request['is_country_site']) ? true : false;
+
         if (isset($request['country_code']) and !empty($request['country_code'])) {
             $filter[] = [
                 'term' => [
@@ -478,7 +481,7 @@ class APIServices extends Services
                 ],
             ];
 
-            if ($request['country_code'] == 'gn') {
+            if ($request['country_code'] == 'gn' && $isCountrySite) {
                 $no_hydrocarbon = true;
             }
         }
@@ -917,6 +920,8 @@ class APIServices extends Services
         }
 
         $no_hydrocarbon = false;
+        $isCountrySite =  (isset($request['is_country_site']) && $request['is_country_site']) ? true : false;
+
         if (isset($request['country_code']) && !empty($request['country_code'])) {
             $filters[] = [
                 "term" => [
@@ -924,7 +929,7 @@ class APIServices extends Services
                 ],
             ];
 
-            if ($request['country_code'] == 'gn') {
+            if ($request['country_code'] == 'gn' && $isCountrySite) {
                 $no_hydrocarbon = true;
             }
         }
@@ -990,6 +995,7 @@ class APIServices extends Services
         ) : [];
         $filters        = [];
         $no_hydrocarbon = false;
+        $isCountrySite =  (isset($request['is_country_site']) && $request['is_country_site']) ? true : false;
 
         if (!empty($country)) {
             $filters[] = [
@@ -998,8 +1004,7 @@ class APIServices extends Services
                 ],
             ];
 
-
-            if (count($country)==1 && in_array('gn', $country)) {
+            if (count($country) ==1 && in_array('gn', $country) && $isCountrySite) {
                 $no_hydrocarbon = true;
             }
         }
@@ -1017,8 +1022,8 @@ class APIServices extends Services
                     $lang.".country.code" => $request['country_code'],
                 ],
             ];
-            
-            if (strtolower($request['country_code']) == 'gn') {
+
+            if ($request['country_code'] == 'gn' && $isCountrySite) {
                 $no_hydrocarbon = true;
             }
         }
@@ -1152,6 +1157,7 @@ class APIServices extends Services
         $resources      = isset($request['resource']) ? array_map('trim', explode(',', $request['resource'])) : [];
         $filters        = [];
         $no_hydrocarbon = false;
+        $isCountrySite =  (isset($request['is_country_site']) && $request['is_country_site']) ? true : false;
 
         if (!empty($resources)) {
             $filters[] = [
@@ -1176,7 +1182,7 @@ class APIServices extends Services
                 ],
             ];
 
-            if ($request['country_code'] == 'gn') {
+            if ($request['country_code'] == 'gn' && $isCountrySite) {
                 $no_hydrocarbon = true;
             }
         }
