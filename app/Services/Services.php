@@ -287,9 +287,10 @@ class Services
      *
      * @return bool
      */
-    public function checkResourceAccess($contractId, $lang, $params = [])
+    public function checkResourceAccess($contractId, $lang, $access_params = [])
     {
         $resource_access = true;
+        $params          = [];
         $params['index'] = $this->index;
         $params['type']  = "metadata";
         $filter          = [];
@@ -320,7 +321,7 @@ class Services
         if (!empty($result)) {
             $result = $result[0]['_source'][$lang];
 
-            if ((isset($result['country']['code']) && $result['country']['code'] == 'GN' && $params['isCountrySite'])
+            if ((isset($result['country']['code']) && $result['country']['code'] == 'GN' && $access_params['isCountrySite'])
                 && (isset($result['resource']) && in_array('Hydrocarbons', $result['resource']))
             ) {
                 $resource_access = false;
