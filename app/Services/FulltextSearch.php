@@ -46,7 +46,7 @@ class FulltextSearch extends Services
             $filters[] = ["terms" => [$lang . ".signature_year.keyword" => $year]];
         }
         $no_hydrocarbons = false;
-        $isCountrySite   = (isset($request['is_country_site']) && $request['is_country_site']) ? true : false;
+        $isCountrySite   = (isset($request['is_country_site']) && $request['is_country_site'] == 1) ? true : false;
 
         if ((isset($request['download']) && $request['download'])
             && (isset($request['country']) && !empty($request['country']))
