@@ -242,7 +242,7 @@ class FulltextSearch extends Services
 
         if ($no_hydrocarbons) {
             $params['body']['query']['bool']['must_not']['term'] = $this->excludeResource(
-                'resource_raw',
+                'resource_raw.keyword',
                 'Hydrocarbons',
                 $lang
             );
