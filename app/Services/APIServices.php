@@ -135,12 +135,14 @@ class APIServices extends Services
      */
     public function getTextPages($contractId, array $request = [])
     {
-        $data            = [
+        $data                           = [
             'total'  => 0,
             'result' => [],
         ];
-        $lang            = $this->getLang($request);
-        $resource_access = $this->checkResourceAccess($contractId, $lang);
+        $lang                           = $this->getLang($request);
+        $access_params                  = [];
+        $access_params['isCountrySite'] = (isset($request['is_country_site']) && $request['is_country_site'] == 1) ? true : false;
+        $resource_access                = $this->checkResourceAccess($contractId, $lang, $access_params);
 
         if (!$resource_access) {
             return $data;
@@ -204,17 +206,19 @@ class APIServices extends Services
      */
     public function getAnnotationPages($contractId, $request)
     {
-        $params          = [];
-        $data            = [
+        $params                         = [];
+        $data                           = [
             'total'  => 0,
             'result' => [],
         ];
-        $params['index'] = $this->index;
-        $params['type']  = "annotations";
-        $filter          = [];
-        $lang            = $this->getLang($request);
-        $type            = $this->getIdType($contractId);
-        $resource_access = $this->checkResourceAccess($contractId, $lang);
+        $params['index']                = $this->index;
+        $params['type']                 = "annotations";
+        $filter                         = [];
+        $lang                           = $this->getLang($request);
+        $type                           = $this->getIdType($contractId);
+        $access_params                  = [];
+        $access_params['isCountrySite'] = (isset($request['is_country_site']) && $request['is_country_site'] == 1) ? true : false;
+        $resource_access                = $this->checkResourceAccess($contractId, $lang, $access_params);
 
         if (!$resource_access) {
             return $data;
@@ -296,9 +300,11 @@ class APIServices extends Services
      */
     public function getAnnotationGroup($contractId, $request)
     {
-        $lang            = $this->getLang($request);
-        $resource_access = $this->checkResourceAccess($contractId, $lang);
-        $data            = ['total' => 0, 'result' => []];
+        $lang                           = $this->getLang($request);
+        $access_params                  = [];
+        $access_params['isCountrySite'] = (isset($request['is_country_site']) && $request['is_country_site'] == 1) ? true : false;
+        $resource_access                = $this->checkResourceAccess($contractId, $lang, $access_params);
+        $data                           = ['total' => 0, 'result' => []];
 
         if (!$resource_access) {
             return $data;
@@ -405,12 +411,14 @@ class APIServices extends Services
      */
     public function getMetadata($contractId, $request)
     {
-        $params          = $this->getMetadataIndexType();
-        $filters         = [];
-        $category        = '';
-        $type            = $this->getIdType($contractId);
-        $lang            = $this->getLang($request);
-        $resource_access = $this->checkResourceAccess($contractId, $lang);
+        $params                         = $this->getMetadataIndexType();
+        $filters                        = [];
+        $category                       = '';
+        $type                           = $this->getIdType($contractId);
+        $lang                           = $this->getLang($request);
+        $access_params                  = [];
+        $access_params['isCountrySite'] = (isset($request['is_country_site']) && $request['is_country_site'] == 1) ? true : false;
+        $resource_access                = $this->checkResourceAccess($contractId, $lang, $access_params);
 
         if (!$resource_access) {
             return [];
@@ -474,7 +482,7 @@ class APIServices extends Services
         $lang           = $this->getLang($request);
         $no_hydrocarbon = false;
 
-        $isCountrySite  = (isset($request['is_country_site']) && $request['is_country_site'] == 1) ? true : false;
+        $isCountrySite = (isset($request['is_country_site']) && $request['is_country_site'] == 1) ? true : false;
 
         if (isset($request['country_code']) and !empty($request['country_code'])) {
             $filter[] = [
@@ -613,14 +621,16 @@ class APIServices extends Services
      */
     public function searchAnnotationAndText($contractId, $request)
     {
-        $lang            = $this->getLang($request);
-        $data            = [
+        $lang                           = $this->getLang($request);
+        $data                           = [
             'total'              => 0,
             'total_search_count' => 0,
             'results'            => [],
 
         ];
-        $resource_access = $this->checkResourceAccess($contractId, $lang);
+        $access_params                  = [];
+        $access_params['isCountrySite'] = (isset($request['is_country_site']) && $request['is_country_site'] == 1) ? true : false;
+        $resource_access                = $this->checkResourceAccess($contractId, $lang, $access_params);
 
         if (!$resource_access) {
             return $data;
@@ -1547,11 +1557,13 @@ class APIServices extends Services
             ],
         ];
 
-        $results         = $this->search($params);
-        $data            = isset($results['hits']['hits'][0]["_source"]) ? $results['hits']['hits'][0]["_source"] : [];
-        $page            = [];
-        $lang            = $this->getLang($request);
-        $resource_access = $this->checkResourceAccess($data['contract_id'], $lang);
+        $results                        = $this->search($params);
+        $data                           = isset($results['hits']['hits'][0]["_source"]) ? $results['hits']['hits'][0]["_source"] : [];
+        $page                           = [];
+        $lang                           = $this->getLang($request);
+        $access_params                  = [];
+        $access_params['isCountrySite'] = (isset($request['is_country_site']) && $request['is_country_site'] == 1) ? true : false;
+        $resource_access                = $this->checkResourceAccess($data['contract_id'], $lang, $access_params);
 
         if (!$resource_access) {
             return [];

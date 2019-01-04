@@ -83,7 +83,7 @@ class Services
     public function getCategory($lang, $category)
     {
         $params['term'] = [
-            $lang.".category" => [
+            $lang . ".category" => [
                 "value" => $category,
             ],
         ];
@@ -138,7 +138,7 @@ class Services
         }
 
         if (count($queryString) == 1) {
-            return $queryString."~4";
+            return $queryString . "~4";
         }
 
         return $queryString;
@@ -283,13 +283,13 @@ class Services
      *
      * @param $contractId
      * @param $lang
+     * @param array $params
      *
      * @return bool
      */
-    public function checkResourceAccess($contractId, $lang)
+    public function checkResourceAccess($contractId, $lang, $params = [])
     {
         $resource_access = true;
-        $params          = [];
         $params['index'] = $this->index;
         $params['type']  = "metadata";
         $filter          = [];
@@ -320,7 +320,7 @@ class Services
         if (!empty($result)) {
             $result = $result[0]['_source'][$lang];
 
-            if ((isset($result['country']['code']) && $result['country']['code'] == 'GN')
+            if ((isset($result['country']['code']) && $result['country']['code'] == 'GN' && $params['isCountrySite'])
                 && (isset($result['resource']) && in_array('Hydrocarbons', $result['resource']))
             ) {
                 $resource_access = false;
