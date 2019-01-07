@@ -28,7 +28,7 @@ class Services
 
     public function __construct()
     {
-        $hosts       = explode(",",env('ELASTICSEARCH_SERVER'));
+        $hosts       = explode(",", env('ELASTICSEARCH_SERVER'));
         $this->index = env("INDEX");
         $logger      = ClientBuilder::defaultLogger('/var/log/rc-api.log', Logger::WARNING);
         $client      = ClientBuilder::create()->setHosts($hosts)->setLogger($logger);
@@ -83,7 +83,7 @@ class Services
     public function getCategory($lang, $category)
     {
         $params['term'] = [
-            $lang.".category" => [
+            $lang . ".category" => [
                 "value" => $category,
             ],
         ];
@@ -138,7 +138,7 @@ class Services
         }
 
         if (count($queryString) == 1) {
-            return $queryString."~4";
+            return $queryString . "~4";
         }
 
         return $queryString;
@@ -215,24 +215,27 @@ class Services
     /**
      * @param $source
      * @param $field_name
+     *
      * @return mixed
      */
     protected function getValueOfField($source, $field_name)
     {
         $field_value = $source[$field_name];
-        if (isset($field_value) && !empty($field_value) ) {
-            if ( is_array($field_value) )
+        if (isset($field_value) && !empty($field_value)) {
+            if (is_array($field_value)) {
                 return $field_value[0];
-            else {
+            } else {
                 return $field_value;
             }
         }
+
         return "";
     }
 
     /**
      * @param $source
      * @param $field_name
+     *
      * @return mixed
      */
     protected function getValuesOfField($source, $field_name)
@@ -242,11 +245,13 @@ class Services
 
             return $field_value;
         }
+
         return [];
     }
 
     /**
      * @param $request
+     *
      * @return string
      */
     protected function getSortOrder($request)
@@ -255,5 +260,75 @@ class Services
                 $request['order'],
                 ['desc', 'asc']
             )) ? $request['order'] : self::ORDER;
+    }
+
+    /**
+     * Excludes specific resource
+     *
+     * @param $resource_key
+     * @param $resource_name
+     * @param $lang
+     *
+     * @return array
+     */
+    public function excludeResource($resource_key, $resource_name, $lang)
+    {
+        return [
+            "$lang.$resource_key" => $resource_name,
+        ];
+    }
+
+    /**
+     * Checks if specific contract is accessible
+     *
+     * @param $contractId
+     * @param $lang
+     * @param array $params
+     *
+     * @return bool
+     */
+    public function checkResourceAccess($contractId, $lang, $access_params = [])
+    {
+        $resource_access = true;
+        $params          = [];
+        $params['index'] = $this->index;
+        $params['type']  = "metadata";
+        $filter          = [];
+        $type            = $this->getIdType($contractId);
+
+        if (!empty($contractId) && $type == "string") {
+            $filter[] = [
+                "term" => ["$lang.open_contracting_id" => ["value" => $contractId]],
+            ];
+        }
+        if (!empty($contractId) && $type == "numeric") {
+            $filter[] = [
+                "term" => ["contract_id" => ["value" => $contractId]],
+            ];
+        }
+
+        $params['body'] = [
+            'query' => [
+                'bool' => [
+                    'must' => $filter,
+                ],
+            ],
+        ];
+
+        $results = $this->search($params);
+        $result  = $results['hits']['hits'];
+
+        if (!empty($result)) {
+            $result = $result[0]['_source'][$lang];
+
+            if ((isset($result['country']['code']) && $result['country']['code'] == 'GN' && $access_params['isCountrySite'])
+                && (isset($result['resource']) && in_array('Hydrocarbons', $result['resource']))
+            ) {
+                $resource_access = false;
+            }
+        }
+
+        return $resource_access;
+
     }
 }
