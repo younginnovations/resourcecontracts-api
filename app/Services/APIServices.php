@@ -836,7 +836,7 @@ class APIServices extends Services
 
         $fullTquery = [
             'query_string' => [
-                "fields"              => ["text"],
+                "fields"              => ["text.keyword"],
                 'query'               => $this->addFuzzyOperator($queryString),
                 "default_operator"    => "OR",
                 "fuzzy_prefix_length" => 4,
@@ -846,7 +846,7 @@ class APIServices extends Services
         if ($foundOperator) {
             $fullTquery = [
                 'simple_query_string' => [
-                    "fields"           => ["text"],
+                    "fields"           => ["text.keyword"],
                     'query'            => urldecode($queryString),
                     "default_operator" => "OR",
                 ],
