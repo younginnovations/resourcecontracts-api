@@ -263,6 +263,246 @@ class FulltextSearch extends Services
         return (array)$data;
     }
 
+    /**
+     * Format the queries with weight and return the search result
+     *
+     * @param $request
+     *
+     * @return array
+     */
+    public function searchInMasterWithWeight($request)
+    {
+        $params          = [];
+        $lang            = $this->getLang($request);
+        $params['index'] = $this->index;
+        $params['type']  = "master";
+        $type            = isset($request['group']) ? array_map('trim', explode('|', $request['group'])) : [];
+        $typeCheck       = $this->typeCheck($type);
+
+        if (!$typeCheck) {
+            return [];
+        }
+        if (isset($request['year']) and !empty($request['year'])) {
+            $year      = explode('|', $request['year']);
+            $filters[] = ["terms" => [$lang . ".signature_year" => $year]];
+        }
+        $no_hydrocarbons = false;
+        $isCountrySite   = (isset($request['is_country_site']) && $request['is_country_site'] == 1) ? true : false;
+
+        if ((isset($request['download']) && $request['download'])
+            && (isset($request['country']) && !empty($request['country']))
+            && (isset($request['country_code']) && empty($request['country_code']))) {
+            $request['country_code'] = $request['country'];
+        }
+
+        if (isset($request['country_code']) and !empty($request['country_code'])) {
+
+            $country   = explode('|', strtoupper($request['country_code']));
+            $filters[] = ["terms" => [$lang . ".country_code" => $country]];
+            /*$country   = explode('|', $request['country_code']);
+            $filters[] = ["terms" => [$lang.".country_code" => $country]];*/
+
+            if (count($country) == 1 && in_array('GN', $country) && $isCountrySite) {
+                $no_hydrocarbons = true;
+            }
+        }
+        if (isset($request['resource']) and !empty($request['resource'])) {
+            $resource  = explode('|', $request['resource']);
+            $filters[] = ["terms" => [$lang . ".resource_raw" => $resource]];
+        }
+        if (isset($request['category']) and !empty($request['category'])) {
+            $filters[] = ["term" => [$lang . ".category" => $request['category']]];
+        }
+        if (isset($request['contract_type']) and !empty($request['contract_type'])) {
+            $contractType = explode('|', $request['contract_type']);
+            $filters[]    = ["terms" => [$lang . ".contract_type" => $contractType]];
+        }
+        if (isset($request['document_type']) and !empty($request['document_type'])) {
+            $contractType = explode('|', $request['document_type']);
+            $filters[]    = ["terms" => [$lang . ".document_type" => $contractType]];
+        }
+        if (isset($request['language']) and !empty($request['language'])) {
+            $contractType = explode('|', $request['language']);
+            $filters[]    = ["terms" => [$lang . ".language" => $contractType]];
+        }
+        if (isset($request['company_name']) and !empty($request['company_name'])) {
+            $companyName = explode('|', $request['company_name']);
+            $filters[]   = ["terms" => [$lang . ".company_name" => $companyName]];
+        }
+        if (isset($request['corporate_group']) and !empty($request['corporate_group'])) {
+            $corporateGroup = explode('|', $request['corporate_group']);
+            $filters[]      = ["terms" => [$lang . ".corporate_grouping.keyword" => $corporateGroup]];
+            $filters[]      = ["terms" => [$lang . ".corporate_grouping.keyword" => $corporateGroup]];
+        }
+        if (isset($request['annotation_category']) and !empty($request['annotation_category'])) {
+            $annotationsCategory = explode('|', $request['annotation_category']);
+            $filters[]           = ["terms" => ["annotations_category.keyword" => $annotationsCategory]];
+        }
+        if (isset($request['annotated']) and !empty($request['annotated']) and $request['annotated'] == 1) {
+            $filters[] = [
+                "bool" => [
+                    "must" => [
+                        "exists" => [
+                            "field" => "annotations_string." . $lang,
+                        ],
+                    ],
+                ],
+            ];
+        }
+
+        $fields = [];
+        if (in_array("metadata", $type)) {
+            array_push($fields, "metadata_string." . $lang);
+        }
+        if (in_array("text", $type)) {
+            array_push($fields, "pdf_text_string^0.2");
+        }
+        if (in_array("annotations", $type)) {
+            array_push($fields, "annotations_string." . $lang. "^0.6");
+        }
+
+
+        $queryString = isset($request['q']) ? $request['q'] : "";
+
+        if (!empty($queryString)) {
+            $operatorFound = $this->findOperator($queryString);
+
+            if ($operatorFound) {
+                $simpleQuery =
+                    [
+                        'simple_query_string' => [
+                            "fields"           => $fields,
+                            'query'            => urldecode($queryString),
+                            "default_operator" => "AND",
+                        ],
+                    ];
+                array_push($filters, $simpleQuery);
+            } else {
+                $queryStringFilter = [
+                    'query_string' => [
+                        "fields"              => $fields,
+                        'query'               => $this->addFuzzyOperator($request['q']),
+                        "default_operator"    => "AND",
+                        "fuzzy_prefix_length" => 4,
+                    ],
+                ];
+                array_push($filters, $queryStringFilter);
+            }
+        }
+        if (!empty($filters)) {
+            $params['body']['query'] = [
+                "bool" => [
+                    "must" => $filters,
+                ],
+            ];
+        }
+
+        $params['body']['_source'] = [
+            $lang . ".contract_name",
+            $lang . ".signature_year",
+            $lang . ".open_contracting_id",
+            $lang . ".signature_date",
+            $lang . ".file_size",
+            $lang . ".country_code",
+            $lang . ".country_name",
+            $lang . ".resource",
+            $lang . ".language",
+            $lang . ".file_size",
+            $lang . ".company_name",
+            $lang . ".contract_type",
+            $lang . ".corporate_grouping",
+            $lang . ".show_pdf_text",
+            $lang . ".category",
+        ];
+        if (isset($request['sort_by']) and !empty($request['sort_by'])) {
+            if ($request['sort_by'] == "country") {
+                $params['body']['sort'][$lang . '.country_name.keyword']['order'] = $this->getSortOrder($request);
+            }
+            if ($request['sort_by'] == "year") {
+                $params['body']['sort'][$lang . '.signature_year.keyword']['order'] = $this->getSortOrder($request);
+            }
+            if ($request['sort_by'] == "contract_name") {
+                $params['body']['sort'][$lang . '.contract_name.raw']['order'] = $this->getSortOrder($request);
+            }
+            if ($request['sort_by'] == "resource") {
+                $params['body']['sort'][$lang . '.resource_raw.keyword']['order'] = $this->getSortOrder($request);
+            }
+            if ($request['sort_by'] == "contract_type") {
+                $params['body']['sort'][$lang . '.contract_type.keyword']['order'] = $this->getSortOrder($request);
+            }
+        }
+
+        $highlightField = [];
+
+        if (in_array('text', $type)) {
+            $highlightField['pdf_text_string'] = [
+                'fragment_size'       => 200,
+                'number_of_fragments' => 50,
+            ];
+
+        }
+
+        if (in_array('annotations', $type)) {
+            $highlightField['annotations_string.' . $lang] = [
+                'fragment_size'       => 50,
+                'number_of_fragments' => 1,
+            ];
+
+        }
+
+        if (in_array('metadata', $type)) {
+            $highlightField['metadata_string.' . $lang] = [
+                'fragment_size'       => 50,
+                'number_of_fragments' => 1,
+            ];
+        }
+
+        $params['body']['highlight'] = [
+            'pre_tags'  => [
+                '<strong>',
+            ],
+            'post_tags' => [
+                '</strong>',
+            ],
+            'fields'    => $highlightField,
+        ];
+
+        $perPage = (isset($request['per_page']) && !empty($request['per_page'])) ? (integer)$request['per_page'] : self::SIZE;
+        $perPage = ($perPage < 100) ? $perPage : 100;
+        $from    = (isset($request['from']) && !empty($request['from'])) && (integer)$request['from'] > -1 ? (integer)$request['from'] : self::FROM;
+        $from    = ($from < 9900) ? $from : 9900;
+
+        $params['body']['size'] = $perPage;
+        $params['body']['from'] = $from;
+
+
+        if ((isset($request['download']) && $request['download']) || (isset($request['all']) && $request['all'])) {
+            $params['body']['size'] = $this->countAll();
+            $params['body']['from'] = 0;
+        }
+
+        if ($no_hydrocarbons) {
+            $params['body']['query']['bool']['must_not']['term'] = $this->excludeResource(
+                'resource_raw.keyword',
+                'Hydrocarbons',
+                $lang
+            );
+        }
+
+        $data = $this->searchText($params, $type, $queryString, $lang);
+        $data['from'] = isset($request['from']) and !empty($request['from']) and (integer)$request['from'] > -1 ? $request['from'] : self::FROM;
+
+        $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
+        if (isset($request['download']) && $request['download']) {
+            $download     = new DownloadServices();
+            $downloadData = $download->getMetadataAndAnnotations($data, $request, $lang);
+
+            return $download->downloadSearchResult($downloadData);
+        }
+
+        return (array)$data;
+    }
+
 
     /**
      * Return the result
