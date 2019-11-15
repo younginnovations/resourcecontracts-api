@@ -331,4 +331,77 @@ class Services
         return $resource_access;
 
     }
+
+        /**
+     * Get all contracts from metadata type of elasticsearch
+     *
+     * @param [type] $lang
+     * @param [type] $rc
+     * @return array
+     */
+    public function getAllMetaContracts($lang, $rc)
+    {
+        $params['index'] = $this->index;
+        $params['type']  = 'metadata';
+        $params['body']['query'] = [
+            "bool" => [
+                "must" => $rc,
+            ],
+        ];
+
+        $totalMetaContracts = $this->countResult($params)['count'];
+    
+        $params['body']['size'] = $totalMetaContracts;
+        $params['body']['from'] = 0;
+        $params['body']['_source'] = [
+            "contract_id",
+            $lang . ".open_contracting_id",
+            $lang . ".is_supporting_document",
+            $lang . ".translated_from",
+            "supporting_contracts",
+        ];
+
+        return $this->search($params);
+    }
+    
+    /**
+     * Get single contract from ID
+     *
+     * @param [type] $id
+     * @param [type] $lang
+     * @return array
+     */
+    public function getSingleContract($id, $lang)
+    {
+        $params['index'] = $this->index;
+        $params['type']  = "master";
+        $params['body']['query'] = [
+            "bool" => [
+                "must" => [
+                    "term" => [
+                        "_id" => $id,
+                    ]
+                ],
+            ],
+        ];
+        $params['body']['_source'] = [
+            $lang . ".contract_name",
+            $lang . ".signature_year",
+            $lang . ".open_contracting_id",
+            $lang . ".signature_date",
+            $lang . ".file_size",
+            $lang . ".country_code",
+            $lang . ".country_name",
+            $lang . ".resource",
+            $lang . ".language",
+            $lang . ".file_size",
+            $lang . ".company_name",
+            $lang . ".contract_type",
+            $lang . ".corporate_grouping",
+            $lang . ".show_pdf_text",
+            $lang . ".category",
+        ];
+
+        return $this->search($params);
+    }
 }
