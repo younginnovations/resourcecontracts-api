@@ -284,7 +284,7 @@ class FulltextSearch extends Services
         }
         if (isset($request['year']) and !empty($request['year'])) {
             $year      = explode('|', $request['year']);
-            $filters[] = ["terms" => [$lang . ".signature_year" => $year]];
+            $filters[] = ["terms" => [$lang . ".signature_year.keyword" => $year]];
         }
         $no_hydrocarbons = false;
         $isCountrySite   = (isset($request['is_country_site']) && $request['is_country_site'] == 1) ? true : false;
@@ -298,7 +298,7 @@ class FulltextSearch extends Services
         if (isset($request['country_code']) and !empty($request['country_code'])) {
 
             $country   = explode('|', strtoupper($request['country_code']));
-            $filters[] = ["terms" => [$lang . ".country_code" => $country]];
+            $filters[] = ["terms" => [$lang . ".country_code.keyword" => $country]];
             /*$country   = explode('|', $request['country_code']);
             $filters[] = ["terms" => [$lang.".country_code" => $country]];*/
 
@@ -308,35 +308,35 @@ class FulltextSearch extends Services
         }
         if (isset($request['resource']) and !empty($request['resource'])) {
             $resource  = explode('|', $request['resource']);
-            $filters[] = ["terms" => [$lang . ".resource_raw" => $resource]];
+            $filters[] = ["terms" => [$lang . ".resource_raw.keyword" => $resource]];
         }
         if (isset($request['category']) and !empty($request['category'])) {
-            $filters[] = $rc = ["term" => [$lang . ".category" => $request['category']]];
+            $filters[] = $rc = ["term" => [$lang . ".category.keyword" => $request['category']]];
         }
         if (isset($request['contract_type']) and !empty($request['contract_type'])) {
             $contractType = explode('|', $request['contract_type']);
-            $filters[]    = ["terms" => [$lang . ".contract_type" => $contractType]];
+            $filters[]    = ["terms" => [$lang . ".contract_type.keyword" => $contractType]];
         }
         if (isset($request['document_type']) and !empty($request['document_type'])) {
             $contractType = explode('|', $request['document_type']);
-            $filters[]    = ["terms" => [$lang . ".document_type" => $contractType]];
+            $filters[]    = ["terms" => [$lang . ".document_type.keyword" => $contractType]];
         }
         if (isset($request['language']) and !empty($request['language'])) {
             $contractType = explode('|', $request['language']);
-            $filters[]    = ["terms" => [$lang . ".language" => $contractType]];
+            $filters[]    = ["terms" => [$lang . ".language.keyword" => $contractType]];
         }
         if (isset($request['company_name']) and !empty($request['company_name'])) {
             $companyName = explode('|', $request['company_name']);
-            $filters[]   = ["terms" => [$lang . ".company_name" => $companyName]];
+            $filters[]   = ["terms" => [$lang . ".company_name.keyword" => $companyName]];
         }
         if (isset($request['corporate_group']) and !empty($request['corporate_group'])) {
             $corporateGroup = explode('|', $request['corporate_group']);
-            $filters[]      = ["terms" => [$lang . ".corporate_grouping" => $corporateGroup]];
-            $filters[]      = ["terms" => [$lang . ".corporate_grouping" => $corporateGroup]];
+            $filters[]      = ["terms" => [$lang . ".corporate_grouping.keyword" => $corporateGroup]];
+            $filters[]      = ["terms" => [$lang . ".corporate_grouping.keyword" => $corporateGroup]];
         }
         if (isset($request['annotation_category']) and !empty($request['annotation_category'])) {
             $annotationsCategory = explode('|', $request['annotation_category']);
-            $filters[]           = ["terms" => ["annotations_category" => $annotationsCategory]];
+            $filters[]           = ["terms" => ["annotations_category.keyword" => $annotationsCategory]];
         }
         if (isset($request['annotated']) and !empty($request['annotated']) and $request['annotated'] == 1) {
             $filters[] = [
@@ -538,6 +538,7 @@ class FulltextSearch extends Services
 
         foreach ($fields as $field) {
             $contractId = $field['_id'];
+            $score = $field['_score'];
             $source     = $field['_source'][$lang];
             if (isset($source['country_code'])) {
                 array_push($data['country'], $this->getValueOfField($source, 'country_code'));
@@ -573,6 +574,7 @@ class FulltextSearch extends Services
 
             $contract[$contractId]          = [
                 "id"                        => (int) $contractId,
+                "score"                     => $score,
                 "open_contracting_id"       => $this->getValueOfField($source, 'open_contracting_id'),
                 "name"                      => $this->getValueOfField($source, 'contract_name'),
                 "year_signed"               => $this->getValueOfField($source, 'signature_year'),
@@ -627,9 +629,18 @@ class FulltextSearch extends Services
                 if (count($metaField['_source'][$lang]['translated_from'])) {
                     $mainContractId = $metaField['_source'][$lang]['translated_from'][0]['id'];
                     if (!isset($data['results'][$mainContractId])) {
+                        $mainContract = array_filter($fields, function($d) use ($mainContractId) {
+                            return $d['_id'] == $mainContractId;
+                        });
 
-                        $mainContract = $this->getSingleContract($mainContractId, $lang);
-                        $source = $mainContract['hits']['hits'][0]['_source'][$lang];
+                        $mainContract = array_pop($mainContract);
+                        $source       =$mainContract['_source'][$lang];
+
+                        if(!count($mainContract)) {
+                            $mainContract = $this->getSingleContract($mainContractId, $lang);
+                            $source = $mainContract['hits']['hits'][0]['_source'][$lang];
+                        }
+                        
 
                         $metaField = array_filter($metaFields, function ($d) use ($mainContractId) {
                             return $d['_source']['contract_id'] == $mainContractId;
@@ -638,6 +649,7 @@ class FulltextSearch extends Services
 
                         $mainContract          = [
                             "id"                        => (int) $mainContractId,
+                            "score"                     => isset($mainContract['_score']) ? $mainContract['_score']: 0,
                             "open_contracting_id"       => $this->getValueOfField($source, 'open_contracting_id'),
                             "name"                      => $this->getValueOfField($source, 'contract_name'),
                             "year_signed"               => $this->getValueOfField($source, 'signature_year'),
@@ -660,33 +672,8 @@ class FulltextSearch extends Services
                     array_push($data['results'][$mainContractId]['children'], $contract[$contractId]);
                 }
             }
-
-
-
-            // $i++;
         }
 
-        // echo(json_encode($data['results']));die;
-
-        // $testData = [];
-
-        // foreach ($data['results'] as $cId => $contract) {
-        //     if (!$contract['is_supporting_document']) {
-        //         if (!isset($testData[$cId])) {
-        //             $testData[$cId] = $contract;
-        //             $testData[$cId]['children'] = [];
-        //         }
-        //     } else {
-        //         if (count($contract['translated_from'])) {
-        //             $mainContractId = $contract['translated_from'][0]['id'];
-        //             if (!isset($testData[$mainContractId])) {
-                       
-        //             }
-        //         }
-        //     }
-        // }
-
-        // $data['results'] = $testData;
 
         $data['country']         = (isset($data['country']) && !empty($data['country'])) ? array_unique(
             $data['country']
