@@ -70,7 +70,7 @@ class FulltextSearch extends Services
             $filters[] = ["terms" => [$lang . ".resource_raw.keyword" => $resource]];
         }
         if (isset($request['category']) and !empty($request['category'])) {
-            $filters[] = ["term" => [$lang . ".category.keyword" => $request['category']]];
+            $filters[] = ["term" => [$lang . ".category" => $request['category']]];
         }
         if (isset($request['contract_type']) and !empty($request['contract_type'])) {
             $contractType = explode('|', $request['contract_type']);
@@ -284,7 +284,7 @@ class FulltextSearch extends Services
         }
         if (isset($request['year']) and !empty($request['year'])) {
             $year      = explode('|', $request['year']);
-            $filters[] = ["terms" => [$lang . ".signature_year" => $year]];
+            $filters[] = ["terms" => [$lang . ".signature_year.keyword" => $year]];
         }
         $no_hydrocarbons = false;
         $isCountrySite   = (isset($request['is_country_site']) && $request['is_country_site'] == 1) ? true : false;
@@ -298,7 +298,7 @@ class FulltextSearch extends Services
         if (isset($request['country_code']) and !empty($request['country_code'])) {
 
             $country   = explode('|', strtoupper($request['country_code']));
-            $filters[] = ["terms" => [$lang . ".country_code" => $country]];
+            $filters[] = ["terms" => [$lang . ".country_code.keyword" => $country]];
             /*$country   = explode('|', $request['country_code']);
             $filters[] = ["terms" => [$lang.".country_code" => $country]];*/
 
@@ -308,35 +308,35 @@ class FulltextSearch extends Services
         }
         if (isset($request['resource']) and !empty($request['resource'])) {
             $resource  = explode('|', $request['resource']);
-            $filters[] = ["terms" => [$lang . ".resource_raw" => $resource]];
+            $filters[] = ["terms" => [$lang . ".resource_raw.keyword" => $resource]];
         }
         if (isset($request['category']) and !empty($request['category'])) {
             $filters[] = $rc = ["term" => [$lang . ".category" => $request['category']]];
         }
         if (isset($request['contract_type']) and !empty($request['contract_type'])) {
             $contractType = explode('|', $request['contract_type']);
-            $filters[]    = ["terms" => [$lang . ".contract_type" => $contractType]];
+            $filters[]    = ["terms" => [$lang . ".contract_type.keyword" => $contractType]];
         }
         if (isset($request['document_type']) and !empty($request['document_type'])) {
             $contractType = explode('|', $request['document_type']);
-            $filters[]    = ["terms" => [$lang . ".document_type" => $contractType]];
+            $filters[]    = ["terms" => [$lang . ".document_type.keyword" => $contractType]];
         }
         if (isset($request['language']) and !empty($request['language'])) {
             $contractType = explode('|', $request['language']);
-            $filters[]    = ["terms" => [$lang . ".language" => $contractType]];
+            $filters[]    = ["terms" => [$lang . ".language.keyword" => $contractType]];
         }
         if (isset($request['company_name']) and !empty($request['company_name'])) {
             $companyName = explode('|', $request['company_name']);
-            $filters[]   = ["terms" => [$lang . ".company_name" => $companyName]];
+            $filters[]   = ["terms" => [$lang . ".company_name.keyword" => $companyName]];
         }
         if (isset($request['corporate_group']) and !empty($request['corporate_group'])) {
             $corporateGroup = explode('|', $request['corporate_group']);
-            $filters[]      = ["terms" => [$lang . ".corporate_grouping" => $corporateGroup]];
-            $filters[]      = ["terms" => [$lang . ".corporate_grouping" => $corporateGroup]];
+            $filters[]      = ["terms" => [$lang . ".corporate_grouping.keyword" => $corporateGroup]];
+            $filters[]      = ["terms" => [$lang . ".corporate_grouping.keyword" => $corporateGroup]];
         }
         if (isset($request['annotation_category']) and !empty($request['annotation_category'])) {
             $annotationsCategory = explode('|', $request['annotation_category']);
-            $filters[]           = ["terms" => ["annotations_category" => $annotationsCategory]];
+            $filters[]           = ["terms" => ["annotations_category.keyword" => $annotationsCategory]];
         }
         if (isset($request['annotated']) and !empty($request['annotated']) and $request['annotated'] == 1) {
             $filters[] = [
@@ -490,7 +490,7 @@ class FulltextSearch extends Services
         }
 
         $data = $this->groupedSearchText($params, $type, $queryString, $lang, $rc);
-        $data['resultsTotal'] = count($data['results']);
+        $data['result_total'] = count($data['results']);
         $data['results'] = array_slice($data['results'], $from, $perPage);
         $data['from'] = isset($request['from']) and !empty($request['from']) and (integer)$request['from'] > -1 ? $request['from'] : self::FROM;
 
@@ -534,10 +534,9 @@ class FulltextSearch extends Services
         $data['company_name']    = [];
         $data['corporate_group'] = [];
 
-        // $i = 0;
-
         foreach ($fields as $field) {
             $contractId = $field['_id'];
+            $score = $field['_score'];
             $source     = $field['_source'][$lang];
             if (isset($source['country_code'])) {
                 array_push($data['country'], $this->getValueOfField($source, 'country_code'));
@@ -563,16 +562,15 @@ class FulltextSearch extends Services
                     $this->getValuesOfField($source, 'corporate_grouping')
                 );
             }
-             //TODO use array_search or (foreach and break) for better perfomance
-            $metaField = array_filter($metaFields, function($d) use ($contractId) {
-                return $d['_source']['contract_id'] == $contractId;
-            });
-            $metaField = array_pop($metaField);
+
+            $metaIndex = array_search($contractId, array_column($metaFields, '_id'));
+            $metaField = $metaFields[$metaIndex];
+
             $contract = [];
-            // echo json_encode($metaField['_source'][$lang]);die;
 
             $contract[$contractId]          = [
                 "id"                        => (int) $contractId,
+                "score"                     => $score,
                 "open_contracting_id"       => $this->getValueOfField($source, 'open_contracting_id'),
                 "name"                      => $this->getValueOfField($source, 'contract_name'),
                 "year_signed"               => $this->getValueOfField($source, 'signature_year'),
@@ -620,24 +618,29 @@ class FulltextSearch extends Services
                 array_push($contract[$contractId]['group'], "Annotation");
             }
 
-            if (!$metaField['_source'][$lang]['is_supporting_document'] && !isset($data['results'][$contractId])) {
+            if (!$contract[$contractId]['is_supporting_document'] && !isset($data['results'][$contractId])) {
                 $data['results'][$contractId] = $contract[$contractId];
                 $data['results'][$contractId]['children'] = [];
             } else {
-                if (count($metaField['_source'][$lang]['translated_from'])) {
-                    $mainContractId = $metaField['_source'][$lang]['translated_from'][0]['id'];
+                if (count($contract[$contractId]['translated_from'])) {
+                    $mainContractId = $contract[$contractId]['translated_from'][0]['id'];
                     if (!isset($data['results'][$mainContractId])) {
+                        $mainContractIndex = array_search($mainContractId, array_column($fields, '_id'));
+                        $mainContract = $mainContractIndex ? $fields[$mainContractIndex]: [];
 
-                        $mainContract = $this->getSingleContract($mainContractId, $lang);
-                        $source = $mainContract['hits']['hits'][0]['_source'][$lang];
+                        $source = $mainContractIndex ? $mainContract['_source'][$lang]: [];
 
-                        $metaField = array_filter($metaFields, function ($d) use ($mainContractId) {
-                            return $d['_source']['contract_id'] == $mainContractId;
-                        });
-                        $metaField = array_pop($metaField);
+                        if(!count($mainContract)) {
+                            $mainContract = $this->getSingleContract($mainContractId, $lang);
+                            $source = $mainContract['hits']['hits'][0]['_source'][$lang];
+                        }
+
+                        $metaIndex = array_search($mainContractId, array_column($metaFields, '_id'));
+                        $metaField = $metaFields[$metaIndex];
 
                         $mainContract          = [
                             "id"                        => (int) $mainContractId,
+                            "score"                     => isset($mainContract['_score']) ? $mainContract['_score']: 0,
                             "open_contracting_id"       => $this->getValueOfField($source, 'open_contracting_id'),
                             "name"                      => $this->getValueOfField($source, 'contract_name'),
                             "year_signed"               => $this->getValueOfField($source, 'signature_year'),
@@ -660,33 +663,7 @@ class FulltextSearch extends Services
                     array_push($data['results'][$mainContractId]['children'], $contract[$contractId]);
                 }
             }
-
-
-
-            // $i++;
         }
-
-        // echo(json_encode($data['results']));die;
-
-        // $testData = [];
-
-        // foreach ($data['results'] as $cId => $contract) {
-        //     if (!$contract['is_supporting_document']) {
-        //         if (!isset($testData[$cId])) {
-        //             $testData[$cId] = $contract;
-        //             $testData[$cId]['children'] = [];
-        //         }
-        //     } else {
-        //         if (count($contract['translated_from'])) {
-        //             $mainContractId = $contract['translated_from'][0]['id'];
-        //             if (!isset($testData[$mainContractId])) {
-                       
-        //             }
-        //         }
-        //     }
-        // }
-
-        // $data['results'] = $testData;
 
         $data['country']         = (isset($data['country']) && !empty($data['country'])) ? array_unique(
             $data['country']
@@ -715,77 +692,6 @@ class FulltextSearch extends Services
 
         return $data;
     }
-
-    /**
-     * Get all contracts from metadata type of elasticsearch
-     *
-     * @param [type] $lang
-     * @param [type] $rc
-     * @return array
-     */
-    private function getAllMetaContracts($lang, $rc)
-    {
-        $params['index'] = $this->index;
-        $params['type']  = 'metadata';
-        $params['body']['size'] = $this->countAll();
-        $params['body']['from'] = 0;
-        $params['body']['_source'] = [
-            "contract_id",
-            $lang . ".open_contracting_id",
-            $lang . ".is_supporting_document",
-            $lang . ".translated_from",
-            "supporting_contracts",
-        ];
-        $params['body']['query'] = [
-            "bool" => [
-                "must" => $rc,
-            ],
-        ];
-
-        return $this->search($params);
-    }
-    
-    /**
-     * Get single contract from ID
-     *
-     * @param [type] $id
-     * @param [type] $lang
-     * @return array
-     */
-    private function getSingleContract($id, $lang)
-    {
-        $params['index'] = $this->index;
-        $params['type']  = "master";
-        $params['body']['query'] = [
-            "bool" => [
-                "must" => [
-                    "term" => [
-                        "_id" => $id,
-                    ]
-                ],
-            ],
-        ];
-        $params['body']['_source'] = [
-            $lang . ".contract_name",
-            $lang . ".signature_year",
-            $lang . ".open_contracting_id",
-            $lang . ".signature_date",
-            $lang . ".file_size",
-            $lang . ".country_code",
-            $lang . ".country_name",
-            $lang . ".resource",
-            $lang . ".language",
-            $lang . ".file_size",
-            $lang . ".company_name",
-            $lang . ".contract_type",
-            $lang . ".corporate_grouping",
-            $lang . ".show_pdf_text",
-            $lang . ".category",
-        ];
-
-        return $this->search($params);
-    }
-
 
     /**
      * Return the result
