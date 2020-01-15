@@ -415,6 +415,8 @@ class FulltextSearch extends Services
             $lang . ".category",
         ];
         if (isset($request['sort_by']) and !empty($request['sort_by'])) {
+            $params['body']['sort']['_score']['order'] = 'desc';
+
             if ($request['sort_by'] == "country") {
                 $params['body']['sort'][$lang . '.country_name.keyword']['order'] = $this->getSortOrder($request);
             }
