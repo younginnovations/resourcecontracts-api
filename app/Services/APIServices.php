@@ -20,6 +20,53 @@ class APIServices extends Services
     const SIZE = 25;
 
     /**
+     * Returns recent contract count
+     *
+     * @param $request
+     *
+     * @return array
+     */
+    public function recentContractCount($request)
+    {
+        $category = [];
+        if (isset($request['lang']) and !empty($request['lang'])) {
+            $this->lang = $request['lang'];
+        }
+
+        if (isset($request['category']) and !empty($request['category'])) {
+            $category = [$this->lang.".category" => $request['category']];
+        }
+
+        $params['index'] = $this->index;
+        $params['type']  = "master";
+        $params['body']  = [
+            'size'  => 0,
+            'aggs'  =>
+                [
+                    'recent_contract_count' =>
+                        [
+                            'cardinality' =>
+                                [
+                                    'field' => $this->lang.'.open_contracting_id',
+                                ],
+                        ],
+                ],
+            'query' => [
+                'bool' => [
+                    'must' => [
+                        'range' => ['published_at' => ['gte' => 'now-90d/d']],
+                    ],
+                    'filter' => [
+                        'term'  => $category,
+                    ]
+                ],
+            ],
+        ];
+
+        return $this->search($params);
+    }
+
+    /**
      * Return the summary of contracts
      *
      * @param $request

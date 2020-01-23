@@ -10,9 +10,10 @@ $router->addRoute('GET', '/contracts', 'App\Controllers\APIController::getAllCon
 $router->addRoute('GET', '/contracts/count', 'App\Controllers\APIController::getAllContractCount');
 $router->addRoute('GET', '/contract/{id}/searchtext', 'App\Controllers\APIController::search');
 $router->addRoute('GET', '/contracts/search', 'App\Controllers\APIController::fullTextSearch');
-$router->addRoute('GET', '/groupedcontracts/search', 'App\Controllers\APIController::groupedfullTextSearch');
+$router->addRoute('GET', '/contracts/group', 'App\Controllers\APIController::groupedfullTextSearch');
 $router->addRoute('GET', '/annotation/{id}', 'App\Controllers\APIController::getAnnotationById');
-
+$router->addRoute('GET', '/contracts/recent', 'App\Controllers\APIController::recentGroupedContracts');
+$router->addRoute('GET', '/contracts/recent/count', 'App\Controllers\APIController::getRecentContractCount');
 
 //Internal API
 $router->addRoute('GET', '/contract/{id}/annotations/download', 'App\Controllers\APIController::downloadAnnotationsAsCSV');
