@@ -182,6 +182,18 @@ class APIController extends BaseController
     }
 
     /**
+     * Grouped Full text search with weight order
+     *
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function groupedfullTextSearch()
+    {
+        $response = $this->search->searchInMasterWithWeight($this->request->query->all());
+
+        return $this->json($response);
+    }
+
+    /**
      * Get all the contracts according to countries
      *
      * @return \Symfony\Component\HttpFoundation\Response
