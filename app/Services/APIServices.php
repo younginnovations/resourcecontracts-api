@@ -801,11 +801,11 @@ class APIServices extends Services
                 "post_tags" => ["</span>"],
                 "fields"    => [
                     "annotation_text." . $lang => [
-                        "fragment_size"       => 100000,
+                        "fragment_size"       => 200,
                         "number_of_fragments" => 1,
                     ],
                     "category"                 => [
-                        "fragment_size"       => 100000,
+                        "fragment_size"       => 200,
                         "number_of_fragments" => 1,
                     ],
                 ],
