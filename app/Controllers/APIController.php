@@ -50,6 +50,16 @@ class APIController extends BaseController
     }
 
     /**
+     * Returns recent contract count
+     *
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function getRecentContractCount()
+    {
+        return $this->json($this->api->recentContractCount($this->request->query->all()));
+    }
+
+    /**
      * Return all the summary of contract
      *
      * @return \Symfony\Component\HttpFoundation\Response
@@ -307,6 +317,17 @@ class APIController extends BaseController
     {
         $id       = $argument['id'];
         $response = $this->api->getAnnotationById($id, $request->query->all());
+
+        return $this->json($response);
+    }
+
+    /**
+     * Find the latest 90d old contracts
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function recentGroupedContracts()
+    {
+        $response = $this->search->searchInMasterWithRecentPublishDate($this->request->query->all());
 
         return $this->json($response);
     }
