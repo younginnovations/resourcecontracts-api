@@ -492,6 +492,9 @@ class FulltextSearch extends Services
 
         $data = $this->groupedSearchText($params, $type, $queryString, $lang, $rc);
         $data['result_total'] = count($data['results']);
+
+       $data['results'] = $this->manualSort($data['results'], $request);
+
         $data['results'] = array_slice($data['results'], $from, $perPage);
         $data['from'] = isset($request['from']) and !empty($request['from']) and (integer)$request['from'] > -1 ? $request['from'] : self::FROM;
 
@@ -1113,6 +1116,9 @@ class FulltextSearch extends Services
 
         $data                 = $this->groupedSearchText($params, $type, $queryString, $lang, $rc);
         $data['result_total'] = count($data['results']);
+
+        $data['results'] = $this->manualSort($data['results'], $request);
+
         $data['results']      = array_slice($data['results'], $from, $perPage);
         $data['from'] = isset($request['from']) and !empty($request['from']) and (integer) $request['from'] > -1 ? $request['from'] : self::FROM;
 
@@ -1270,6 +1276,36 @@ class FulltextSearch extends Services
                 }
 
             }
+        }
+
+        return $data;
+    }
+
+    /*
+     * Sort the result set manually by year
+     *
+     * @param $data
+     * @param $request
+     * @return array
+     */
+
+    private function manualSort($data, $request) {
+        if($request['sort_by'] == "year") {
+            if($this->getSortOrder($request) === 'desc') {
+                usort($data, function ($a, $b) {
+                    return intval($b['year_signed']) - intval($a['year_signed']);
+                });
+            } else {
+                usort($data, function ($a, $b) {
+                    return intval($a['year_signed']) - intval($b['year_signed']);
+                });
+            }
+        }
+
+        if ((!isset($request['q']) || empty($request['q'])) && (!isset($request['sort_by']) || empty($request['sort_by']))) {
+            usort($data, function ($a, $b) {
+                return intval($b['year_signed']) - intval($a['year_signed']);
+            });
         }
 
         return $data;
