@@ -376,7 +376,7 @@ class Services
         $main_params['body']['from']                    = $params['body']['from'];
         $main_params['body']['_source']                 = [
             "contract_id",
-            "supporting_contracts",
+            "supporting_contracts"
         ];
 
         return $this->search($main_params);
