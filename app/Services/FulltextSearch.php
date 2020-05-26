@@ -16,6 +16,8 @@ class FulltextSearch extends Services
 
     const FROM = 0;
     const SIZE = 25;
+
+    private $document_count;
     /**
      * @var APIRepositoryInterface
      */
@@ -265,11 +267,12 @@ class FulltextSearch extends Services
     /**
      * Format the queries with weight and return the search result
      *
-     * @param $request
+     * @param      $request
+     * @param bool $no_filter
      *
      * @return array
      */
-    public function searchInMasterWithWeight($request)
+    public function searchInMasterWithWeight($request, $no_filter = false)
     {
         $params          = [];
         $lang            = $this->getLang($request);
@@ -277,6 +280,7 @@ class FulltextSearch extends Services
         $params['type']  = "master";
         $type            = isset($request['group']) ? array_map('trim', explode('|', $request['group'])) : [];
         $typeCheck       = $this->typeCheck($type);
+        $rc              = [];
 
         if (!$typeCheck) {
             return [];
@@ -413,6 +417,7 @@ class FulltextSearch extends Services
             $lang.".show_pdf_text",
             $lang.".category",
         ];
+
         if (isset($request['sort_by']) and !empty($request['sort_by'])) {
             $params['body']['sort']['_score']['order'] = 'desc';
 
@@ -431,6 +436,9 @@ class FulltextSearch extends Services
             if ($request['sort_by'] == "contract_type") {
                 $params['body']['sort'][$lang.'.contract_type.keyword']['order'] = $this->getSortOrder($request);
             }
+        }else {
+            $params['body']['sort']['_score']['order'] = 'desc';
+            $params['body']['sort'][$lang.'.signature_year.keyword']['order'] = 'desc';
         }
 
         $highlightField = [];
@@ -440,7 +448,6 @@ class FulltextSearch extends Services
                 'fragment_size'       => 200,
                 'number_of_fragments' => 50,
             ];
-
         }
 
         if (in_array('annotations', $type)) {
@@ -448,7 +455,6 @@ class FulltextSearch extends Services
                 'fragment_size'       => 50,
                 'number_of_fragments' => 1,
             ];
-
         }
 
         if (in_array('metadata', $type)) {
@@ -473,12 +479,16 @@ class FulltextSearch extends Services
         $from    = (isset($request['from']) && !empty($request['from'])) && (integer) $request['from'] > -1 ? (integer) $request['from'] : self::FROM;
         $from    = ($from < 9900) ? $from : 9900;
 
-        $params['body']['size'] = $this->countAll();
-        $params['body']['from'] = 0;
-
+        if ($no_filter) {
+            $params['body']['size'] = $perPage;
+            $params['body']['from'] = $from;
+        } else {
+            $params['body']['size'] = isset($this->document_count) ? $this->document_count : $this->countAll();
+            $params['body']['from'] = 0;
+        }
 
         if ((isset($request['download']) && $request['download']) || (isset($request['all']) && $request['all'])) {
-            $params['body']['size'] = $this->countAll();
+            $params['body']['size'] = empty($this->document_count) ? $this->countAll() : $this->document_count;
             $params['body']['from'] = 0;
         }
 
@@ -490,11 +500,16 @@ class FulltextSearch extends Services
             );
         }
 
-        $data                 = $this->groupedSearchText($params, $type, $queryString, $lang, $rc);
-        $data['result_total'] = count($data['results']);
+        $data = $this->groupedSearchText($params, $type, $lang, $rc, $no_filter);
+        if ($no_filter) {
+            $data['result_total'] = $data['total'];
+            $from = 0;
+            $perPage = count($data['results']);
+        }else {
+            $data['result_total'] = count($data['results']);
+        }
 
         $data['results'] = $this->manualSort($data['results'], $request);
-
         $data['results'] = array_slice($data['results'], $from, $perPage);
         $data['from'] = isset($request['from']) and !empty($request['from']) and (integer) $request['from'] > -1 ? $request['from'] : self::FROM;
 
@@ -538,18 +553,52 @@ class FulltextSearch extends Services
         return $data;
     }
 
+    public function groupedSearchTextWithNoFilter($params, $lang, $rc)
+    {
+        $main_contracts = $this->getMainContracts($params, $lang, $rc);
+        $main_contracts = $main_contracts['hits']['hits'];
+        $contract_ids   = [];
+
+        foreach ($main_contracts as $main_contract) {
+            $temp_rec       = $main_contract['_source'];
+            $contract_ids[] = $temp_rec['contract_id'];
+
+            if (isset($temp_rec['supporting_contracts'])) {
+                $supporting_contracts = $temp_rec['supporting_contracts'];
+
+                foreach ($supporting_contracts as $supporting_contract) {
+                    $contract_ids[] = $supporting_contract['id'];
+                }
+            }
+        }
+        $params['body']['query']['bool']['filter']['terms']['_id'] = $contract_ids;
+        $params['body']['size']                                    = isset($this->document_count) ? $this->document_count : $this->countAll();
+        $params['body']['from']                                    = 0;
+
+        return $this->search($params);
+    }
+
     /**
      * Return the result
      *
      * @param $params
+     * @param $type
+     * @param $lang
+     * @param $rc
+     * @param $no_filter
      *
      * @return array
      */
-    public function groupedSearchText($params, $type, $queryString, $lang, $rc)
+    public function groupedSearchText($params, $type, $lang, $rc, $no_filter)
     {
         $data = [];
         try {
-            $results  = $this->search($params);
+            if ($no_filter) {
+                $results                  = $this->groupedSearchTextWithNoFilter($params, $lang, $rc);
+                $results['hits']['total'] = isset($this->document_count) ? $this->document_count : $this->countAll();
+            } else {
+                $results = $this->search($params);
+            }
             $metaData = $this->getAllMetaContracts($lang, $rc);
         } catch (BadRequest400Exception $e) {
             $results['hits']['hits']  = [];
@@ -729,7 +778,6 @@ class FulltextSearch extends Services
         $data = [];
         try {
             $results = $this->search($params);
-
         } catch (BadRequest400Exception $e) {
             $results['hits']['hits']  = [];
             $results['hits']['total'] = 0;
@@ -891,16 +939,17 @@ class FulltextSearch extends Services
      */
     public function countAll()
     {
-        $params          = [];
-        $params['index'] = $this->index;
-        $params['type']  = "master";
-        $params['body']  = [
+        $params               = [];
+        $params['index']      = $this->index;
+        $params['type']       = "master";
+        $params['body']       = [
             "query" => [
                 "match_all" => new class {
                 },
             ],
         ];
-        $count           = $this->countResult($params);
+        $count                = $this->countResult($params);
+        $this->document_count = $count['count'];
 
         return $count['count'];
     }
