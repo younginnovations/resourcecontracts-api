@@ -416,6 +416,9 @@ class FulltextSearch extends Services
             $lang.".corporate_grouping",
             $lang.".show_pdf_text",
             $lang.".category",
+            "is_supporting_document",
+            "supporting_contracts",
+            "parent_contract",
         ];
 
         if (isset($request['sort_by']) and !empty($request['sort_by'])) {
@@ -436,7 +439,7 @@ class FulltextSearch extends Services
             if ($request['sort_by'] == "contract_type") {
                 $params['body']['sort'][$lang.'.contract_type.keyword']['order'] = $this->getSortOrder($request);
             }
-        }else {
+        } else {
             $params['body']['sort']['en.signature_year.raw']['order'] = 'desc';
         }
 
@@ -502,9 +505,9 @@ class FulltextSearch extends Services
         $data = $this->groupedSearchText($params, $type, $lang, $rc, $no_filter);
         if ($no_filter) {
             $data['result_total'] = $data['total'];
-            $from = 0;
-            $perPage = count($data['results']);
-        }else {
+            $from                 = 0;
+            $perPage              = count($data['results']);
+        } else {
             $data['result_total'] = count($data['results']);
         }
 
@@ -571,40 +574,51 @@ class FulltextSearch extends Services
             }
         }
         $params['body']['query']['bool']['filter']['terms']['_id'] = $contract_ids;
-        $params['body']['size']                                    = isset($this->document_count) ? $this->document_count : $this->countAll();
+        $params['body']['size']                                    = isset($this->document_count) ? $this->document_count : $this->countAll(
+        );
         $params['body']['from']                                    = 0;
 
         return $this->search($params);
     }
 
-    /**
-     * Return the result
-     *
-     * @param $params
-     * @param $type
-     * @param $lang
-     * @param $rc
-     * @param $no_filter
-     *
-     * @return array
-     */
-    public function groupedSearchText($params, $type, $lang, $rc, $no_filter)
+    public function getContracts($params, $ret_array)
     {
-        $data = [];
-        try {
-            if ($no_filter) {
-                $results                  = $this->groupedSearchTextWithNoFilter($params, $lang, $rc);
-                $results['hits']['total'] = isset($this->document_count) ? $this->document_count : $this->countAll();
-            } else {
-                $results = $this->search($params);
+        $page_size              = 10;
+        $params['body']['size'] = $page_size;
+        $results                = $this->search($params);
+        $contracts              = $results['hits']['hits'];
+
+        if (!empty($contracts)) {
+            foreach ($contracts as $contract) {
+                $fields                      = $contract['_source'];
+                $ret_array['contract_ids'][] = (int) $contract['_id'];
+
+                if ($fields['is_supporting_document'] == '1') {
+                    $main_contract = $fields['parent_contract'];
+
+                    if (!array_key_exists($main_contract['id'], $ret_array['main_contract_ids'])) {
+                        $ret_array['main_contract_ids'][] = $main_contract['id'];
+                    }
+                } else {
+                    $ret_array['main_contract_ids'][] = (int) $contract['_id'];
+                }
             }
-            $metaData = $this->getAllMetaContracts($lang, $rc);
-        } catch (BadRequest400Exception $e) {
-            $results['hits']['hits']  = [];
-            $results['hits']['total'] = 0;
-            $metaData['hits']['hits'] = [];
+
+            if (count($ret_array['main_contract_ids']) < $page_size) {
+                $params['body']['query']['bool']['must_not']['bool']['filter']['terms']['_id'] = $ret_array['contract_ids'];
+
+                $this->getContracts($params, $ret_array);
+            }
         }
-        $metaFields              = $metaData['hits']['hits'];
+
+        return $ret_array;
+    }
+
+    public function rearrangeContracts($params, $ret_array, $lang, $type)
+    {
+        $params['body']['query']['bool']['filter']['terms']['_id'] = $ret_array['contract_ids'];
+
+        $results                 = $this->search($params);
         $fields                  = $results['hits']['hits'];
         $data['total']           = $results['hits']['total'];
         $data['country']         = [];
@@ -619,6 +633,7 @@ class FulltextSearch extends Services
             $contractId = $field['_id'];
             $score      = $field['_score'];
             $source     = $field['_source'][$lang];
+
             if (isset($source['country_code'])) {
                 array_push($data['country'], $this->getValueOfField($source, 'country_code'));
             }
@@ -644,12 +659,8 @@ class FulltextSearch extends Services
                 );
             }
 
-            $metaIndex = array_search($contractId, array_column($metaFields, '_id'));
-            $metaField = $metaFields[$metaIndex];
-
-            $contract = [];
-
-            $contract[$contractId]                        = [
+            $temp_contract                                     = [];
+            $temp_contract[$contractId]                        = [
                 "id"                     => (int) $contractId,
                 "score"                  => $score,
                 "open_contracting_id"    => $this->getValueOfField($source, 'open_contracting_id'),
@@ -663,77 +674,43 @@ class FulltextSearch extends Services
                 "is_ocr_reviewed"        => isset($source['show_pdf_text']) ? $this->getBoolean(
                     (int) $this->getValueOfField($source, 'show_pdf_text')
                 ) : null,
-                "is_supporting_document" => $metaField['_source'][$lang]['is_supporting_document'],
-                "supporting_contracts"   => $metaField['_source']['supporting_contracts'],
-                "translated_from"        => $metaField['_source'][$lang]['translated_from'],
+                "is_supporting_document" => $field['_source']['is_supporting_document'],
+                "supporting_contracts"   => $field['_source']['supporting_contracts'],
+                "translated_from"        => [],
             ];
-            $contract[$contractId]['group']               = [];
-            $highlight                                    = isset($field['highlight']) ? $field['highlight'] : '';
-            $contract[$contractId]['text']                = isset($highlight['pdf_text_string'][0]) ? $highlight['pdf_text_string'][0] : '';
-            $annotationText                               = isset($highlight['annotations_string.'.$lang][0]) ? $highlight['annotations_string.'.$lang][0] : '';
-            $contract[$contractId]['temp_annotationText'] = $annotationText;
-            $contract[$contractId]['annotations']         = [];
-            $contract[$contractId]['metadata']            = isset($highlight['metadata_string'][0]) ? $highlight['metadata_string'][0] : '';
+            $temp_contract[$contractId]['group']               = [];
+            $highlight                                         = isset($field['highlight']) ? $field['highlight'] : '';
+            $temp_contract[$contractId]['text']                = isset($highlight['pdf_text_string'][0]) ? $highlight['pdf_text_string'][0] : '';
+            $annotationText                                    = isset($highlight['annotations_string.'.$lang][0]) ? $highlight['annotations_string.'.$lang][0] : '';
+            $temp_contract[$contractId]['temp_annotationText'] = $annotationText;
+            $temp_contract[$contractId]['annotations']         = [];
+            $temp_contract[$contractId]['metadata']            = isset($highlight['metadata_string'][0]) ? $highlight['metadata_string'][0] : '';
 
-            if (isset($highlight['pdf_text_string']) and in_array('text', $type)) {
-                array_push($contract[$contractId]['group'], "Text");
+            if (isset($highlight['pdf_text_string']) && in_array('text', $type)) {
+                array_push($temp_contract[$contractId]['group'], "Text");
             }
-            if (isset($highlight['metadata_string']) and in_array('metadata', $type)) {
-                array_push($contract[$contractId]['group'], "Metadata");
+            if (isset($highlight['metadata_string']) && in_array('metadata', $type)) {
+                array_push($temp_contract[$contractId]['group'], "Metadata");
             }
-            if (
-                isset($highlight['annotations_string']) and in_array(
-                    'annotations',
-                    $type
-                ) and !empty($contract[$contractId]['annotations'])
-            ) {
-                array_push($contract[$contractId]['group'], "Annotation");
+            if (isset($highlight['annotations_string'])
+                && in_array('annotations', $type)
+                && !empty($temp_contract[$contractId]['annotations'])) {
+                array_push($temp_contract[$contractId]['group'], "Annotation");
             }
 
-            if (!$contract[$contractId]['is_supporting_document'] && !isset($data['results'][$contractId])) {
-                $data['results'][$contractId]             = $contract[$contractId];
-                $data['results'][$contractId]['children'] = [];
-            } else {
-                if (count($contract[$contractId]['translated_from'])) {
-                    $mainContractId = $contract[$contractId]['translated_from'][0]['id'];
-                    if (!isset($data['results'][$mainContractId])) {
-                        $mainContractIndex = array_search($mainContractId, array_column($fields, '_id'));
-                        $mainContract      = $mainContractIndex ? $fields[$mainContractIndex] : [];
-
-                        $source = $mainContractIndex ? $mainContract['_source'][$lang] : [];
-
-                        if (!count($mainContract)) {
-                            $mainContract = $this->getSingleContract($mainContractId, $lang);
-                            $source       = $mainContract['hits']['hits'][0]['_source'][$lang];
-                        }
-
-                        $metaIndex = array_search($mainContractId, array_column($metaFields, '_id'));
-                        $metaField = $metaFields[$metaIndex];
-
-                        $mainContract = [
-                            "id"                     => (int) $mainContractId,
-                            "score"                  => isset($mainContract['_score']) ? $mainContract['_score'] : 0,
-                            "open_contracting_id"    => $this->getValueOfField($source, 'open_contracting_id'),
-                            "name"                   => $this->getValueOfField($source, 'contract_name'),
-                            "year_signed"            => $this->getValueOfField($source, 'signature_year'),
-                            "contract_type"          => $this->getValuesOfField($source, 'contract_type'),
-                            "resource"               => $this->getValuesOfField($source, 'resource'),
-                            'country_code'           => $this->getValueOfField($source, 'country_code'),
-                            "language"               => $this->getValueOfField($source, 'language'),
-                            "category"               => $this->getValuesOfField($source, 'category'),
-                            "is_ocr_reviewed"        => isset($source['show_pdf_text']) ? $this->getBoolean(
-                                (int) $this->getValueOfField($source, 'show_pdf_text')
-                            ) : null,
-                            "is_supporting_document" => $metaField['_source'][$lang]['is_supporting_document'],
-                            "supporting_contracts"   => $metaField['_source']['supporting_contracts'],
-                            "translated_from"        => $metaField['_source'][$lang]['translated_from'],
-                        ];
-
-                        $data['results'][$mainContractId]             = $mainContract;
-                        $data['results'][$mainContractId]['children'] = [];
-                    }
-                    array_push($data['results'][$mainContractId]['children'], $contract[$contractId]);
+            $data['results'][$contractId]['children'] = [];
+            if ($temp_contract[$contractId]['is_supporting_document'] == '0' && !empty($temp_contract[$contractId]['supporting_contracts'])) {
+                $temp_child_contracts = $temp_contract[$contractId]['supporting_contracts'];
+                $temp_child_ids       = [];
+                foreach ($temp_child_contracts as $temp_child_contract) {
+                    $temp_child_ids[] = $temp_child_contract['id'];
                 }
+                foreach ($fields as $temp_field) {
+                    if (in_array($temp_field['_id'], $temp_child_ids)) {
+                        $data['results'][$contractId]['children'] = $temp_field;
+                    }
+                }
+
             }
         }
 
@@ -763,6 +740,37 @@ class FulltextSearch extends Services
         asort($data['corporate_group']);
 
         return $data;
+    }
+
+    /**
+     * Return the result
+     *
+     * @param $params
+     * @param $type
+     * @param $lang
+     * @param $rc
+     * @param $no_filter
+     *
+     * @return array
+     */
+    public function groupedSearchText($params, $type, $lang, $rc, $no_filter)
+    {
+        $data = [];
+        try {
+            if ($no_filter) {
+                $results                  = $this->groupedSearchTextWithNoFilter($params, $lang, $rc);
+                $results['hits']['total'] = isset($this->document_count) ? $this->document_count : $this->countAll();
+            } else {
+                $ret_array = $this->getContracts($params, ['main_contract_ids' => [], 'contract_ids' => []]);
+                $data = $this->rearrangeContracts($params, $ret_array, $lang, $type);
+                dd($data);
+            }
+        } catch (BadRequest400Exception $e) {
+            $results['hits']['hits']  = [];
+            $results['hits']['total'] = 0;
+            $metaData['hits']['hits'] = [];
+        }
+
     }
 
     /**
