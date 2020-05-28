@@ -198,24 +198,7 @@ class APIController extends BaseController
      */
     public function groupedfullTextSearch()
     {
-        $filters   = $this->request->query->all();
-        $no_filter = false;
-
-        if (empty($filters['q'])
-            && empty($filters['country_code'])
-            && empty($filters['corporate_group'])
-            && empty($filters['company_name'])
-            && empty($filters['contract_type'])
-            && empty($filters['document_type'])
-            && empty($filters['language'])
-            && empty($filters['year'])
-            && empty($filters['resource'])
-            && empty($filters['annotation_category'])
-            && empty($filters['annotated'])
-        ) {
-            $no_filter = true;
-        }
-        $response = $this->search->searchInMasterWithWeight($filters, $no_filter);
+        $response = $this->search->searchInMasterWithWeight($this->request->query->all());
 
         return $this->json($response);
     }
