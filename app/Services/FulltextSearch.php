@@ -492,10 +492,10 @@ class FulltextSearch extends Services
         $from      = ($from < 9900) ? $from : 9900;
 
         $data                 = $this->groupedSearchText($params, $type, $lang, $queryString, $page_size);
-        $data['result_total'] = 5;
+        $data['result_total'] = 10;
         $data['results']      = array_slice($this->manualSort($data['results'], $request), $from, $page_size);
         $data['from']         = $from;
-        $data['per_page']     = $page_size;
+        $data['per_page']     = 5;
 
         if (isset($request['download']) && $request['download']) {
             $download     = new DownloadServices();
@@ -622,6 +622,7 @@ class FulltextSearch extends Services
             ) : null,
             "is_supporting_document" => $source['is_supporting_document'],
             "supporting_contracts"   => $source['supporting_contracts'],
+            "translated_from" => ($source['is_supporting_document']=='1')?$source['parent_contract']:[]
         ];
         $contract['group']       = [];
         $highlight               = isset($temp_contract['highlight']) ? $temp_contract['highlight'] : '';
@@ -654,7 +655,6 @@ class FulltextSearch extends Services
         ) {
             array_push($contract['group'], "Annotation");
         }
-        $contract['children'] = [];
 
         return $contract;
     }
