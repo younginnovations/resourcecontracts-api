@@ -662,24 +662,55 @@ class FulltextSearch extends Services
 
     public function sortMainContracts($fields)
     {
-        $parent_contracts = [];
+        $sorted_parent_contracts = [];
+        $sorted_fields           = [];
 
         foreach ($fields as $field) {
-            $parent_id = (int) $field['_id'];
+            $parent_id                 = (int) $field['_id'];
+            $sorted_fields[$parent_id] = $field;
 
-            if (!in_array($parent_id, $parent_contracts)) {
-
-                if ($field['_source']['is_supporting_document'] == '1'
+            if (!in_array($parent_id, $sorted_parent_contracts)) {
+                if ($field['_source']['is_supporting_document'] == '0') {
+                    $sorted_parent_contracts[] = $parent_id;
+                } elseif ($field['_source']['is_supporting_document'] == '1'
                     && !empty($field['_source']['parent_contract'])
-                    && !in_array((int) $field['_source']['parent_contract']['id'], $parent_contracts)
-                ) {
-                    $parent_id = (int) $field['_source']['parent_contract']['id'];
+                    && !in_array((int) $field['_source']['parent_contract']['id'], $sorted_parent_contracts)) {
+                    $sorted_parent_contracts[] = $field['_source']['parent_contract']['id'];
                 }
-                $parent_contracts[] = $parent_id;
             }
         }
 
-        return $parent_contracts;
+        return ['sorted_parent_contracts' => $sorted_parent_contracts, 'sorted_fields' => $sorted_fields];
+    }
+
+    public function mapSource($source, $data)
+    {
+        if (isset($source['country_code'])) {
+            array_push($data['country'], $this->getValueOfField($source, 'country_code'));
+        }
+        if (isset($source['signature_year'])) {
+            array_push($data['year'], (int) $this->getValueOfField($source, 'signature_year'));
+        }
+        if (isset($source['contract_type'])) {
+            array_push($data['contract_type'], $this->getValueOfField($source, 'contract_type'));
+        }
+        if (isset($source['resource'])) {
+            $data['resource'] = array_merge($data['resource'], $this->getValuesOfField($source, 'resource'));
+        }
+        if (isset($source['company_name'])) {
+            $data['company_name'] = array_merge(
+                $data['company_name'],
+                $this->getValuesOfField($source, 'company_name')
+            );
+        }
+        if (isset($source['corporate_grouping'])) {
+            $data['corporate_group'] = array_merge(
+                $data['corporate_group'],
+                $this->getValuesOfField($source, 'corporate_grouping')
+            );
+        }
+
+        return $data;
     }
 
     public function rearrangeContracts($params, $ret_array, $lang, $type)
@@ -697,80 +728,29 @@ class FulltextSearch extends Services
         $data['company_name']    = [];
         $data['corporate_group'] = [];
         $main_contracts          = [];
+        $contracts               = [];
+        $sorted_contracts        = $this->sortMainContracts($fields);
+        $sorted_fields           = $sorted_contracts['sorted_fields'];
+        $sorted_parent_contracts = $sorted_contracts['sorted_parent_contracts'];
 
-        $sorted_parent_ids = $this->sortMainContracts($fields);
-        dd($sorted_parent_ids);
+        foreach ($sorted_parent_contracts as $sorted_parent_contract) {
+            $temp_main_contract = $sorted_fields[$sorted_parent_contract];
+            $source             = $temp_main_contract['_source'][$lang];
+            $data               = $this->mapSource($source, $data);
 
-        foreach ($sorted_parent_ids as $sorted_parent_id) {
+            $contracts[$sorted_parent_contract]             = $temp_main_contract;
+            $contracts[$sorted_parent_contract]['children'] = [];
 
-        }
-
-        foreach ($fields as $field) {
-            $source     = $field['_source'][$lang];
-            $contractId = (int) $field['_id'];
-
-            if (isset($source['country_code'])) {
-                array_push($data['country'], $this->getValueOfField($source, 'country_code'));
-            }
-            if (isset($source['signature_year'])) {
-                array_push($data['year'], (int) $this->getValueOfField($source, 'signature_year'));
-            }
-            if (isset($source['contract_type'])) {
-                array_push($data['contract_type'], $this->getValueOfField($source, 'contract_type'));
-            }
-            if (isset($source['resource'])) {
-                $data['resource'] = array_merge($data['resource'], $this->getValuesOfField($source, 'resource'));
-            }
-            if (isset($source['company_name'])) {
-                $data['company_name'] = array_merge(
-                    $data['company_name'],
-                    $this->getValuesOfField($source, 'company_name')
-                );
-            }
-            if (isset($source['corporate_grouping'])) {
-                $data['corporate_group'] = array_merge(
-                    $data['corporate_group'],
-                    $this->getValuesOfField($source, 'corporate_grouping')
-                );
-            }
-
-            if ($field['_source']['is_supporting_document'] == '0') {
-                $main_contracts[$contractId]             = $this->mapFields($field, $lang, $type);
-                $main_contracts[$contractId]['children'] = [];
-
-                if (!empty($field['_source']['supporting_contracts'])) {
-                    $temp_child_contracts = $field['_source']['supporting_contracts'];
-                    $temp_child_ids       = [];
-
-                    foreach ($temp_child_contracts as $temp_child_contract) {
-                        $temp_child_ids[] = (int) $temp_child_contract['id'];
-                    }
-
-                    foreach ($fields as $child_field) {
-                        $temp_child_contract_id = (int) $child_field['_id'];
-                        if (in_array($temp_child_contract_id, $temp_child_ids)) {
-                            $main_contracts[$contractId]['children'][$temp_child_contract_id] = $this->mapFields(
-                                $child_field,
-                                $lang,
-                                $type
-                            );
-                        }
-                    }
-                }
-            } else {
-                $temp_parent_contract_id = $field['_source']['parent_contract']['id'];
-
-                if (!array_key_exists($temp_parent_contract_id, $main_contracts)) {
-                    foreach ($fields as $temp_parent_field) {
-                        if ($temp_parent_field['_id'] == $temp_parent_contract_id) {
-                            $main_contracts[$contractId] = $this->mapFields($temp_parent_field, $lang, $type);
-                        }
-                    }
+            if (isset($temp_main_contract['_source']['supporting_contracts'])) {
+                $temp_child_contract_ids = $temp_main_contract['_source']['supporting_contracts'];
+                foreach ($temp_child_contract_ids as $temp_child_contract_id) {
+                    $temp_child_contract = $sorted_fields[$temp_child_contract_id['id']];
+                    $contracts[$sorted_parent_contract]['children'][] = $temp_child_contract;
+                    $data               = $this->mapSource($temp_child_contract['_source'][$lang], $data);
                 }
             }
         }
-        $data['results'] = $main_contracts;
-
+        $data['results'] = $contracts;
         $data['country']         = (isset($data['country']) && !empty($data['country'])) ? array_unique(
             $data['country']
         ) : [];
@@ -796,6 +776,7 @@ class FulltextSearch extends Services
         asort($data['company_name']);
         asort($data['corporate_group']);
 
+        dd($data);
         return $data;
     }
 
