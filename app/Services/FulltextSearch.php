@@ -439,8 +439,6 @@ class FulltextSearch extends Services
             if ($request['sort_by'] == "contract_type") {
                 $params['body']['sort'][$lang.'.contract_type.keyword']['order'] = $this->getSortOrder($request);
             }
-        } else {
-            $params['body']['sort']['en.signature_year.raw']['order'] = 'desc';
         }
 
         $highlightField = [];
