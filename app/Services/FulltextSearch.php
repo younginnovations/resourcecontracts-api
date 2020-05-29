@@ -493,22 +493,22 @@ class FulltextSearch extends Services
         $page_size = 5;
 
 
-        $data                 = $this->groupedSearchText($params, $type, $lang, $queryString, $page_size);
-        $data['results']      = array_slice($this->manualSort($data['results'], $request), $from, $page_size);
-        $data['from']         = $from;
-        $data['per_page']     = $page_size;
+        $data             = $this->groupedSearchText($params, $type, $lang, $queryString, $page_size);
+        $data['results']  = array_slice($this->manualSort($data['results'], $request), $from, $page_size);
+        $data['from']     = $from;
+        $data['per_page'] = $page_size;
 
         if (isset($request['download']) && $request['download']) {
             $download     = new DownloadServices();
             $downloadData = $download->getMetadataAndAnnotations($data, $request, $lang);
 
-            return $download->downloadSearchResult($downloadData, $lang);
+            return $download->downloadSearchResult($downloadData);
         }
 
         return $data;
     }
 
-    public function getTotalMainContracts($params)
+    public function getTotalCount($params, $main_contract_count = false)
     {
         $params['body']['_source']                                    = ['_id', 'is_supporting_document'];
         $contract_ids                                                 = $params['body']['query']['bool']['filter']['terms']['_id'];
@@ -518,8 +518,21 @@ class FulltextSearch extends Services
         unset($params['body']['query']['bool']['filter']);
 
         $contracts = $this->search($params);
+        $count     = $contracts['hits']['total'];
 
-        return $contracts['hits']['total'];
+
+        if ($main_contract_count) {
+            $contracts = $contracts['hits']['hits'];
+            $count     = 0;
+
+            foreach ($contracts as $contract) {
+                if ($contract['_source']['is_supporting_document'] == '0') {
+                    $count++;
+                }
+            }
+        }
+
+        return $count;
     }
 
     public function getContracts($params, $contract_id_array, $page_size)
@@ -535,21 +548,57 @@ class FulltextSearch extends Services
                 /*all contracts array*/
                 $contract_id_array['contract_ids'][] = (int) $contract['_id'];
 
-                /*main contract array*/
+                /*child contract array*/
                 if ($fields['is_supporting_document'] == '1') {
-                    $contract_id_array['main_contract_ids'][] = $fields['parent_contract']['id'];
+                    $parent_contract_id = $fields['parent_contract']['id'];
+                    $temp_ids           = [];
+
+                    foreach ($contracts as $temp_contract) {
+                        $temp_ids[] = $temp_contract['_id'];
+                    }
+
+                    if (!in_array($parent_contract_id, $temp_ids)) {
+                        $temp_params = [];
+                        $temp_params['type']                                           = $params['type'];
+                        $temp_params['index']                                          = $params['index'];
+                        $temp_params['body']['_source']                                = [
+                            '_id',
+                            'supporting_contracts',
+                        ];
+                        $temp_params['body']['query']['bool']['must'][]['term']['_id'] = $parent_contract_id;
+                        $parent_contract                                               = $this->search($temp_params);
+                        $parent_contract                                               = $parent_contract['hits']['hits'];
+
+                        if (!empty($parent_contract)) {
+                            $temp_supporting_contracts = $parent_contract[0]['_source']['supporting_contracts'];
+
+                            if (!empty($temp_supporting_contracts)) {
+                                foreach ($temp_supporting_contracts as $temp_supporting_contract) {
+                                    $contract_id_array['contract_ids'][] = $temp_supporting_contract['id'];
+                                }
+                            }
+                        }
+                    }
                     $contract_id_array['contract_ids'][]      = $fields['parent_contract']['id'];
-                } else {
+                    $contract_id_array['main_contract_ids'][] = $fields['parent_contract']['id'];
+                }
+                /*main contract array*/
+                else {
+                    $temp_supporting_contracts = $contract['_source']['supporting_contracts'];
+
+                    if(!empty($temp_supporting_contracts)) {
+                        foreach ($temp_supporting_contracts as $temp_supporting_contract) {
+                            $contract_id_array['contract_ids'][] = $temp_supporting_contract['id'];
+                        }
+                    }
                     $contract_id_array['main_contract_ids'][] = (int) $contract['_id'];
                 }
-
             }
 
             $contract_id_array['main_contract_ids'] = array_values(
                 array_unique($contract_id_array['main_contract_ids'])
             );
             $contract_id_array['contract_ids']      = array_values(array_unique($contract_id_array['contract_ids']));
-
 
             if (count($contract_id_array['main_contract_ids']) < $page_size) {
                 $params['body']['query']['bool']['must_not']['bool']['filter']['terms']['_id'] = $contract_id_array['contract_ids'];
@@ -705,9 +754,9 @@ class FulltextSearch extends Services
 
     public function rearrangeContracts($params, $contract_ids, $lang, $type, $queryString)
     {
-        $params['body']['size']                                    = $this->countAll();
         $params['body']['from']                                    = 0;
         $params['body']['query']['bool']['filter']['terms']['_id'] = $contract_ids;
+        $params['body']['size']                                    = $this->getTotalCount($params, false);
 
         $results                  = $this->search($params);
         $fields                   = $results['hits']['hits'];
@@ -719,11 +768,11 @@ class FulltextSearch extends Services
         $data['contract_type']    = [];
         $data['company_name']     = [];
         $data['corporate_group']  = [];
+        $data['result_total']     = $this->getTotalCount($params, true);
         $main_contracts           = [];
         $indexed_contract_array   = $this->getIndexContracts($fields, $contract_ids, $params);
         $indexed_contracts        = $indexed_contract_array['indexed_contracts'];
         $indexed_parent_contracts = $indexed_contract_array['indexed_parent_contracts'];
-        $data['result_total']     = $this->getTotalMainContracts($params);
 
         foreach ($indexed_parent_contracts as $parent_contract_id) {
             $temp_main_contract                  = $indexed_contracts[$parent_contract_id];
@@ -739,8 +788,8 @@ class FulltextSearch extends Services
             if (isset($temp_main_contract['_source']['supporting_contracts'])) {
                 $temp_child_contracts = $temp_main_contract['_source']['supporting_contracts'];
 
-                foreach ($temp_child_contracts as $child_contract_id) {
-                    $temp_child_contract                               = $indexed_contracts[$child_contract_id['id']];
+                foreach ($temp_child_contracts as $child_contract) {
+                    $temp_child_contract                               = $indexed_contracts[$child_contract['id']];
                     $child_source                                      = $temp_child_contract['_source'];
                     $data                                              = $this->mapSource($child_source[$lang], $data);
                     $main_contracts[$parent_contract_id]['children'][] = $this->mapContractFields(
