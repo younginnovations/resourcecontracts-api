@@ -621,9 +621,12 @@ class FulltextSearch extends Services
                 (int) $this->getValueOfField($source_lang, 'show_pdf_text')
             ) : null,
             "is_supporting_document" => $source['is_supporting_document'],
-            "supporting_contracts"   => $source['supporting_contracts'],
-            "translated_from" => ($source['is_supporting_document']=='1')?$source['parent_contract']:[]
+            "supporting_contracts"   => empty($source['supporting_contracts']) ? null : $source['supporting_contracts'],
+            "translated_from"        => ($source['is_supporting_document'] == '1') ? $source['parent_contract'] : [],
         ];
+        if($source['is_supporting_document']=='0') {
+            $contract['children'] = [];
+        }
         $contract['group']       = [];
         $highlight               = isset($temp_contract['highlight']) ? $temp_contract['highlight'] : '';
         $contract['text']        = isset($highlight['pdf_text_string'][0]) ? $highlight['pdf_text_string'][0] : '';
@@ -683,7 +686,7 @@ class FulltextSearch extends Services
         foreach ($indexed_parent_contracts as $parent_contract_id) {
             $temp_main_contract                  = $indexed_contracts[$parent_contract_id];
             $source                              = $temp_main_contract['_source'];
-            $data                                = $this->mapSource($source, $data);
+            $data                                = $this->mapSource($source[$lang], $data);
             $main_contracts[$parent_contract_id] = $this->mapContractFields(
                 $temp_main_contract,
                 $lang,
@@ -696,7 +699,8 @@ class FulltextSearch extends Services
 
                 foreach ($temp_child_contracts as $child_contract_id) {
                     $temp_child_contract                               = $indexed_contracts[$child_contract_id['id']];
-                    $data                                              = $this->mapSource($lang, $data);
+                    $child_source                                      = $temp_child_contract['_source'];
+                    $data                                              = $this->mapSource($child_source[$lang], $data);
                     $main_contracts[$parent_contract_id]['children'][] = $this->mapContractFields(
                         $temp_child_contract,
                         $lang,
