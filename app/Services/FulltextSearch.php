@@ -606,7 +606,7 @@ class FulltextSearch extends Services
         $source_lang = $temp_contract['_source'][$lang];
         $score       = $temp_contract['_score'];
 
-        $contract                = [
+        $contract = [
             "id"                     => $id,
             "score"                  => $score,
             "open_contracting_id"    => $this->getValueOfField($source_lang, 'open_contracting_id'),
@@ -624,7 +624,7 @@ class FulltextSearch extends Services
             "supporting_contracts"   => empty($source['supporting_contracts']) ? null : $source['supporting_contracts'],
             "translated_from"        => ($source['is_supporting_document'] == '1') ? $source['parent_contract'] : [],
         ];
-        if($source['is_supporting_document']=='0') {
+        if ($source['is_supporting_document'] == '0') {
             $contract['children'] = [];
         }
         $contract['group']       = [];
@@ -664,9 +664,12 @@ class FulltextSearch extends Services
 
     public function rearrangeContracts($params, $contract_ids, $lang, $type, $queryString)
     {
-        $params['body']['size']                                    = $this->countAll();
-        $params['body']['from']                                    = 0;
-        $params['body']['query']['bool']['filter']['terms']['_id'] = $contract_ids;
+        $params['body']['size'] = $this->countAll();
+        $params['body']['from'] = 0;
+        //$params['body']['query']['bool']['filter']['terms']['_id'] = $contract_ids;
+        $params['body']['query']['bool']['should'][0]['bool']['must'] = $params['body']['query']['bool']['must'];
+        $params['body']['query']['bool']['should'][1]['bool']         = ['filter' => ['terms' => ['_id' => $contract_ids]]];
+        unset($params['body']['query']['bool']['must']);
 
         $results                  = $this->search($params);
         $fields                   = $results['hits']['hits'];
