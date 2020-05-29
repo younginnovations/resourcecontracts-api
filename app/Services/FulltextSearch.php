@@ -490,12 +490,13 @@ class FulltextSearch extends Services
         $page_size = ($page_size < 100) ? $page_size : 100;
         $from      = (isset($request['from']) && !empty($request['from'])) && (integer) $request['from'] > -1 ? (integer) $request['from'] : self::FROM;
         $from      = ($from < 9900) ? $from : 9900;
+        $page_size = 5;
+
 
         $data                 = $this->groupedSearchText($params, $type, $lang, $queryString, $page_size);
-        $data['result_total'] = 10;
         $data['results']      = array_slice($this->manualSort($data['results'], $request), $from, $page_size);
         $data['from']         = $from;
-        $data['per_page']     = 5;
+        $data['per_page']     = $page_size;
 
         if (isset($request['download']) && $request['download']) {
             $download     = new DownloadServices();
@@ -505,6 +506,20 @@ class FulltextSearch extends Services
         }
 
         return $data;
+    }
+
+    public function getTotalMainContracts($params)
+    {
+        $params['body']['_source']                                    = ['_id', 'is_supporting_document'];
+        $contract_ids                                                 = $params['body']['query']['bool']['filter']['terms']['_id'];
+        $params['body']['query']['bool']['should'][0]['bool']['must'] = $params['body']['query']['bool']['must'];
+        $params['body']['query']['bool']['should'][1]['bool']         = ['filter' => ['terms' => ['_id' => $contract_ids]]];
+        unset($params['body']['query']['bool']['must']);
+        unset($params['body']['query']['bool']['filter']);
+
+        $contracts = $this->search($params);
+
+        return $contracts['hits']['total'];
     }
 
     public function getContracts($params, $contract_id_array, $page_size)
@@ -552,12 +567,12 @@ class FulltextSearch extends Services
         $indexed_contracts        = [];
 
         foreach ($contracts as $contract) {
-            $parent_id                     = (int) $contract['_id'];
-            $indexed_contracts[$parent_id] = $contract;
+            $contract_id                     = (int) $contract['_id'];
+            $indexed_contracts[$contract_id] = $contract;
 
-            if (!in_array($parent_id, $indexed_parent_contracts)) {
+            if (!in_array($contract_id, $indexed_parent_contracts)) {
                 if ($contract['_source']['is_supporting_document'] == '0') {
-                    $indexed_parent_contracts[] = $parent_id;
+                    $indexed_parent_contracts[] = $contract_id;
                 } elseif ($contract['_source']['is_supporting_document'] == '1'
                     && !empty($contract['_source']['parent_contract'])
                     && !in_array((int) $contract['_source']['parent_contract']['id'], $indexed_parent_contracts)) {
@@ -567,6 +582,32 @@ class FulltextSearch extends Services
         }
 
         return ['indexed_parent_contracts' => $indexed_parent_contracts, 'indexed_contracts' => $indexed_contracts];
+    }
+
+    public function getIndexContracts($contracts, $contract_ids, $params)
+    {
+        $contract_ids_not_found = [];
+        $indexed_contract_array = $this->indexContracts($contracts);
+
+        foreach ($contract_ids as $contract_id) {
+            if (!array_key_exists($contract_id, $indexed_contract_array['indexed_contracts'])) {
+                $contract_ids_not_found[] = $contract_id;
+            }
+        }
+
+        if (!empty($contract_ids_not_found)) {
+            $params['body']['query']                                   = [];
+            $params['body']['query']['bool']['filter']['terms']['_id'] = $contract_ids_not_found;
+            $contracts                                                 = $this->search($params);
+            $contracts                                                 = $contracts['hits']['hits'];
+            $temp_indexed_contract_array                               = $this->indexContracts($contracts);
+            $indexed_contract_array['indexed_contracts']               = $indexed_contract_array['indexed_contracts'] +
+                $temp_indexed_contract_array['indexed_contracts'];
+            $indexed_contract_array['indexed_parent_contracts']        = $indexed_contract_array['indexed_parent_contracts']
+                + $temp_indexed_contract_array['indexed_parent_contracts'];
+        }
+
+        return $indexed_contract_array;
     }
 
     public function mapSource($source, $data)
@@ -664,12 +705,9 @@ class FulltextSearch extends Services
 
     public function rearrangeContracts($params, $contract_ids, $lang, $type, $queryString)
     {
-        $params['body']['size'] = $this->countAll();
-        $params['body']['from'] = 0;
-        //$params['body']['query']['bool']['filter']['terms']['_id'] = $contract_ids;
-        $params['body']['query']['bool']['should'][0]['bool']['must'] = $params['body']['query']['bool']['must'];
-        $params['body']['query']['bool']['should'][1]['bool']         = ['filter' => ['terms' => ['_id' => $contract_ids]]];
-        unset($params['body']['query']['bool']['must']);
+        $params['body']['size']                                    = $this->countAll();
+        $params['body']['from']                                    = 0;
+        $params['body']['query']['bool']['filter']['terms']['_id'] = $contract_ids;
 
         $results                  = $this->search($params);
         $fields                   = $results['hits']['hits'];
@@ -682,9 +720,10 @@ class FulltextSearch extends Services
         $data['company_name']     = [];
         $data['corporate_group']  = [];
         $main_contracts           = [];
-        $indexed_contract_array   = $this->indexContracts($fields);
+        $indexed_contract_array   = $this->getIndexContracts($fields, $contract_ids, $params);
         $indexed_contracts        = $indexed_contract_array['indexed_contracts'];
         $indexed_parent_contracts = $indexed_contract_array['indexed_parent_contracts'];
+        $data['result_total']     = $this->getTotalMainContracts($params);
 
         foreach ($indexed_parent_contracts as $parent_contract_id) {
             $temp_main_contract                  = $indexed_contracts[$parent_contract_id];
