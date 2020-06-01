@@ -271,7 +271,7 @@ class FulltextSearch extends Services
      *
      * @return array
      */
-    public function searchInMasterWithWeight($request)
+    public function searchInMasterWithWeight($request, $only_main = false)
     {
         $params          = [];
         $lang            = $this->getLang($request);
@@ -491,7 +491,7 @@ class FulltextSearch extends Services
         $from      = (isset($request['from']) && !empty($request['from'])) && (integer) $request['from'] > -1 ? (integer) $request['from'] : self::FROM;
         $from      = ($from < 9900) ? $from : 9900;
 
-        $data            = $this->groupedSearchText($params, $type, $lang, $queryString, $page_size);
+        $data            = $this->groupedSearchText($params, $type, $lang, $queryString, $page_size, $only_main);
         $data['results'] = array_slice($this->manualSort($data['results'], $request), $from, $page_size);
         $temp_results    = $data['results'];
         $total           = 0;
@@ -650,8 +650,14 @@ class FulltextSearch extends Services
         }
 
         if (!empty($contract_ids_not_found)) {
+            $parent_contract_ids_not_found = [];
+            foreach ($contract_ids_not_found as $contract_id_not_found) {
+                if (in_array($contract_id_not_found, $indexed_contract_array['indexed_parent_contracts'])) {
+                    $parent_contract_ids_not_found[] = $contract_id_not_found;
+                }
+            }
             $params['body']['query']                                   = [];
-            $params['body']['query']['bool']['filter']['terms']['_id'] = $contract_ids_not_found;
+            $params['body']['query']['bool']['filter']['terms']['_id'] = $parent_contract_ids_not_found;
             $contracts                                                 = $this->search($params);
             $contracts                                                 = $contracts['hits']['hits'];
             $temp_indexed_contract_array                               = $this->indexContracts($contracts);
@@ -794,15 +800,20 @@ class FulltextSearch extends Services
                 $temp_child_contracts = $temp_main_contract['_source']['supporting_contracts'];
 
                 foreach ($temp_child_contracts as $child_contract) {
-                    $temp_child_contract                               = $indexed_contracts[$child_contract['id']];
-                    $child_source                                      = $temp_child_contract['_source'];
-                    $data                                              = $this->mapSource($child_source[$lang], $data);
-                    $main_contracts[$parent_contract_id]['children'][] = $this->mapContractFields(
-                        $temp_child_contract,
-                        $lang,
-                        $queryString,
-                        $type
-                    );
+                    if (isset($indexed_contracts[$child_contract['id']])) {
+                        $temp_child_contract                               = $indexed_contracts[$child_contract['id']];
+                        $child_source                                      = $temp_child_contract['_source'];
+                        $data                                              = $this->mapSource(
+                            $child_source[$lang],
+                            $data
+                        );
+                        $main_contracts[$parent_contract_id]['children'][] = $this->mapContractFields(
+                            $temp_child_contract,
+                            $lang,
+                            $queryString,
+                            $type
+                        );
+                    }
                 }
             }
         }
@@ -838,19 +849,26 @@ class FulltextSearch extends Services
     /**
      * Return the result
      *
-     * @param $params
-     * @param $type
-     * @param $lang
-     * @param $queryString
-     * @param $page_size
+     * @param      $params
+     * @param      $type
+     * @param      $lang
+     * @param      $queryString
+     * @param      $page_size
+     * @param bool $only_main
      *
      * @return array
      */
-    public function groupedSearchText($params, $type, $lang, $queryString, $page_size)
+    public function groupedSearchText($params, $type, $lang, $queryString, $page_size, $only_main = false)
     {
         try {
+            $temp_params = $params;
+
+            if ($only_main) {
+                $temp_params['body']['query']['bool']['must'][]['term']['is_supporting_document'] = '0';
+            }
+
             $contract_id_array = $this->getContracts(
-                $params,
+                $temp_params,
                 ['main_contract_ids' => [], 'contract_ids' => []],
                 $page_size
             );
