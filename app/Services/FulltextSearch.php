@@ -490,11 +490,17 @@ class FulltextSearch extends Services
         $page_size = ($page_size < 100) ? $page_size : 100;
         $from      = (isset($request['from']) && !empty($request['from'])) && (integer) $request['from'] > -1 ? (integer) $request['from'] : self::FROM;
         $from      = ($from < 9900) ? $from : 9900;
-        $page_size = 5;
 
+        $data            = $this->groupedSearchText($params, $type, $lang, $queryString, $page_size);
+        $data['results'] = array_slice($this->manualSort($data['results'], $request), $from, $page_size);
+        $temp_results    = $data['results'];
+        $total           = 0;
 
-        $data             = $this->groupedSearchText($params, $type, $lang, $queryString, $page_size);
-        $data['results']  = array_slice($this->manualSort($data['results'], $request), $from, $page_size);
+        foreach ($temp_results as $temp_result) {
+            $children = $temp_result['children'];
+            $total    = $total + 1 + count($children);
+        }
+        $data['total']    = $total;
         $data['from']     = $from;
         $data['per_page'] = $page_size;
 
@@ -558,7 +564,7 @@ class FulltextSearch extends Services
                     }
 
                     if (!in_array($parent_contract_id, $temp_ids)) {
-                        $temp_params = [];
+                        $temp_params                                                   = [];
                         $temp_params['type']                                           = $params['type'];
                         $temp_params['index']                                          = $params['index'];
                         $temp_params['body']['_source']                                = [
@@ -581,12 +587,11 @@ class FulltextSearch extends Services
                     }
                     $contract_id_array['contract_ids'][]      = $fields['parent_contract']['id'];
                     $contract_id_array['main_contract_ids'][] = $fields['parent_contract']['id'];
-                }
-                /*main contract array*/
+                } /*main contract array*/
                 else {
                     $temp_supporting_contracts = $contract['_source']['supporting_contracts'];
 
-                    if(!empty($temp_supporting_contracts)) {
+                    if (!empty($temp_supporting_contracts)) {
                         foreach ($temp_supporting_contracts as $temp_supporting_contract) {
                             $contract_id_array['contract_ids'][] = $temp_supporting_contract['id'];
                         }
