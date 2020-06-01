@@ -562,8 +562,11 @@ class FulltextSearch extends Services
         return $count;
     }
 
-    public function getContracts($params, $contract_id_array, $page_size)
+    public function getContracts($params, $contract_id_array, $page_size, $from)
     {
+        if(!empty($from)) {
+            $page_size = (($from/$page_size)+1)*$page_size;
+        }
         $params['body']['size'] = $page_size;
         $results                = $this->search($params);
         $contracts              = $results['hits']['hits'];
@@ -907,9 +910,9 @@ class FulltextSearch extends Services
             $contract_id_array = $this->getContracts(
                 $temp_params,
                 ['main_contract_ids' => [], 'contract_ids' => []],
-                $page_size
+                $page_size,
+                $from
             );
-
 
             return $this->rearrangeContracts(
                 $params,
