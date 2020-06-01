@@ -268,6 +268,7 @@ class FulltextSearch extends Services
      * Format the queries with weight and return the search result
      *
      * @param      $request
+     * @param bool $only_main
      *
      * @return array
      */
@@ -490,11 +491,13 @@ class FulltextSearch extends Services
         $page_size = ($page_size < 100) ? $page_size : 100;
         $from      = (isset($request['from']) && !empty($request['from'])) && (integer) $request['from'] > -1 ? (integer) $request['from'] : self::FROM;
         $from      = ($from < 9900) ? $from : 9900;
-
-        $data            = $this->groupedSearchText($params, $type, $lang, $queryString, $page_size, $only_main);
-        $data['results'] = array_slice($this->manualSort($data['results'], $request), $from, $page_size);
-        $temp_results    = $data['results'];
-        $total           = 0;
+        $data      = $this->groupedSearchText($params, $type, $lang, $queryString, $page_size, $from, $only_main);
+        
+        if (!$only_main) {
+            $data['results'] = array_slice($this->manualSort($data['results'], $request), $from, $page_size);
+        }
+        $temp_results = $data['results'];
+        $total        = 0;
 
         foreach ($temp_results as $temp_result) {
             $children = $temp_result['children'];
@@ -854,17 +857,19 @@ class FulltextSearch extends Services
      * @param      $lang
      * @param      $queryString
      * @param      $page_size
+     * @param      $from
      * @param bool $only_main
      *
      * @return array
      */
-    public function groupedSearchText($params, $type, $lang, $queryString, $page_size, $only_main = false)
+    public function groupedSearchText($params, $type, $lang, $queryString, $page_size, $from, $only_main = false)
     {
         try {
             $temp_params = $params;
 
             if ($only_main) {
                 $temp_params['body']['query']['bool']['must'][]['term']['is_supporting_document'] = '0';
+                $temp_params['body']['from']                                                      = $from;
             }
 
             $contract_id_array = $this->getContracts(
