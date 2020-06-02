@@ -427,7 +427,7 @@ class FulltextSearch extends Services
                 $params['body']['sort'][$lang.'.country_name.keyword']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == "year") {
-                $params['body']['sort'][$lang.'.signature_year.raw']['order'] = $this->getSortOrder($request);
+                $params['body']['sort'][$lang.'.signature_year.keyword']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == "contract_name") {
                 $params['body']['sort'][$lang.'.contract_name.raw']['order'] = $this->getSortOrder($request);
@@ -439,7 +439,7 @@ class FulltextSearch extends Services
                 $params['body']['sort'][$lang.'.contract_type.keyword']['order'] = $this->getSortOrder($request);
             }
         } else {
-            $params['body']['sort']['en.signature_year.raw']['order'] = 'desc';
+            $params['body']['sort'][$lang.'.signature_year.keyword']['order'] = 'desc';
         }
 
         $highlightField = [];
@@ -893,11 +893,11 @@ class FulltextSearch extends Services
                 unset($temp_params['body']['_source']);
                 unset($temp_params['body']['highlight']);
                 $temp_params['body']['_source']                                                   = [
-                    'contract_id',
-                    'open_contracting_id',
+                    $lang.'.open_contracting_id',
                     'is_supporting_document',
                     'supporting_contracts',
                     'parent_contract',
+                    $lang.'.signature_year'
                 ];
                 $temp_params['body']['query']['bool']['must'][]['term']['is_supporting_document'] = '0';
                 $temp_params['body']['size']                                                      = $page_size;
