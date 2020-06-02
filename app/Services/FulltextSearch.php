@@ -421,7 +421,7 @@ class FulltextSearch extends Services
         ];
 
         if (isset($request['sort_by']) and !empty($request['sort_by'])) {
-            $params['body']['sort']['_score']['order'] = 'desc';
+//            $params['body']['sort']['_score']['order'] = 'desc';
 
             if ($request['sort_by'] == "country") {
                 $params['body']['sort'][$lang.'.country_name.keyword']['order'] = $this->getSortOrder($request);
@@ -430,7 +430,7 @@ class FulltextSearch extends Services
                 $params['body']['sort'][$lang.'.signature_year.keyword']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == "contract_name") {
-                $params['body']['sort'][$lang.'.contract_name.raw']['order'] = $this->getSortOrder($request);
+                $params['body']['sort'][$lang.'.contract_name.keyword']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == "resource") {
                 $params['body']['sort'][$lang.'.resource_raw.keyword']['order'] = $this->getSortOrder($request);
@@ -564,6 +564,7 @@ class FulltextSearch extends Services
 
     public function getContracts($params, $contract_id_array, $page_size, $from)
     {
+
         if(!empty($from)) {
             $page_size = (($from/$page_size)+1)*$page_size;
         }
@@ -897,7 +898,6 @@ class FulltextSearch extends Services
                     'is_supporting_document',
                     'supporting_contracts',
                     'parent_contract',
-                    $lang.'.signature_year'
                 ];
                 $temp_params['body']['query']['bool']['must'][]['term']['is_supporting_document'] = '0';
                 $temp_params['body']['size']                                                      = $page_size;
