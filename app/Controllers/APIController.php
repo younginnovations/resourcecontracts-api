@@ -216,7 +216,7 @@ class APIController extends BaseController
             $only_default_filter = true;
         }
 
-        $response = $this->search->searchInMasterWithWeight($filters, $only_default_filter);
+        $response = $this->search->searchInMasterWithWeight($filters, $only_default_filter, false);
 
         return $this->json($response);
     }
@@ -363,7 +363,7 @@ class APIController extends BaseController
             $only_default_filter = true;
         }
 
-        $response = $this->search->searchInMasterWithRecentPublishDate($filters, $only_default_filter);
+        $response = $this->search->searchInMasterWithWeight($filters, $only_default_filter, true);
 
         return $this->json($response);
     }

@@ -265,272 +265,32 @@ class FulltextSearch extends Services
     }
 
     /**
-     * Format the queries with weight and return the search result
+     * Returns main contract count
      *
-     * @param      $request
-     * @param bool $only_default_filter
+     * @param $query_params
      *
-     * @return array
+     * @return mixed
      */
-    public function searchInMasterWithWeight($request, $only_default_filter = false)
-    {
-        $params          = [];
-        $lang            = $this->getLang($request);
-        $params['index'] = $this->index;
-        $params['type']  = "master";
-        $type            = isset($request['group']) ? array_map('trim', explode('|', $request['group'])) : [];
-        $typeCheck       = $this->typeCheck($type);
-
-        if (!$typeCheck) {
-            return [];
-        }
-        if (isset($request['year']) and !empty($request['year'])) {
-            $year      = explode('|', $request['year']);
-            $filters[] = ["terms" => [$lang.".signature_year.keyword" => $year]];
-        }
-        $no_hydrocarbons = false;
-        $isCountrySite   = (isset($request['is_country_site']) && $request['is_country_site'] == 1) ? true : false;
-
-        if ((isset($request['download']) && $request['download'])
-            && (isset($request['country']) && !empty($request['country']))
-            && (isset($request['country_code']) && empty($request['country_code']))) {
-            $request['country_code'] = $request['country'];
-        }
-
-        if (isset($request['country_code']) and !empty($request['country_code'])) {
-
-            $country   = explode('|', strtoupper($request['country_code']));
-            $filters[] = ["terms" => [$lang.".country_code.keyword" => $country]];
-            /*$country   = explode('|', $request['country_code']);
-            $filters[] = ["terms" => [$lang.".country_code" => $country]];*/
-
-            if (count($country) == 1 && in_array('GN', $country) && $isCountrySite) {
-                $no_hydrocarbons = true;
-            }
-        }
-        if (isset($request['resource']) and !empty($request['resource'])) {
-            $resource  = explode('|', $request['resource']);
-            $filters[] = ["terms" => [$lang.".resource_raw.keyword" => $resource]];
-        }
-        if (isset($request['category']) and !empty($request['category'])) {
-            $filters[] = $rc = ["term" => [$lang.".category" => $request['category']]];
-        }
-        if (isset($request['contract_type']) and !empty($request['contract_type'])) {
-            $contractType = explode('|', $request['contract_type']);
-            $filters[]    = ["terms" => [$lang.".contract_type.keyword" => $contractType]];
-        }
-        if (isset($request['document_type']) and !empty($request['document_type'])) {
-            $contractType = explode('|', $request['document_type']);
-            $filters[]    = ["terms" => [$lang.".document_type.keyword" => $contractType]];
-        }
-        if (isset($request['language']) and !empty($request['language'])) {
-            $contractType = explode('|', $request['language']);
-            $filters[]    = ["terms" => [$lang.".language.keyword" => $contractType]];
-        }
-        if (isset($request['company_name']) and !empty($request['company_name'])) {
-            $companyName = explode('|', $request['company_name']);
-            $filters[]   = ["terms" => [$lang.".company_name.keyword" => $companyName]];
-        }
-        if (isset($request['corporate_group']) and !empty($request['corporate_group'])) {
-            $corporateGroup = explode('|', $request['corporate_group']);
-            $filters[]      = ["terms" => [$lang.".corporate_grouping.keyword" => $corporateGroup]];
-            $filters[]      = ["terms" => [$lang.".corporate_grouping.keyword" => $corporateGroup]];
-        }
-        if (isset($request['annotation_category']) and !empty($request['annotation_category'])) {
-            $annotationsCategory = explode('|', $request['annotation_category']);
-            $filters[]           = ["terms" => ["annotations_category.keyword" => $annotationsCategory]];
-        }
-        if (isset($request['annotated']) and !empty($request['annotated']) and $request['annotated'] == 1) {
-            $filters[] = [
-                "bool" => [
-                    "must" => [
-                        "exists" => [
-                            "field" => "annotations_string.".$lang,
-                        ],
-                    ],
-                ],
-            ];
-        }
-
-        $fields = [];
-        if (in_array("metadata", $type)) {
-            array_push($fields, "metadata_string.".$lang);
-        }
-        if (in_array("text", $type)) {
-            array_push($fields, "pdf_text_string^0.2");
-        }
-        if (in_array("annotations", $type)) {
-            array_push($fields, "annotations_string.".$lang."^0.6");
-        }
-
-
-        $queryString = isset($request['q']) ? $request['q'] : "";
-
-        if (!empty($queryString)) {
-            $operatorFound = $this->findOperator($queryString);
-
-            if ($operatorFound) {
-                $simpleQuery =
-                    [
-                        'simple_query_string' => [
-                            "fields"           => $fields,
-                            'query'            => urldecode($queryString),
-                            "default_operator" => "AND",
-                        ],
-                    ];
-                array_push($filters, $simpleQuery);
-            } else {
-                $queryStringFilter = [
-                    'query_string' => [
-                        "fields"              => $fields,
-                        'query'               => $this->addFuzzyOperator($request['q']),
-                        "default_operator"    => "AND",
-                        "fuzzy_prefix_length" => 4,
-                    ],
-                ];
-                array_push($filters, $queryStringFilter);
-            }
-        }
-        if (!empty($filters)) {
-            $params['body']['query'] = [
-                "bool" => [
-                    "must" => $filters,
-                ],
-            ];
-        }
-
-        $params['body']['_source'] = [
-            $lang.".contract_name",
-            $lang.".signature_year",
-            $lang.".open_contracting_id",
-            $lang.".signature_date",
-            $lang.".file_size",
-            $lang.".country_code",
-            $lang.".country_name",
-            $lang.".resource",
-            $lang.".language",
-            $lang.".file_size",
-            $lang.".company_name",
-            $lang.".contract_type",
-            $lang.".corporate_grouping",
-            $lang.".show_pdf_text",
-            $lang.".category",
-            "is_supporting_document",
-            "supporting_contracts",
-            "parent_contract",
-        ];
-
-        if (isset($request['sort_by']) and !empty($request['sort_by'])) {
-//            $params['body']['sort']['_score']['order'] = 'desc';
-
-            if ($request['sort_by'] == "country") {
-                $params['body']['sort'][$lang.'.country_name.keyword']['order'] = $this->getSortOrder($request);
-            }
-            if ($request['sort_by'] == "year") {
-                $params['body']['sort'][$lang.'.signature_year.keyword']['order'] = $this->getSortOrder($request);
-            }
-            if ($request['sort_by'] == "contract_name") {
-                $params['body']['sort'][$lang.'.contract_name.keyword']['order'] = $this->getSortOrder($request);
-            }
-            if ($request['sort_by'] == "resource") {
-                $params['body']['sort'][$lang.'.resource_raw.keyword']['order'] = $this->getSortOrder($request);
-            }
-            if ($request['sort_by'] == "contract_type") {
-                $params['body']['sort'][$lang.'.contract_type.keyword']['order'] = $this->getSortOrder($request);
-            }
-        } else {
-            $params['body']['sort'][$lang.'.signature_year.keyword']['order'] = 'desc';
-        }
-
-        $highlightField = [];
-
-        if (in_array('text', $type)) {
-            $highlightField['pdf_text_string'] = [
-                'fragment_size'       => 200,
-                'number_of_fragments' => 50,
-            ];
-        }
-
-        if (in_array('annotations', $type)) {
-            $highlightField['annotations_string.'.$lang] = [
-                'fragment_size'       => 50,
-                'number_of_fragments' => 1,
-            ];
-        }
-
-        if (in_array('metadata', $type)) {
-            $highlightField['metadata_string.'.$lang] = [
-                'fragment_size'       => 50,
-                'number_of_fragments' => 1,
-            ];
-        }
-
-        $params['body']['highlight'] = [
-            'pre_tags'  => [
-                '<strong>',
-            ],
-            'post_tags' => [
-                '</strong>',
-            ],
-            'fields'    => $highlightField,
-        ];
-
-        if ($no_hydrocarbons) {
-            $params['body']['query']['bool']['must_not']['term'] = $this->excludeResource(
-                'resource_raw.keyword',
-                'Hydrocarbons',
-                $lang
-            );
-        }
-
-        $page_size = (isset($request['per_page']) && !empty($request['per_page'])) ? (integer) $request['per_page'] : self::SIZE;
-        $page_size = ($page_size < 100) ? $page_size : 100;
-        $from      = (isset($request['from']) && !empty($request['from'])) && (integer) $request['from'] > -1 ? (integer) $request['from'] : self::FROM;
-        $from      = ($from < 9900) ? $from : 9900;
-
-        if ((isset($request['download']) && $request['download'])) {
-            //$params['body']['size'] = empty($this->document_count) ? $this->countAll() : $this->document_count;
-            //$params['body']['from'] = 0;
-            $query_params = $params['body']['query'];
-            $page_size    = ($only_default_filter) ? $this->getAllMainContractCount(
-                $query_params
-            ) : $this->getContractCount($params, false);
-            $from         = 0;
-        }
-        $params['body']['size'] = $page_size;
-        $params['body']['from'] = $from;
-        $data                   = $this->groupedSearchText($params, $type, $lang, $queryString, $only_default_filter);
-
-        if (!$only_default_filter) {
-            $data['results'] = array_slice($this->manualSort($data['results'], $request), $from, $page_size);
-        }
-
-        $data['total']    = $this->getContractCount($params, false);
-        $data['from']     = $from;
-        $data['per_page'] = $page_size;
-
-        if (isset($request['download']) && $request['download']) {
-            $download     = new DownloadServices();
-            $downloadData = $download->getMetadataAndAnnotations($data, $request, $lang);
-
-            return $download->downloadSearchResult($downloadData);
-        }
-
-        return $data;
-    }
-
-    public function getAllMainContractCount($query_params)
+    public function getMainContractCount($query_params)
     {
         $params                                                                       = [];
         $params['index']                                                              = $this->index;
         $params['type']                                                               = "master";
         $params['body']['query']                                                      = $query_params;
-        $params['body']['query']['bool']['must'][1]['term']['is_supporting_document'] = '0';
+        $params['body']['query']['bool']['must'][]['term']['is_supporting_document'] = '0';
         $count                                                                        = $this->countResult($params);
 
         return $count['count'];
     }
 
+    /**
+     * Returns contract count
+     *
+     * @param      $params
+     * @param bool $parent_count
+     *
+     * @return int
+     */
     public function getContractCount($params, $parent_count = false)
     {
         $temp_params                                  = [];
@@ -566,7 +326,13 @@ class FulltextSearch extends Services
         return count($parent_contract_ids) + count($child_contract_ids);
     }
 
-
+    /**
+     * Returns main and associated contract count with filters
+     *
+     * @param $params
+     *
+     * @return mixed
+     */
     public function getFilteredAllContractCount($params)
     {
         $temp_params                                                       = [];
@@ -580,14 +346,20 @@ class FulltextSearch extends Services
         return $count['count'];
     }
 
+    /**
+     * Returns paginated main contract id and contract id as arrays
+     *
+     * @param $params
+     * @param $contract_id_array
+     * @param $only_default_filter
+     *
+     * @return mixed
+     */
     public function getContracts($params, $contract_id_array, $only_default_filter)
     {
-        $page_size =  $params['body']['size'];
-        $from      = $params['body']['from'];
-
-        $params['body']['size'] = $page_size;
-        $results                = $this->search($params);
-        $contracts              = $results['hits']['hits'];
+        $page_size = $params['body']['size'];
+        $results   = $this->search($params);
+        $contracts = $results['hits']['hits'];
 
         if (!empty($contracts)) {
 
@@ -640,6 +412,11 @@ class FulltextSearch extends Services
                     }
                     $contract_id_array['main_contract_ids'][] = (int) $contract['_id'];
                 }
+
+                if (count(array_unique($contract_id_array['main_contract_ids'])) == $page_size) {
+                    break;
+                }
+
             }
 
             $contract_id_array['main_contract_ids'] = array_values(
@@ -657,6 +434,13 @@ class FulltextSearch extends Services
         return $contract_id_array;
     }
 
+    /**
+     * Manages main and all contract ids
+     *
+     * @param $contracts
+     *
+     * @return array[]
+     */
     public function indexContracts($contracts)
     {
         $indexed_parent_contracts = [];
@@ -680,6 +464,15 @@ class FulltextSearch extends Services
         return ['indexed_parent_contracts' => $indexed_parent_contracts, 'indexed_contracts' => $indexed_contracts];
     }
 
+    /**
+     * Indexes the parent and all contracts
+     *
+     * @param $contracts
+     * @param $contract_ids
+     * @param $params
+     *
+     * @return array[]
+     */
     public function getIndexContracts($contracts, $contract_ids, $params)
     {
         $contract_ids_not_found = [];
@@ -693,6 +486,7 @@ class FulltextSearch extends Services
 
         if (!empty($contract_ids_not_found)) {
             $parent_contract_ids_not_found = [];
+
             foreach ($contract_ids_not_found as $contract_id_not_found) {
                 if (in_array($contract_id_not_found, $indexed_contract_array['indexed_parent_contracts'])) {
                     $parent_contract_ids_not_found[] = $contract_id_not_found;
@@ -712,6 +506,14 @@ class FulltextSearch extends Services
         return $indexed_contract_array;
     }
 
+    /**
+     * Maps source data to contract
+     *
+     * @param $source
+     * @param $data
+     *
+     * @return mixed
+     */
     public function mapSource($source, $data)
     {
         if (isset($source['country_code'])) {
@@ -742,6 +544,16 @@ class FulltextSearch extends Services
         return $data;
     }
 
+    /**
+     * Maps field data to contract
+     *
+     * @param $temp_contract
+     * @param $lang
+     * @param $queryString
+     * @param $type
+     *
+     * @return array
+     */
     public function mapContractFields($temp_contract, $lang, $queryString, $type)
     {
         $id          = (int) $temp_contract['_id'];
@@ -805,6 +617,19 @@ class FulltextSearch extends Services
         return $contract;
     }
 
+    /**
+     * Returns mapped contracts
+     *
+     * @param $params
+     * @param $contract_ids
+     * @param $lang
+     * @param $type
+     * @param $queryString
+     * @param $only_default_filter
+     * @param $only_default_filter_params
+     *
+     * @return mixed
+     */
     public function rearrangeContracts(
         $params,
         $contract_ids,
@@ -829,6 +654,7 @@ class FulltextSearch extends Services
         $data['company_name']     = [];
         $data['corporate_group']  = [];
         $main_contracts           = [];
+
         $indexed_contract_array   = $this->getIndexContracts(
             $fields,
             $contract_ids,
@@ -870,9 +696,7 @@ class FulltextSearch extends Services
             }
         }
 
-        $data['result_total']    = ($only_default_filter) ? $this->getAllMainContractCount(
-            $only_default_filter_params['body']['query']
-        ) : $this->getContractCount($params, true);
+        $data['result_total']    = ($only_default_filter) ? $this->getMainContractCount($only_default_filter_params['body']['query']) : $this->getContractCount($params, true);
         $data['results']         = $main_contracts;
         $data['country']         = (isset($data['country']) && !empty($data['country'])) ? array_unique(
             $data['country']
@@ -898,7 +722,6 @@ class FulltextSearch extends Services
         asort($data['contract_type']);
         asort($data['company_name']);
         asort($data['corporate_group']);
-
 
         return $data;
     }
@@ -1146,10 +969,11 @@ class FulltextSearch extends Services
      *
      * @param      $request
      * @param bool $only_default_filter
+     * @param bool $recent
      *
      * @return array
      */
-    public function searchInMasterWithRecentPublishDate($request, $only_default_filter = false)
+    public function searchInMasterWithWeight($request, $only_default_filter = false, $recent = false)
     {
         $params          = [];
         $lang            = $this->getLang($request);
@@ -1264,7 +1088,9 @@ class FulltextSearch extends Services
             }
         }
 
-        array_set($filters[], "range.published_at.gte", "now-90d/d");
+        if($recent) {
+            array_set($filters[], "range.published_at.gte", "now-90d/d");
+        }
 
         if (!empty($filters)) {
             $params['body']['query'] = [
@@ -1316,7 +1142,9 @@ class FulltextSearch extends Services
             if ($request['sort_by'] == "contract_type") {
                 $params['body']['sort'][$lang.'.contract_type.keyword']['order'] = $this->getSortOrder($request);
             }
-        } else {
+        } 
+
+        if($only_default_filter && (!isset($request['sort_by']) || empty($request['sort_by']))) {
             $params['body']['sort'][$lang.'.signature_year.keyword']['order'] = 'desc';
         }
 
@@ -1369,34 +1197,18 @@ class FulltextSearch extends Services
         $from      = ($from < 9900) ? $from : 9900;
 
         if ((isset($request['download']) && $request['download'])) {
-            //$params['body']['size'] = $this->countAll();
-            //$params['body']['from'] = 0;
             $query_params = $params['body']['query'];
-            $page_size    = ($only_default_filter) ? $this->getAllMainContractCount(
-                $query_params
-            ) : $this->getContractCount($params, false);
+            $page_size    = ($only_default_filter) ? $this->getMainContractCount($query_params) : $this->getContractCount($params, false);
             $from         = 0;
         }
 
         $params['body']['size'] = $page_size;
         $params['body']['from'] = $from;
         $data                   = $this->groupedSearchText($params, $type, $lang, $queryString, $only_default_filter);
-
-        if (!$only_default_filter) {
-            $data['results'] = array_slice($this->manualSort($data['results'], $request), $from, $page_size);
-        }
-        $temp_results = $data['results'];
-        $total        = 0;
-
-        foreach ($temp_results as $temp_result) {
-            $children = $temp_result['children'];
-            $total    = $total + 1 + count($children);
-        }
-
-        $data['total']    = $total;
-        $data['from']     = $from;
-        $data['per_page'] = $page_size;
-
+        $data['results']        = $this->manualSort($data['results'], $request);
+        $data['total']          = $this->getContractCount($params, false);
+        $data['from']           = $from;
+        $data['per_page']       = $page_size;
 
         if (isset($request['download']) && $request['download']) {
             $download     = new DownloadServices();
@@ -1585,13 +1397,6 @@ class FulltextSearch extends Services
         }
 
         if ((!isset($request['q']) || empty($request['q'])) && (!isset($request['sort_by']) || empty($request['sort_by']))) {
-            usort(
-                $data,
-                function ($a, $b) {
-                    return intval($b['year_signed']) - intval($a['year_signed']);
-                }
-            );
-        } elseif ((!isset($request['sort_by']) || empty($request['sort_by']))) {
             usort(
                 $data,
                 function ($a, $b) {
