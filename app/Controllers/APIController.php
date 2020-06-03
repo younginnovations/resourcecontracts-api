@@ -198,8 +198,8 @@ class APIController extends BaseController
      */
     public function groupedfullTextSearch()
     {
-        $filters   = $this->request->query->all();
-        $only_main = false;
+        $filters             = $this->request->query->all();
+        $only_default_filter = false;
 
         if (empty($filters['q'])
             && empty($filters['country_code'])
@@ -213,10 +213,10 @@ class APIController extends BaseController
             && empty($filters['annotation_category'])
             && empty($filters['annotated'])
         ) {
-            $only_main = true;
+            $only_default_filter = true;
         }
 
-        $response = $this->search->searchInMasterWithWeight($filters, $only_main);
+        $response = $this->search->searchInMasterWithWeight($filters, $only_default_filter);
 
         return $this->json($response);
     }
@@ -345,8 +345,8 @@ class APIController extends BaseController
      */
     public function recentGroupedContracts()
     {
-        $filters   = $this->request->query->all();
-        $only_main = false;
+        $filters             = $this->request->query->all();
+        $only_default_filter = false;
 
         if (empty($filters['q'])
             && empty($filters['country_code'])
@@ -360,10 +360,10 @@ class APIController extends BaseController
             && empty($filters['annotation_category'])
             && empty($filters['annotated'])
         ) {
-            $only_main = true;
+            $only_default_filter = true;
         }
 
-        $response = $this->search->searchInMasterWithRecentPublishDate($filters, $only_main);
+        $response = $this->search->searchInMasterWithRecentPublishDate($filters, $only_default_filter);
 
         return $this->json($response);
     }
