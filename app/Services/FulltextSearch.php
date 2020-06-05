@@ -1121,7 +1121,6 @@ class FulltextSearch extends Services
             "parent_contract",
             "published_at",
         ];
-
         // $params['body']['sort']['published_at']['order'] = 'desc';
         // $params['body']['sort']['_score']['order']       = 'desc';
 
