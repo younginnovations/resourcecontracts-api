@@ -832,7 +832,7 @@ class FulltextSearch extends Services
     public function groupedSearchText($params, $type, $lang, $queryString, $only_default_filter = false)
     {
         try {
-            $temp_params = $params;
+            $temp_params                    = $params;
             $temp_params['body']['_source'] = [
                 $lang.'.open_contracting_id',
                 'is_supporting_document',
@@ -1059,12 +1059,17 @@ class FulltextSearch extends Services
      *
      * @param      $request
      * @param bool $only_default_filter
+     * @param bool $free_text_filter
      * @param bool $recent
      *
      * @return array
      */
-    public function searchInMasterWithWeight($request, $only_default_filter = false, $recent = false)
-    {
+    public function searchInMasterWithWeight(
+        $request,
+        $only_default_filter = false,
+        $free_text_filter = false,
+        $recent = false
+    ) {
         $params          = [];
         $lang            = $this->getLang($request);
         $params['index'] = $this->index;
@@ -1233,7 +1238,7 @@ class FulltextSearch extends Services
             }
         }
 
-        if ($only_default_filter && (!isset($request['sort_by']) || empty($request['sort_by']))) {
+        if (($only_default_filter && (!isset($request['sort_by']) || empty($request['sort_by']))) || !$free_text_filter) {
             $params['body']['sort'][$lang.'.signature_year.keyword']['order'] = 'desc';
         }
 

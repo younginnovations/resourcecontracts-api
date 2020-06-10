@@ -200,6 +200,7 @@ class APIController extends BaseController
     {
         $filters             = $this->request->query->all();
         $only_default_filter = false;
+        $free_text_filter    = !empty($filters['q']);
 
         if (empty($filters['q'])
             && empty($filters['country_code'])
@@ -216,7 +217,7 @@ class APIController extends BaseController
             $only_default_filter = true;
         }
 
-        $response = $this->search->searchInMasterWithWeight($filters, $only_default_filter, false);
+        $response = $this->search->searchInMasterWithWeight($filters, $only_default_filter, $free_text_filter, false);
 
         return $this->json($response);
     }
@@ -347,6 +348,7 @@ class APIController extends BaseController
     {
         $filters             = $this->request->query->all();
         $only_default_filter = false;
+        $free_text_filter    = !empty($filters['q']);
 
         if (empty($filters['q'])
             && empty($filters['country_code'])
@@ -363,7 +365,7 @@ class APIController extends BaseController
             $only_default_filter = true;
         }
 
-        $response = $this->search->searchInMasterWithWeight($filters, $only_default_filter, true);
+        $response = $this->search->searchInMasterWithWeight($filters, $only_default_filter, $free_text_filter, true);
 
         return $this->json($response);
     }
