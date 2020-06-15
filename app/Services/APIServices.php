@@ -53,12 +53,12 @@ class APIServices extends Services
                 ],
             'query' => [
                 'bool' => [
-                    'must' => [
+                    'must'   => [
                         'range' => ['published_at' => ['gte' => 'now-90d/d']],
                     ],
                     'filter' => [
-                        'term'  => $category,
-                    ]
+                        'term' => $category,
+                    ],
                 ],
             ],
         ];
@@ -87,7 +87,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.country.code.raw',
+                                    'field' => $lang.'.country.code.raw',
                                     'size'  => 252,
                                     'order' => [
                                         "_term" => "asc",
@@ -98,7 +98,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.signature_year.raw',
+                                    'field' => $lang.'.signature_year.raw',
                                     'size'  => 1000,
                                     'order' => [
                                         "_term" => "desc",
@@ -109,7 +109,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.resource.raw',
+                                    'field' => $lang.'.resource.raw',
                                     'size'  => 1000,
                                     'order' => [
                                         "_term" => "asc",
@@ -129,7 +129,7 @@ class APIServices extends Services
         }
         if (isset($request['country_code']) && !empty($request['country_code'])) {
             $country['term'] = [
-                $lang . ".country.code" => [
+                $lang.".country.code" => [
                     "value" => $request['country_code'],
                 ],
             ];
@@ -149,12 +149,17 @@ class APIServices extends Services
             );
         }
 
-        $response = $this->search($params);
+        $recent_params = $params;
 
-        $data['country_summary']  = $response['aggregations']['country_summary']['buckets'];
-        $data['year_summary']     = $response['aggregations']['year_summary']['buckets'];
-        $data['resource_summary'] = $response['aggregations']['resource_summary']['buckets'];
-        $data['contract_count']   = $response['hits']['total'];
+        $recent_params['body']['query']['bool']['must'][]['range']['published_at']['gte'] = "now-90d/d";
+        unset($recent_params['body']['aggs']);
+
+        $response                      = $this->search($params);
+        $data['country_summary']       = $response['aggregations']['country_summary']['buckets'];
+        $data['year_summary']          = $response['aggregations']['year_summary']['buckets'];
+        $data['resource_summary']      = $response['aggregations']['resource_summary']['buckets'];
+        $data['contract_count']        = $this->getContractCount($params, false);
+        $data['recent_contract_count'] = $this->getContractCount($recent_params, false);
 
         return $data;
     }
@@ -478,7 +483,7 @@ class APIServices extends Services
         }
         if (!empty($contractId) && $type == "string") {
             $filters[] = [
-                "term" => [$lang . ".open_contracting_id" => ["value" => $contractId]],
+                "term" => [$lang.".open_contracting_id" => ["value" => $contractId]],
             ];
         }
         if (isset($request['category']) && !empty($request['category'])) {
@@ -489,11 +494,11 @@ class APIServices extends Services
         $params['body'] = [
             "_source" => [
                 "excludes" => [
-                    $lang . ".updated_user_name",
-                    $lang . ".updated_user_email",
-                    $lang . ".updated_at",
-                    $lang . ".created_user_name",
-                    $lang . ".created_user_email",
+                    $lang.".updated_user_name",
+                    $lang.".updated_user_email",
+                    $lang.".updated_at",
+                    $lang.".created_user_name",
+                    $lang.".created_user_email",
                 ],
             ],
             "query"   => [
@@ -534,7 +539,7 @@ class APIServices extends Services
         if (isset($request['country_code']) and !empty($request['country_code'])) {
             $filter[] = [
                 'term' => [
-                    $lang . '.country.code' => $request['country_code'],
+                    $lang.'.country.code' => $request['country_code'],
                 ],
             ];
 
@@ -545,30 +550,30 @@ class APIServices extends Services
         if (isset($request['year']) and !empty($request['year'])) {
             $filter[] = [
                 'term' => [
-                    $lang . '.signature_year' => $request['year'],
+                    $lang.'.signature_year' => $request['year'],
                 ],
             ];
         }
         if (isset($request['resource']) and !empty($request['resource'])) {
             $filter[] = [
                 'term' => [
-                    $lang . '.resource.raw' => $request['resource'],
+                    $lang.'.resource.raw' => $request['resource'],
                 ],
             ];
         }
         if (isset($request['category']) and !empty($request['category'])) {
             $filter[] = [
                 'term' => [
-                    $lang . '.category' => $request['category'],
+                    $lang.'.category' => $request['category'],
                 ],
             ];
         }
 
         $params['body']['query']['bool']['filter'] = $filter;
 
-        $perPage = (isset($request['per_page']) && !empty($request['per_page'])) ? (integer)$request['per_page'] : self::SIZE;
+        $perPage = (isset($request['per_page']) && !empty($request['per_page'])) ? (integer) $request['per_page'] : self::SIZE;
         $perPage = ($perPage < 100) ? $perPage : 100;
-        $from    = (isset($request['from']) && !empty($request['from'] && (integer)$request['from'] > -1)) ? (integer)$request['from'] : self::FROM;
+        $from    = (isset($request['from']) && !empty($request['from'] && (integer) $request['from'] > -1)) ? (integer) $request['from'] : self::FROM;
         $from    = ($from < 9900) ? $from : 9900;
 
         $params['body']['size'] = $perPage;
@@ -586,19 +591,19 @@ class APIServices extends Services
         if (isset($request['sort_by']) and !empty($request['sort_by'])) {
 
             if ($request['sort_by'] == 'country') {
-                $params['body']['sort'][$lang . '.country.name.raw']['order'] = $this->getSortOrder($request);
+                $params['body']['sort'][$lang.'.country.name.raw']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == 'year') {
-                $params['body']['sort'][$lang . '.signature_year.raw']['order'] = $this->getSortOrder($request);
+                $params['body']['sort'][$lang.'.signature_year.raw']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == 'contract_name') {
-                $params['body']['sort'][$lang . '.contract_name.raw']['order'] = $this->getSortOrder($request);
+                $params['body']['sort'][$lang.'.contract_name.raw']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == 'resource') {
-                $params['body']['sort'][$lang . '.resource.keyword']['order'] = $this->getSortOrder($request);
+                $params['body']['sort'][$lang.'.resource.keyword']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == 'contract_type') {
-                $params['body']['sort'][$lang . '.type_of_contract.raw']['order'] = $this->getSortOrder($request);
+                $params['body']['sort'][$lang.'.type_of_contract.raw']['order'] = $this->getSortOrder($request);
             }
         }
 
@@ -621,7 +626,7 @@ class APIServices extends Services
         foreach ($results['hits']['hits'] as $result) {
             $source            = $result['_source'];
             $data['results'][] = [
-                'id'                  => (integer)$source['contract_id'],
+                'id'                  => (integer) $source['contract_id'],
                 'open_contracting_id' => $source[$lang]['open_contracting_id'],
                 'name'                => $source[$lang]['contract_name'],
                 'country_code'        => $source[$lang]['country']['code'],
@@ -771,7 +776,7 @@ class APIServices extends Services
 
         $fullTquery = [
             'query_string' => [
-                "fields"              => ["annotation_text." . $lang],
+                "fields"              => ["annotation_text.".$lang],
                 'query'               => $this->addFuzzyOperator($queryString),
                 "default_operator"    => "OR",
                 "fuzzy_prefix_length" => 4,
@@ -781,7 +786,7 @@ class APIServices extends Services
         if ($foundOperator) {
             $fullTquery = [
                 'simple_query_string' => [
-                    "fields"           => ["annotation_text." . $lang],
+                    "fields"           => ["annotation_text.".$lang],
                     'query'            => urldecode($queryString),
                     "default_operator" => "OR",
                 ],
@@ -800,11 +805,11 @@ class APIServices extends Services
                 "pre_tags"  => ["<span class='search-highlight-word'>"],
                 "post_tags" => ["</span>"],
                 "fields"    => [
-                    "annotation_text." . $lang => [
+                    "annotation_text.".$lang => [
                         "fragment_size"       => 200,
                         "number_of_fragments" => 1,
                     ],
-                    "category"                 => [
+                    "category"               => [
                         "fragment_size"       => 200,
                         "number_of_fragments" => 1,
                     ],
@@ -824,7 +829,7 @@ class APIServices extends Services
         $data    = [];
         foreach ($results['hits']['hits'] as $hit) {
             $fields = $hit['_source'];
-            $text   = isset($hit['highlight']["annotation_text." . $lang]) ? $hit['highlight']["annotation_text." . $lang][0] : "";
+            $text   = isset($hit['highlight']["annotation_text.".$lang]) ? $hit['highlight']["annotation_text.".$lang][0] : "";
             if ($text == "") {
                 $text = isset($hit['highlight']['category']) ? $hit['highlight']['category'][0] : "";
             }
@@ -966,14 +971,14 @@ class APIServices extends Services
         if (!empty($resources)) {
             $filters[] = [
                 'terms' => [
-                    $lang . ".resource.raw" => $resources,
+                    $lang.".resource.raw" => $resources,
                 ],
             ];
         }
         if (isset($request['category']) && !empty($request['category'])) {
             $filters[] = [
                 "term" => [
-                    $lang . ".category" => $request['category'],
+                    $lang.".category" => $request['category'],
                 ],
             ];
         }
@@ -984,7 +989,7 @@ class APIServices extends Services
         if (isset($request['country_code']) && !empty($request['country_code'])) {
             $filters[] = [
                 "term" => [
-                    $lang . ".country.code" => $request['country_code'],
+                    $lang.".country.code" => $request['country_code'],
                 ],
             ];
 
@@ -1006,7 +1011,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.country.code.raw',
+                                    'field' => $lang.'.country.code.raw',
                                     'size'  => 252,
                                 ],
                         ],
@@ -1059,7 +1064,7 @@ class APIServices extends Services
         if (!empty($country)) {
             $filters[] = [
                 'terms' => [
-                    $lang . ".country.code" => $country,
+                    $lang.".country.code" => $country,
                 ],
             ];
 
@@ -1070,7 +1075,7 @@ class APIServices extends Services
         if (isset($request['category']) && !empty($request['category'])) {
             $filters[] = [
                 'term' => [
-                    $lang . ".category" => $request['category'],
+                    $lang.".category" => $request['category'],
                 ],
             ];
         }
@@ -1078,7 +1083,7 @@ class APIServices extends Services
         if (isset($request['country_code']) && !empty($request['country_code'])) {
             $filters[] = [
                 'term' => [
-                    $lang . ".country.code" => $request['country_code'],
+                    $lang.".country.code" => $request['country_code'],
                 ],
             ];
 
@@ -1099,7 +1104,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.resource.raw',
+                                    'field' => $lang.'.resource.raw',
                                     'size'  => 1000,
                                 ],
                         ],
@@ -1148,14 +1153,14 @@ class APIServices extends Services
         if (!empty($country)) {
             $filters[] = [
                 'terms' => [
-                    $lang . ".country.code" => $country,
+                    $lang.".country.code" => $country,
                 ],
             ];
         }
         if (isset($request['category']) && !empty($request['category'])) {
             $filters[] = [
                 "term" => [
-                    $lang . ".category" => $request['category'],
+                    $lang.".category" => $request['category'],
                 ],
             ];
         }
@@ -1163,7 +1168,7 @@ class APIServices extends Services
         if (isset($request['country_code']) && !empty($request['country_code'])) {
             $filters[] = [
                 "term" => [
-                    $lang . ".country.code" => $request['country_code'],
+                    $lang.".country.code" => $request['country_code'],
                 ],
             ];
         }
@@ -1181,7 +1186,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.signature_year.raw',
+                                    'field' => $lang.'.signature_year.raw',
                                     'size'  => 1000,
                                 ],
                         ],
@@ -1221,7 +1226,7 @@ class APIServices extends Services
         if (!empty($resources)) {
             $filters[] = [
                 'terms' => [
-                    $lang . ".resource" => $resources,
+                    $lang.".resource" => $resources,
                 ],
             ];
         }
@@ -1229,7 +1234,7 @@ class APIServices extends Services
         if (isset($request['category']) && !empty($request['category'])) {
             $filters[] = [
                 "term" => [
-                    $lang . ".category" => $request['category'],
+                    $lang.".category" => $request['category'],
                 ],
             ];
         }
@@ -1237,7 +1242,7 @@ class APIServices extends Services
         if (isset($request['country_code']) && !empty($request['country_code'])) {
             $filters[] = [
                 "term" => [
-                    $lang . ".country.code" => $request['country_code'],
+                    $lang.".country.code" => $request['country_code'],
                 ],
             ];
 
@@ -1259,13 +1264,13 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.country.code.raw',
+                                    'field' => $lang.'.country.code.raw',
                                     'size'  => 1000,
                                 ],
                             "aggs"  => [
                                 "resource_summary" => [
                                     "terms" => [
-                                        "field" => $lang . ".resource.raw",
+                                        "field" => $lang.".resource.raw",
                                         'size'  => 1000,
                                     ],
                                 ],
@@ -1325,7 +1330,7 @@ class APIServices extends Services
         if (isset($request['country_code']) and !empty($request['country_code'])) {
             $filter[] = [
                 "term" => [
-                    $lang . ".country_code" => $request['country_code'],
+                    $lang.".country_code" => $request['country_code'],
                 ],
             ];
         }
@@ -1333,7 +1338,7 @@ class APIServices extends Services
         if (isset($request['category']) and !empty($request['category'])) {
             $filter[] = [
                 "term" => [
-                    $lang . ".category" => $request['category'],
+                    $lang.".category" => $request['category'],
                 ],
             ];
         }
@@ -1352,7 +1357,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.company_name.keyword',
+                                    'field' => $lang.'.company_name.keyword',
                                     'size'  => 3000,
                                     'order' => [
                                         "_term" => "asc",
@@ -1363,7 +1368,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.corporate_grouping.keyword',
+                                    'field' => $lang.'.corporate_grouping.keyword',
                                     'size'  => 1000,
                                     'order' => [
                                         "_term" => "asc",
@@ -1374,7 +1379,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.contract_type.keyword',
+                                    'field' => $lang.'.contract_type.keyword',
                                     'size'  => 1000,
                                     'order' => [
                                         "_term" => "asc",
@@ -1385,7 +1390,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.document_type.keyword',
+                                    'field' => $lang.'.document_type.keyword',
                                     'size'  => 1000,
                                     'order' => [
                                         "_term" => "asc",
@@ -1396,7 +1401,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang . '.language.keyword',
+                                    'field' => $lang.'.language.keyword',
                                     'size'  => 1000,
                                     'order' => [
                                         "_term" => "asc",
@@ -1454,7 +1459,7 @@ class APIServices extends Services
         if (isset($request['category']) && !empty($request['category'])) {
             $filters[] = [
                 "term" => [
-                    $lang . ".category" => $request['category'],
+                    $lang.".category" => $request['category'],
                 ],
             ];
         }
@@ -1462,7 +1467,7 @@ class APIServices extends Services
 
             $filters[] = [
                 "term" => [
-                    $lang . ".country_code" => $request['country_code'],
+                    $lang.".country_code" => $request['country_code'],
                 ],
             ];
         }
@@ -1562,7 +1567,7 @@ class APIServices extends Services
             return null;
         }
 
-        return (int)$signatureYear;
+        return (int) $signatureYear;
     }
 
     /**
@@ -1689,14 +1694,14 @@ class APIServices extends Services
             $filters[] = [
                 'term' => [
                     '_id' => [
-                        'value' => (int)$document['id'],
+                        'value' => (int) $document['id'],
                     ],
                 ],
             ];
             if (!empty($category)) {
                 $filters[] = [
                     'term' => [
-                        $lang . '.category' => [
+                        $lang.'.category' => [
                             'value' => $category,
                         ],
                     ],
@@ -1704,7 +1709,7 @@ class APIServices extends Services
             }
             $params         = $this->getMetadataIndexType();
             $params['body'] = [
-                '_source' => [$lang . ".contract_name", $lang . ".open_contracting_id"],
+                '_source' => [$lang.".contract_name", $lang.".open_contracting_id"],
                 'query'   => [
                     'bool' => [
                         'must' => $filters,
@@ -1717,14 +1722,14 @@ class APIServices extends Services
                 $first_hit        = $result['hits']['hits'][0];
                 $first_hit_fields = $first_hit['_source'][$lang];
                 $data[]           = [
-                    'id'                  => (int)$first_hit['_id'],
+                    'id'                  => (int) $first_hit['_id'],
                     'open_contracting_id' => $this->getValueOfField($first_hit_fields, 'open_contracting_id'),
                     'name'                => $this->getValueOfField($first_hit_fields, 'contract_name'),
                     'is_published'        => true,
                 ];
             } else {
                 $data[] = [
-                    'id'                  => (int)$document['id'],
+                    'id'                  => (int) $document['id'],
                     'open_contracting_id' => '',
                     'name'                => $document['contract_name'],
                     'is_published'        => false,
@@ -1748,11 +1753,11 @@ class APIServices extends Services
         $data     = [];
         $metadata = $results[$lang];
 
-        $data['id']                  = (int)$results['contract_id'];
+        $data['id']                  = (int) $results['contract_id'];
         $data['open_contracting_id'] = isset($metadata['open_contracting_id']) ? $metadata['open_contracting_id'] : '';
         $data['name']                = isset($metadata['contract_name']) ? $metadata['contract_name'] : '';
         $data['identifier']          = isset($metadata['contract_identifier']) ? $metadata['contract_identifier'] : '';
-        $data['number_of_pages']     = isset($results['total_pages']) ? (int)$results['total_pages'] : '';
+        $data['number_of_pages']     = isset($results['total_pages']) ? (int) $results['total_pages'] : '';
         $data['language']            = isset($metadata['language']) ? $metadata['language'] : '';
         $data['country']             = isset($metadata['country']) ? $metadata['country'] : '';
         $data['resource']            = isset($metadata['resource']) ? $metadata['resource'] : '';
@@ -1809,7 +1814,7 @@ class APIServices extends Services
             'note' => isset($metadata['disclosure_mode_text']) ? $metadata['disclosure_mode_text'] : '',
         ];
         $data['retrieved_at']           = isset($metadata['date_retrieval']) ? $metadata['date_retrieval'] : '';
-        $data['created_at']             = isset($results['created_at']) ? $results['created_at'] . 'Z' : '';
+        $data['created_at']             = isset($results['created_at']) ? $results['created_at'].'Z' : '';
         $data['note']                   = isset($metadata['contract_note']) ? $metadata['contract_note'] : '';
         $data['is_associated_document'] = isset($metadata['is_supporting_document']) ? $this->getBoolean(
             $metadata['is_supporting_document']
@@ -1832,7 +1837,7 @@ class APIServices extends Services
         $data['file']   = [
             [
                 "url"        => isset($metadata['file_url']) ? $metadata['file_url'] : '',
-                "byte_size"  => isset($metadata['file_size']) ? (int)$metadata['file_size'] : '',
+                "byte_size"  => isset($metadata['file_size']) ? (int) $metadata['file_size'] : '',
                 "media_type" => "application/pdf",
             ],
             [
@@ -1886,7 +1891,7 @@ class APIServices extends Services
             return null;
         }
 
-        return (float)$participationShare;
+        return (float) $participationShare;
     }
 
     /**

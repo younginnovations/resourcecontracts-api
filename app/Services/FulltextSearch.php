@@ -17,7 +17,6 @@ class FulltextSearch extends Services
     const FROM = 0;
     const SIZE = 25;
 
-    private $document_count;
     /**
      * @var APIRepositoryInterface
      */
@@ -284,49 +283,6 @@ class FulltextSearch extends Services
     }
 
     /**
-     * Returns contract count
-     *
-     * @param      $params
-     * @param bool $parent_count
-     *
-     * @return int
-     */
-    public function getContractCount($params, $parent_count = false)
-    {
-        $temp_params                                  = [];
-        $temp_params['index']                         = $this->index;
-        $temp_params['type']                          = "master";
-        $temp_params['body']['_source']               = ['_id', 'is_supporting_document', 'parent_contract'];
-        $temp_params['body']['query']['bool']['must'] = $params['body']['query']['bool']['must'];
-        $temp_params['body']['from']                  = 0;
-        $temp_params['body']['size']                  = isset($this->document_count) ? $this->document_count : $this->countAll(
-        );
-        $results                                      = $this->search($temp_params);
-        $results                                      = $results['hits']['hits'];
-        $parent_contract_ids                          = [];
-        $child_contract_ids                           = [];
-
-        foreach ($results as $result) {
-            $source = $result['_source'];
-
-            if ($source['is_supporting_document'] == '1') {
-                $child_contract_ids[]  = (int) $result['_id'];
-                $parent_contract_ids[] = (int) $source['parent_contract']['id'];
-            } else {
-                $parent_contract_ids[] = (int) $result['_id'];
-            }
-        }
-        $parent_contract_ids = array_unique($parent_contract_ids);
-        $child_contract_ids  = array_unique($child_contract_ids);
-
-        if ($parent_count) {
-            return count($parent_contract_ids);
-        }
-
-        return count($parent_contract_ids) + count($child_contract_ids);
-    }
-
-    /**
      * Returns main and associated contract count with filters
      *
      * @param $params
@@ -415,7 +371,6 @@ class FulltextSearch extends Services
                 if (count(array_unique($contract_id_array['main_contract_ids'])) == $page_size) {
                     break;
                 }
-
             }
 
             $contract_id_array['main_contract_ids'] = array_values(
@@ -444,7 +399,7 @@ class FulltextSearch extends Services
     {
         $from                        = $params['body']['from'];
         $page_size                   = $params['body']['size'];
-        $params['body']['size']      = isset($this->document_count) ? $this->document_count : $this->countAll();
+        $params['body']['size']      = $this->countAll();
         $params['body']['from']      = 0;
         $paginated_contract_ids      = [];
         $paginated_main_contract_ids = [];
@@ -460,7 +415,9 @@ class FulltextSearch extends Services
                 $contract_id = (int) $contract['_id'];
 
                 if ($fields['is_supporting_document'] == '1') {
-                    $main_contract_ids[] = (int) $fields['parent_contract']['id'];
+                    $parent_contract_id = (int) $fields['parent_contract']['id'];
+                    $main_contract_ids[] = $parent_contract_id;
+                    $main_supporting_contracts[$parent_contract_id][] = ['id'=>$contract_id];
                 } else {
                     $main_contract_ids[]       = $contract_id;
                     $temp_supporting_contracts = $contract['_source']['supporting_contracts'];
@@ -1034,27 +991,6 @@ class FulltextSearch extends Services
     }
 
     /**
-     * Return search count
-     * @return mixed
-     */
-    public function countAll()
-    {
-        $params               = [];
-        $params['index']      = $this->index;
-        $params['type']       = "master";
-        $params['body']       = [
-            "query" => [
-                "match_all" => new class {
-                },
-            ],
-        ];
-        $count                = $this->countResult($params);
-        $this->document_count = $count['count'];
-
-        return $count['count'];
-    }
-
-    /**
      * Fetch latest 90d contracts
      *
      * @param      $request
@@ -1092,7 +1028,6 @@ class FulltextSearch extends Services
         }
 
         if (isset($request['country_code']) and !empty($request['country_code'])) {
-
             $country   = explode('|', strtoupper($request['country_code']));
             $filters[] = ["terms" => [$lang.".country_code.keyword" => $country]];
 
@@ -1145,6 +1080,7 @@ class FulltextSearch extends Services
         }
 
         $fields = [];
+        
         if (in_array("metadata", $type)) {
             array_push($fields, "metadata_string.".$lang);
         }
@@ -1154,7 +1090,6 @@ class FulltextSearch extends Services
         if (in_array("annotations", $type)) {
             array_push($fields, "annotations_string.".$lang."^0.6");
         }
-
 
         $queryString = isset($request['q']) ? $request['q'] : "";
 
@@ -1290,14 +1225,6 @@ class FulltextSearch extends Services
         $from      = (isset($request['from']) && !empty($request['from'])) && (integer) $request['from'] > -1 ? (integer) $request['from'] : self::FROM;
         $from      = ($from < 9900) ? $from : 9900;
 
-        if ((isset($request['download']) && $request['download'])) {
-            $query_params = $params['body']['query'];
-            $page_size    = ($only_default_filter) ? $this->getMainContractCount(
-                $query_params
-            ) : $this->getContractCount($params, false);
-            $from         = 0;
-        }
-
         $params['body']['size'] = $page_size;
         $params['body']['from'] = $from;
         $data                   = $this->groupedSearchText($params, $type, $lang, $queryString, $only_default_filter);
@@ -1305,13 +1232,6 @@ class FulltextSearch extends Services
         $data['total']          = $this->getContractCount($params, false);
         $data['from']           = $from;
         $data['per_page']       = $page_size;
-
-        if (isset($request['download']) && $request['download']) {
-            $download     = new DownloadServices();
-            $downloadData = $download->getMetadataAndAnnotations($data, $request, $lang);
-
-            return $download->downloadSearchResult($downloadData);
-        }
 
         return $data;
     }
