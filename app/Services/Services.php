@@ -26,11 +26,13 @@ class Services
      */
     private $api;
 
+    private $document_count;
+
     public function __construct()
     {
         $hosts       = explode(",", env('ELASTICSEARCH_SERVER'));
         $this->index = env("INDEX");
-        $logger      = ClientBuilder::defaultLogger('/var/log/rc-api.log', Logger::WARNING);
+        $logger      = ClientBuilder::defaultLogger('/var/www/html/Workspace/resource-contract/resourcecontracts-api/rc-api.log', Logger::WARNING);
         $client      = ClientBuilder::create()->setHosts($hosts)->setLogger($logger);
         $this->api   = $client->build();
         $this->lang  = "en";
@@ -405,5 +407,87 @@ class Services
         ];
 
         return $this->search($params);
+    }
+
+    /**
+     * Return search count
+     * @return mixed
+     */
+    public function countAll()
+    {
+        if(!isset($this->document_count)) {
+            $params               = [];
+            $params['index']      = $this->index;
+            $params['type']       = "master";
+            $params['body']       = [
+                "query" => [
+                    "match_all" => new class {
+                    },
+                ],
+            ];
+            $count                = $this->countResult($params);
+            $this->document_count = $count['count'];
+
+            return $this->document_count;
+        }
+
+        return $this->document_count;
+    }
+
+    /**
+     * Returns contract count
+     *
+     * @param      $params
+     * @param bool $parent_count
+     *
+     * @return int
+     */
+    public function getContractCount($params, $parent_count = false)
+    {
+        $temp_params                                  = [];
+        $temp_params['index']                         = $this->index;
+        $temp_params['type']                          = "master";
+        $temp_params['body']['_source']               = ['_id', 'is_supporting_document', 'parent_contract'];
+        $temp_params['body']['query']['bool']['must'] = $params['body']['query']['bool']['must'];
+        $temp_params['body']['from']                  = 0;
+        $temp_params['body']['size']                  = $this->countAll();
+        $results                                      = $this->search($temp_params);
+        $results                                      = $results['hits']['hits'];
+        $parent_contract_ids                          = [];
+        $child_contract_ids                           = [];
+        $temp_parent_contract_ids                     = [];
+
+        foreach ($results as $result) {
+            $source = $result['_source'];
+
+            if ($source['is_supporting_document'] == '0') {
+                $temp_parent_contract_ids[] = (int) $result['_id'];
+            }
+        }
+
+        foreach ($results as $result) {
+            $source      = $result['_source'];
+            $contract_id = (int) $result['_id'];
+
+            if ($source['is_supporting_document'] == '1') {
+                $parent_contract_id = (int) $source['parent_contract']['id'];
+
+                /*check if parent contract is also published ot not*/
+                if (in_array($parent_contract_id, $temp_parent_contract_ids)) {
+                    $child_contract_ids[]  = $contract_id;
+                    $parent_contract_ids[] = $parent_contract_id;
+                }
+            } else {
+                $parent_contract_ids[] = $contract_id;
+            }
+        }
+        $parent_contract_ids = array_unique($parent_contract_ids);
+        $child_contract_ids  = array_unique($child_contract_ids);
+
+        if ($parent_count) {
+            return count($parent_contract_ids);
+        }
+
+        return count($parent_contract_ids) + count($child_contract_ids);
     }
 }
