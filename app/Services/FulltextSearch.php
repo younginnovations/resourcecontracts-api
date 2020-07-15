@@ -37,6 +37,7 @@ class FulltextSearch extends Services
         $params['type']  = "master";
         $type            = isset($request['group']) ? array_map('trim', explode('|', $request['group'])) : [];
         $typeCheck       = $this->typeCheck($type);
+        $filters         = [];
 
         if (!$typeCheck) {
             return [];
@@ -1080,7 +1081,7 @@ class FulltextSearch extends Services
         }
 
         $fields = [];
-        
+
         if (in_array("metadata", $type)) {
             array_push($fields, "metadata_string.".$lang);
         }
