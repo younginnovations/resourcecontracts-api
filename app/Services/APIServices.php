@@ -75,10 +75,10 @@ class APIServices extends Services
      */
     public function getSummary($request)
     {
-        $params = $this->getMetadataIndexType();
-        $data   = [];
-        $lang   = $this->getLang($request);
-
+        $params         = $this->getMetadataIndexType();
+        $master_params  = $this->getMaserIndexType();
+        $data           = [];
+        $lang           = $this->getLang($request);
         $params['body'] = [
             'size' => 0,
             'aggs' =>
@@ -118,47 +118,56 @@ class APIServices extends Services
                         ],
                 ],
         ];
-
         $filters        = [];
+        $master_filters = [];
         $no_hydrocarbon = false;
         $isCountrySite  = (isset($request['is_country_site']) && $request['is_country_site'] == 1) ? true : false;
 
         if (isset($request['category']) && !empty($request['category'])) {
             $categoryFilter = $this->getCategory($lang, $request['category']);
             array_push($filters, $categoryFilter);
+            array_push($master_filters, $categoryFilter);
         }
         if (isset($request['country_code']) && !empty($request['country_code'])) {
-            $country['term'] = [
+            $country['term']        = [
                 $lang.".country.code" => [
                     "value" => $request['country_code'],
                 ],
             ];
+            $master_country['term'] = [
+                $lang.".country_code" => [
+                    "value" => $request['country_code'],
+                ],
+            ];
             array_push($filters, $country);
+            array_push($master_filters, $master_country);
 
             if ($request['country_code'] == 'gn' && $isCountrySite) {
                 $no_hydrocarbon = true;
             }
         }
-        $params['body']['query']['bool']['must'] = $filters;
+        $params['body']['query']['bool']['must']        = $filters;
+        $master_params['body']['query']['bool']['must'] = $master_filters;
 
         if ($no_hydrocarbon) {
-            $params['body']['query']['bool']['must_not']['term'] = $this->excludeResource(
+            $exclude_hydrocarbon_params                                 = $this->excludeResource(
                 'resource.raw',
                 'Hydrocarbons',
                 $lang
             );
+            $params['body']['query']['bool']['must_not']['term']        = $exclude_hydrocarbon_params;
+            $master_params['body']['query']['bool']['must_not']['term'] = $exclude_hydrocarbon_params;
         }
 
-        $recent_params = $params;
+        $recent_params = $master_params;
 
         $recent_params['body']['query']['bool']['must'][]['range']['published_at']['gte'] = "now-90d/d";
-        unset($recent_params['body']['aggs']);
 
         $response                      = $this->search($params);
         $data['country_summary']       = $response['aggregations']['country_summary']['buckets'];
         $data['year_summary']          = $response['aggregations']['year_summary']['buckets'];
         $data['resource_summary']      = $response['aggregations']['resource_summary']['buckets'];
-        $data['contract_count']        = $this->getContractCount($params, false);
+        $data['contract_count']        = $this->getContractCount($master_params, false);
         $data['recent_contract_count'] = $this->getContractCount($recent_params, false);
 
         return $data;
@@ -173,6 +182,19 @@ class APIServices extends Services
         $param          = [];
         $param['index'] = $this->index;
         $param['type']  = "metadata";
+
+        return $param;
+    }
+
+    /**
+     * Return the index and its type
+     * @return array
+     */
+    public function getMaserIndexType()
+    {
+        $param          = [];
+        $param['index'] = $this->index;
+        $param['type']  = "master";
 
         return $param;
     }
