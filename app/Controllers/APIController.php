@@ -201,9 +201,18 @@ class APIController extends BaseController
         $filters             = $this->request->query->all();
         $only_default_filter = false;
         $free_text_filter    = !empty($filters['q']);
+        $country_code_empty = true;
+
+        if (isset($filters['is_country_site']) && $filters['is_country_site'] == 1) {
+            if(count(explode('|', strtoupper($filters['country_code']))) > 1) {
+                $country_code_empty = false;
+            }
+        }elseif (isset($filters['country_code']) && !empty($filters['country_code'])) {
+            $country_code_empty=false;
+        }
 
         if (empty($filters['q'])
-            && empty($filters['country_code'])
+            && $country_code_empty
             && empty($filters['corporate_group'])
             && empty($filters['company_name'])
             && empty($filters['contract_type'])
