@@ -435,6 +435,29 @@ class Services
     }
 
     /**
+     * Checks if contract has been published
+     * 
+     * @param $ocid
+     *
+     * @return bool
+     */
+    public function isContractPublished($ocid)
+    {
+        $params['index']                         = $this->index;
+        $params['type']                          = "master";
+        $params['body']['_source']               = ['published_at'];
+        $params['body']['query']['bool']['must']['term']['en.open_contracting_id'] =$ocid;
+        $result                                      = $this->search($params);
+        $result = $result['hits']['hits'];
+
+        if(!empty($result)) {
+            return !empty($result[0]['_source']['published_at']);
+        }
+
+        return false;
+    }
+
+    /**
      * Returns contract count
      *
      * @param      $params
@@ -473,7 +496,7 @@ class Services
                 $parent_contract_id = (int) $source['parent_contract']['id'];
 
                 /*check if parent contract is also published ot not*/
-                if (in_array($parent_contract_id, $temp_parent_contract_ids)) {
+                if (in_array($parent_contract_id, $temp_parent_contract_ids) || $this->isContractPublished($source['parent_contract']['open_contracting_id'])) {
                     $child_contract_ids[]  = $contract_id;
                     $parent_contract_ids[] = $parent_contract_id;
                 }
