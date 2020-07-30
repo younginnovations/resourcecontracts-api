@@ -201,14 +201,14 @@ class APIController extends BaseController
         $filters             = $this->request->query->all();
         $only_default_filter = false;
         $free_text_filter    = !empty($filters['q']);
-        $country_code_empty = true;
+        $country_code_empty  = true;
 
         if (isset($filters['is_country_site']) && $filters['is_country_site'] == 1) {
-            if(count(explode('|', strtoupper($filters['country_code']))) > 1) {
+            if (count(explode('|', strtoupper($filters['country_code']))) > 1) {
                 $country_code_empty = false;
             }
-        }elseif (isset($filters['country_code']) && !empty($filters['country_code'])) {
-            $country_code_empty=false;
+        } elseif (isset($filters['country_code']) && !empty($filters['country_code'])) {
+            $country_code_empty = false;
         }
 
         if (empty($filters['q'])
@@ -355,26 +355,9 @@ class APIController extends BaseController
      */
     public function recentGroupedContracts()
     {
-        $filters             = $this->request->query->all();
-        $only_default_filter = false;
-        $free_text_filter    = !empty($filters['q']);
-
-        if (empty($filters['q'])
-            && empty($filters['country_code'])
-            && empty($filters['corporate_group'])
-            && empty($filters['company_name'])
-            && empty($filters['contract_type'])
-            && empty($filters['document_type'])
-            && empty($filters['language'])
-            && empty($filters['year'])
-            && empty($filters['resource'])
-            && empty($filters['annotation_category'])
-            && empty($filters['annotated'])
-        ) {
-            $only_default_filter = true;
-        }
-
-        $response = $this->search->searchInMasterWithWeight($filters, $only_default_filter, $free_text_filter, true);
+        $filters          = $this->request->query->all();
+        $free_text_filter = !empty($filters['q']);
+        $response         = $this->search->searchInMasterWithWeight($filters, false, $free_text_filter, true);
 
         return $this->json($response);
     }
