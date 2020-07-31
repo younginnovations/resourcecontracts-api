@@ -1,5 +1,6 @@
 <?php namespace App\Services;
 
+use DateTime;
 use Elasticsearch\Common\Exceptions\BadRequest400Exception;
 
 
@@ -416,9 +417,9 @@ class FulltextSearch extends Services
                 $contract_id = (int) $contract['_id'];
 
                 if ($fields['is_supporting_document'] == '1') {
-                    $parent_contract_id = (int) $fields['parent_contract']['id'];
-                    $main_contract_ids[] = $parent_contract_id;
-                    $main_supporting_contracts[$parent_contract_id][] = ['id'=>$contract_id];
+                    $parent_contract_id                               = (int) $fields['parent_contract']['id'];
+                    $main_contract_ids[]                              = $parent_contract_id;
+                    $main_supporting_contracts[$parent_contract_id][] = ['id' => $contract_id];
                 } else {
                     $main_contract_ids[]       = $contract_id;
                     $temp_supporting_contracts = $contract['_source']['supporting_contracts'];
@@ -642,6 +643,7 @@ class FulltextSearch extends Services
      * @param $queryString
      * @param $only_default_filter
      * @param $only_default_filter_params
+     * @param $recent
      *
      * @return mixed
      */
@@ -652,7 +654,8 @@ class FulltextSearch extends Services
         $type,
         $queryString,
         $only_default_filter,
-        $only_default_filter_params
+        $only_default_filter_params,
+        $recent
     ) {
         $params['body']['from']                                    = 0;
         $params['body']['query']['bool']['filter']['terms']['_id'] = $contract_ids;
@@ -679,6 +682,19 @@ class FulltextSearch extends Services
         $indexed_contracts        = $indexed_contract_array['indexed_contracts'];
         $indexed_parent_contracts = $indexed_contract_array['indexed_parent_contracts'];
 
+        if ($recent) {
+            foreach ($indexed_contracts as $contract_id => $rec) {
+                $published_at   = $rec['_source']['published_at'];
+                $date           = explode('T', $published_at);
+                $current_date   = new DateTime();
+                $published_date = new DateTime($date[0]);
+                $interval       = $current_date->diff($published_date);
+
+                if ($interval->format('%a') > 90) {
+                    $indexed_contracts[$contract_id]['_score'] = 0;
+                }
+            }
+        }
 
         foreach ($indexed_parent_contracts as $parent_contract_id) {
             if (isset($indexed_contracts[$parent_contract_id])) {
@@ -784,11 +800,18 @@ class FulltextSearch extends Services
      * @param      $lang
      * @param      $queryString
      * @param bool $only_default_filter
+     * @param bool $recent
      *
      * @return array
      */
-    public function groupedSearchText($params, $type, $lang, $queryString, $only_default_filter = false)
-    {
+    public function groupedSearchText(
+        $params,
+        $type,
+        $lang,
+        $queryString,
+        $only_default_filter = false,
+        $recent = false
+    ) {
         try {
             $temp_params                    = $params;
             $temp_params['body']['_source'] = [
@@ -815,7 +838,8 @@ class FulltextSearch extends Services
                 $type,
                 $queryString,
                 $only_default_filter,
-                $temp_params
+                $temp_params,
+                $recent
             );
         } catch (BadRequest400Exception $e) {
             $results['hits']['hits']  = [];
@@ -1228,7 +1252,14 @@ class FulltextSearch extends Services
 
         $params['body']['size'] = $page_size;
         $params['body']['from'] = $from;
-        $data                   = $this->groupedSearchText($params, $type, $lang, $queryString, $only_default_filter);
+        $data                   = $this->groupedSearchText(
+            $params,
+            $type,
+            $lang,
+            $queryString,
+            $only_default_filter,
+            $recent
+        );
         $data['results']        = $this->manualSort($data['results'], $request);
         $data['total']          = $this->getContractCount($params, false);
         $data['from']           = $from;
