@@ -415,7 +415,7 @@ class Services
      */
     public function countAll()
     {
-        if(!isset($this->document_count)) {
+        if (!isset($this->document_count)) {
             $params               = [];
             $params['index']      = $this->index;
             $params['type']       = "master";
@@ -436,21 +436,21 @@ class Services
 
     /**
      * Checks if contract has been published
-     * 
+     *
      * @param $ocid
      *
      * @return bool
      */
     public function isContractPublished($ocid)
     {
-        $params['index']                         = $this->index;
-        $params['type']                          = "master";
-        $params['body']['_source']               = ['published_at'];
-        $params['body']['query']['bool']['must']['term']['en.open_contracting_id'] =$ocid;
-        $result                                      = $this->search($params);
-        $result = $result['hits']['hits'];
+        $params['index']                                                           = $this->index;
+        $params['type']                                                            = "master";
+        $params['body']['_source']                                                 = ['published_at'];
+        $params['body']['query']['bool']['must']['term']['en.open_contracting_id'] = $ocid;
+        $result                                                                    = $this->search($params);
+        $result                                                                    = $result['hits']['hits'];
 
-        if(!empty($result)) {
+        if (!empty($result)) {
             return !empty($result[0]['_source']['published_at']);
         }
 
@@ -461,11 +461,11 @@ class Services
      * Returns contract count
      *
      * @param      $params
-     * @param bool $parent_count
+     * @param bool $only_parent_count
      *
      * @return int
      */
-    public function getContractCount($params, $parent_count = false)
+    public function getContractCount($params, $only_parent_count = false)
     {
         $temp_params                                  = [];
         $temp_params['index']                         = $this->index;
@@ -493,13 +493,18 @@ class Services
             $contract_id = (int) $result['_id'];
 
             if ($source['is_supporting_document'] == '1') {
-                $parent_contract_id = (int) $source['parent_contract']['id'];
+                $parent_contract_id   = (int) $source['parent_contract']['id'];
+                $child_contract_ids[] = $contract_id;
 
-                /*check if parent contract is also published ot not*/
-                if (in_array($parent_contract_id, $temp_parent_contract_ids) || $this->isContractPublished($source['parent_contract']['open_contracting_id'])) {
-                    $child_contract_ids[]  = $contract_id;
+                if (in_array($parent_contract_id, $temp_parent_contract_ids)) {
                     $parent_contract_ids[] = $parent_contract_id;
                 }
+
+                /*check if parent contract is also published ot not*/
+                /*if (in_array($parent_contract_id, $temp_parent_contract_ids) || $this->isContractPublished($source['parent_contract']['open_contracting_id'])) {
+                    $child_contract_ids[]  = $contract_id;
+                    $parent_contract_ids[] = $parent_contract_id;
+                }*/
             } else {
                 $parent_contract_ids[] = $contract_id;
             }
@@ -507,7 +512,7 @@ class Services
         $parent_contract_ids = array_unique($parent_contract_ids);
         $child_contract_ids  = array_unique($child_contract_ids);
 
-        if ($parent_count) {
+        if ($only_parent_count) {
             return count($parent_contract_ids);
         }
 
