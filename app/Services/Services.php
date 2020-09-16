@@ -2,6 +2,7 @@
 
 use Elasticsearch\ClientBuilder;
 use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
 
 /**
  * Class Services
@@ -32,7 +33,8 @@ class Services
     {
         $hosts       = explode(",", env('ELASTICSEARCH_SERVER'));
         $this->index = env("INDEX");
-        $logger      = ClientBuilder::defaultLogger('/var/log/rc-api.log', Logger::WARNING);
+        $logger = new Logger('log');
+        $logger->pushHandler(new StreamHandler('/var/log/rc-api.log', Logger::WARNING));
         $client      = ClientBuilder::create()->setHosts($hosts)->setLogger($logger);
         $this->api   = $client->build();
         $this->lang  = "en";
