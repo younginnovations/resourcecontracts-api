@@ -379,12 +379,6 @@ class FulltextSearch extends Services
                 array_unique($contract_id_array['main_contract_ids'])
             );
             $contract_id_array['contract_ids']      = array_values(array_unique($contract_id_array['contract_ids']));
-
-            if (count($contract_id_array['main_contract_ids']) < $page_size) {
-                $params['body']['query']['bool']['must_not']['bool']['filter']['terms']['_id'] = $contract_id_array['contract_ids'];
-
-                return $this->getMainContracts($params, $contract_id_array);
-            }
         }
 
         return $contract_id_array;
