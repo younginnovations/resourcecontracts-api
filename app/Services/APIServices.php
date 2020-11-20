@@ -351,6 +351,14 @@ class APIServices extends Services
                     'ranges'              => isset($source['ranges']) ? $source['ranges'] : null,
                     'cluster'             => isset($source['cluster']) ? $source['cluster'] : null,
                 ];
+                if( isset($request['category'])
+                    && $request['category']='olc'
+                    && $lang=='fr'
+                    && empty($data['result'][$i]['text'])
+                    && isset($source['annotation_text']['en']))
+                {
+                    $data['result'][$i]['text'] = $source['annotation_text']['en'];
+                }
                 if (isset($source['shapes'])) {
                     unset($data['result'][$i]['ranges']);
                     $data['result'][$i]['shapes'] = $source['shapes'];
