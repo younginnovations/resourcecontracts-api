@@ -1791,7 +1791,7 @@ class APIServices extends Services
         $data['language']            = isset($metadata['language']) ? $metadata['language'] : '';
         $data['country']             = isset($metadata['country']) ? $metadata['country'] : '';
         $data['resource']            = isset($metadata['resource']) ? $metadata['resource'] : '';
-
+        $data['published_at']       =         isset($results['published_at']) ? $results['published_at'] : '';
         foreach ($metadata['government_entity'] as $government) {
             $data['government_entity'][] = [
                 "name"       => $government['entity'],
