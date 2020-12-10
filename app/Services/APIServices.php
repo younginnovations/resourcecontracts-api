@@ -87,7 +87,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang.'.country.code.raw',
+                                    'field' => $lang.'.country.code.keyword',
                                     'size'  => 252,
                                     'order' => [
                                         "_term" => "asc",
@@ -98,7 +98,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang.'.signature_year.raw',
+                                    'field' => $lang.'.signature_year.keyword',
                                     'size'  => 1000,
                                     'order' => [
                                         "_term" => "desc",
@@ -109,7 +109,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang.'.resource.raw',
+                                    'field' => $lang.'.resource.keyword',
                                     'size'  => 1000,
                                     'order' => [
                                         "_term" => "asc",
@@ -151,7 +151,7 @@ class APIServices extends Services
 
         if ($no_hydrocarbon) {
             $exclude_hydrocarbon_params                                 = $this->excludeResource(
-                'resource.raw',
+                'resource.keyword',
                 'Hydrocarbons',
                 $lang
             );
@@ -587,7 +587,7 @@ class APIServices extends Services
         if (isset($request['resource']) and !empty($request['resource'])) {
             $filter[] = [
                 'term' => [
-                    $lang.'.resource.raw' => $request['resource'],
+                    $lang.'.resource.keyword' => $request['resource'],
                 ],
             ];
         }
@@ -621,25 +621,25 @@ class APIServices extends Services
         if (isset($request['sort_by']) and !empty($request['sort_by'])) {
 
             if ($request['sort_by'] == 'country') {
-                $params['body']['sort'][$lang.'.country.name.raw']['order'] = $this->getSortOrder($request);
+                $params['body']['sort'][$lang.'.country.name.keyword']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == 'year') {
-                $params['body']['sort'][$lang.'.signature_year.raw']['order'] = $this->getSortOrder($request);
+                $params['body']['sort'][$lang.'.signature_year.keyword']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == 'contract_name') {
-                $params['body']['sort'][$lang.'.contract_name.raw']['order'] = $this->getSortOrder($request);
+                $params['body']['sort'][$lang.'.contract_name.keyword']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == 'resource') {
                 $params['body']['sort'][$lang.'.resource.keyword']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == 'contract_type') {
-                $params['body']['sort'][$lang.'.type_of_contract.raw']['order'] = $this->getSortOrder($request);
+                $params['body']['sort'][$lang.'.type_of_contract.keyword']['order'] = $this->getSortOrder($request);
             }
         }
 
         if ($no_hydrocarbon) {
             $params['body']['query']['bool']['must_not']['term'] = $this->excludeResource(
-                'resource.raw',
+                'resource.keyword',
                 'Hydrocarbons',
                 $lang
             );
@@ -1001,7 +1001,7 @@ class APIServices extends Services
         if (!empty($resources)) {
             $filters[] = [
                 'terms' => [
-                    $lang.".resource.raw" => $resources,
+                    $lang.".resource.keyword" => $resources,
                 ],
             ];
         }
@@ -1041,7 +1041,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang.'.country.code.raw',
+                                    'field' => $lang.'.country.code.keyword',
                                     'size'  => 252,
                                 ],
                         ],
@@ -1050,7 +1050,7 @@ class APIServices extends Services
 
         if ($no_hydrocarbon) {
             $params['body']['query']['bool']['must_not']['term'] = $this->excludeResource(
-                'resource.raw',
+                'resource.keyword',
                 'Hydrocarbons',
                 $lang
             );
@@ -1134,7 +1134,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang.'.resource.raw',
+                                    'field' => $lang.'.resource.keyword',
                                     'size'  => 1000,
                                 ],
                         ],
@@ -1143,7 +1143,7 @@ class APIServices extends Services
 
         if ($no_hydrocarbon) {
             $params['body']['query']['bool']['must_not']['term'] = $this->excludeResource(
-                'resource.raw',
+                'resource.keyword',
                 'Hydrocarbons',
                 $lang
             );
@@ -1216,7 +1216,7 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang.'.signature_year.raw',
+                                    'field' => $lang.'.signature_year.keyword',
                                     'size'  => 1000,
                                 ],
                         ],
@@ -1294,13 +1294,13 @@ class APIServices extends Services
                         [
                             'terms' =>
                                 [
-                                    'field' => $lang.'.country.code.raw',
+                                    'field' => $lang.'.country.code.keyword',
                                     'size'  => 1000,
                                 ],
                             "aggs"  => [
                                 "resource_summary" => [
                                     "terms" => [
-                                        "field" => $lang.".resource.raw",
+                                        "field" => $lang.".resource.keyword",
                                         'size'  => 1000,
                                     ],
                                 ],
@@ -1311,7 +1311,7 @@ class APIServices extends Services
 
         if ($no_hydrocarbon) {
             $params['body']['query']['bool']['must_not']['term'] = $this->excludeResource(
-                'resource.raw',
+                'resource.keyword',
                 'Hydrocarbons',
                 $lang
             );

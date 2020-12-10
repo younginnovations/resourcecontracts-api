@@ -183,7 +183,7 @@ class FulltextSearch extends Services
                 $params['body']['sort'][$lang.'.signature_year.keyword']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == "contract_name") {
-                $params['body']['sort'][$lang.'.contract_name.raw']['order'] = $this->getSortOrder($request);
+                $params['body']['sort'][$lang.'.contract_name.keyword']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == "resource") {
                 $params['body']['sort'][$lang.'.resource_raw.keyword']['order'] = $this->getSortOrder($request);

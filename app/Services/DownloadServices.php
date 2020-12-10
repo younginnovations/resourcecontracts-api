@@ -128,7 +128,7 @@ class DownloadServices extends Services
                         ],
                         [
                             "terms" => [
-                                "category.raw" => explode('|', $category),
+                                "category.keyword" => explode('|', $category),
                             ],
                         ],
                     ],
