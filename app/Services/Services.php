@@ -65,18 +65,6 @@ class Services
     }
 
     /**
-     * Return the count of search result
-     *
-     * @param $params
-     *
-     * @return array
-     */
-    public function getCount($params)
-    {
-        return $this->api->count($params);
-    }
-
-    /**
      * Filter according to category
      *
      * @param $lang

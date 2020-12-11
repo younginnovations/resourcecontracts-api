@@ -687,7 +687,7 @@ class APIServices extends Services
     {
         $params                               = $this->getMetadataIndexType();
         $params['body']["query"]["match_all"] = new \stdClass();
-        $response                             = $this->getCount($params);
+        $response                             = $this->countResult($params);
 
         return $response['count'];
     }
