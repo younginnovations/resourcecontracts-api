@@ -173,7 +173,6 @@ class APIServices extends Services
         return $data;
     }
 
-    /**
      * Return the index and its type
      * @return array
      */

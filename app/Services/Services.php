@@ -108,25 +108,6 @@ class Services
     }
 
     /**
-     * $params['index']          = (list) A comma-separated list of index names to restrict the operation; use `_all`
-     * or empty string to perform the operation on all indices
-     *        ['ignore_indices'] = (enum) When performed on multiple indices, allows to ignore `missing` ones
-     *        ['preference']     = (string) Specify the node or shard the operation should be performed on (default:
-     *        random)
-     *        ['routing']        = (string) Specific routing value
-     *        ['source']         = (string) The URL-encoded request definition (instead of using request body)
-     *        ['body']           = (array) The request definition
-     *
-     * @param $params array Associative array of parameters
-     *
-     * @return array
-     */
-    public function suggest($params)
-    {
-        return $this->api->suggest($params);
-    }
-
-    /**
      * Add fuzzy operator
      *
      * @param $queryString
@@ -184,36 +165,6 @@ class Services
         }
 
         return $lang;
-    }
-
-    /**
-     * Set Language
-     *
-     * @param string $lang
-     */
-    public function setLang($lang)
-    {
-        $this->lang = $lang;
-    }
-
-    /**
-     * Set Index
-     *
-     * @param string $index
-     */
-    public function setIndex($index)
-    {
-        $this->index = $index;
-    }
-
-    /**
-     * Set Api
-     *
-     * @param ClientBuilder $api
-     */
-    public function setApi($api)
-    {
-        $this->api = $api;
     }
 
     /**
@@ -337,39 +288,6 @@ class Services
     }
 
     /**
-     * Get all contracts from metadata type of elasticsearch
-     *
-     * @param [type] $lang
-     * @param [type] $rc
-     *
-     * @return array
-     */
-    public function getAllMetaContracts($lang, $rc)
-    {
-        $params['index']         = $this->index;
-        $params['type']          = 'metadata';
-        $params['body']['query'] = [
-            "bool" => [
-                "must" => $rc,
-            ],
-        ];
-
-        $totalMetaContracts = $this->countResult($params)['count'];
-
-        $params['body']['size']    = $totalMetaContracts;
-        $params['body']['from']    = 0;
-        $params['body']['_source'] = [
-            "contract_id",
-            $lang.".open_contracting_id",
-            $lang.".is_supporting_document",
-            $lang.".translated_from",
-            "supporting_contracts",
-        ];
-
-        return $this->search($params);
-    }
-
-    /**
      * Get single contract from ID
      *
      * @param [type] $id
@@ -437,29 +355,6 @@ class Services
     }
 
     /**
-     * Checks if contract has been published
-     *
-     * @param $ocid
-     *
-     * @return bool
-     */
-    public function isContractPublished($ocid)
-    {
-        $params['index']                                                           = $this->index;
-        $params['type']                                                            = "master";
-        $params['body']['_source']                                                 = ['published_at'];
-        $params['body']['query']['bool']['must']['term']['en.open_contracting_id'] = $ocid;
-        $result                                                                    = $this->search($params);
-        $result                                                                    = $result['hits']['hits'];
-
-        if (!empty($result)) {
-            return !empty($result[0]['_source']['published_at']);
-        }
-
-        return false;
-    }
-
-    /**
      * Returns contract count
      *
      * @param      $params
@@ -501,12 +396,6 @@ class Services
                 if (in_array($parent_contract_id, $temp_parent_contract_ids)) {
                     $parent_contract_ids[] = $parent_contract_id;
                 }
-
-                /*check if parent contract is also published ot not*/
-                /*if (in_array($parent_contract_id, $temp_parent_contract_ids) || $this->isContractPublished($source['parent_contract']['open_contracting_id'])) {
-                    $child_contract_ids[]  = $contract_id;
-                    $parent_contract_ids[] = $parent_contract_id;
-                }*/
             } else {
                 $parent_contract_ids[] = $contract_id;
             }
