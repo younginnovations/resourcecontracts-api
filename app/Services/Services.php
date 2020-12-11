@@ -14,10 +14,11 @@ class Services
      * string Sorting order default is ascending
      */
     const ORDER = "asc";
-    /**
-     * @param index
+    /*
+     * Prefix to use for all ES indices.
+     * @var string
      */
-    public $index;
+    protected $indices_prefix;
     /**
      * @var string
      */
@@ -32,12 +33,32 @@ class Services
     public function __construct()
     {
         $hosts       = explode(",", env('ELASTICSEARCH_SERVER'));
-        $this->index = env("INDEX");
+        $this->indices_prefix = env('INDICES_PREFIX');
         $logger = new Logger('log');
         $logger->pushHandler(new StreamHandler('/var/log/rc-api.log', Logger::WARNING));
         $client      = ClientBuilder::create()->setHosts($hosts)->setLogger($logger);
         $this->api   = $client->build();
         $this->lang  = "en";
+    }
+
+    public function getMasterIndex()
+    {
+        return $this->indices_prefix . '_master';
+    }
+
+    public function getMetadataIndex()
+    {
+        return $this->indices_prefix . '_metadata';
+    }
+
+    public function getAnnotationsIndex()
+    {
+        return $this->indices_prefix . '_annotations';
+    }
+
+    public function getPdfTextIndex()
+    {
+        return $this->indices_prefix . '_pdf_text';
     }
 
     /**
@@ -234,8 +255,7 @@ class Services
     {
         $resource_access = true;
         $params          = [];
-        $params['index'] = $this->index;
-        $params['type']  = "metadata";
+        $params['index'] = $this->getMetadataIndex();
         $filter          = [];
         $type            = $this->getIdType($contractId);
 
@@ -285,8 +305,7 @@ class Services
      */
     public function getSingleContract($id, $lang)
     {
-        $params['index']           = $this->index;
-        $params['type']            = "master";
+        $params['index']           = $this->getMasterIndex();
         $params['body']['query']   = [
             "bool" => [
                 "must" => [
@@ -325,8 +344,7 @@ class Services
     {
         if (!isset($this->document_count)) {
             $params               = [];
-            $params['index']      = $this->index;
-            $params['type']       = "master";
+            $params['index']      = $this->getMasterIndex();
             $params['body']       = [
                 "query" => [
                     "match_all" => new class {
@@ -353,8 +371,7 @@ class Services
     public function getContractCount($params, $only_parent_count = false)
     {
         $temp_params                                  = [];
-        $temp_params['index']                         = $this->index;
-        $temp_params['type']                          = "master";
+        $temp_params['index']                         = $this->getMasterIndex();
         $temp_params['body']['_source']               = ['_id', 'is_supporting_document', 'parent_contract'];
         $temp_params['body']['query']['bool']['must'] = $params['body']['query']['bool']['must'];
         $temp_params['body']['from']                  = 0;

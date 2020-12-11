@@ -37,8 +37,7 @@ class APIServices extends Services
             $category = [$this->lang.".category" => $request['category']];
         }
 
-        $params['index'] = $this->index;
-        $params['type']  = "master";
+        $params['index'] = $this->getMasterIndex();
         $params['body']  = [
             'size'  => 0,
             'aggs'  =>
@@ -75,8 +74,10 @@ class APIServices extends Services
      */
     public function getSummary($request)
     {
-        $params         = $this->getMetadataIndexType();
-        $master_params  = $this->getMaserIndexType();
+        $params = [];
+        $params['index'] = $this->getMetadataIndex();
+        $master_params = [];
+        $master_params['index'] = $this->getMasterIndex();
         $data           = [];
         $lang           = $this->getLang($request);
         $params['body'] = [
@@ -173,31 +174,6 @@ class APIServices extends Services
         return $data;
     }
 
-     * Return the index and its type
-     * @return array
-     */
-    public function getMetadataIndexType()
-    {
-        $param          = [];
-        $param['index'] = $this->index;
-        $param['type']  = "metadata";
-
-        return $param;
-    }
-
-    /**
-     * Return the index and its type
-     * @return array
-     */
-    public function getMaserIndexType()
-    {
-        $param          = [];
-        $param['index'] = $this->index;
-        $param['type']  = "master";
-
-        return $param;
-    }
-
     /**
      * Return the page of pdf text
      *
@@ -220,8 +196,7 @@ class APIServices extends Services
         if (!$resource_access) {
             return $data;
         }
-        $params['index'] = $this->index;
-        $params['type']  = "pdf_text";
+        $params['index'] = $this->getPdfTextIndex();
         $filter          = [];
         $type            = $this->getIdType($contractId);
 
@@ -284,8 +259,7 @@ class APIServices extends Services
             'total'  => 0,
             'result' => [],
         ];
-        $params['index']                = $this->index;
-        $params['type']                 = "annotations";
+        $params['index']                = $this->getAnnotationsIndex();
         $filter                         = [];
         $lang                           = $this->getLang($request);
         $type                           = $this->getIdType($contractId);
@@ -391,8 +365,7 @@ class APIServices extends Services
             return $data;
         }
         $params          = [];
-        $params['index'] = $this->index;
-        $params['type']  = "annotations";
+        $params['index'] = $this->getAnnotationsIndex();
         $filter          = [];
         $type            = $this->getIdType($contractId);
 
@@ -492,7 +465,8 @@ class APIServices extends Services
      */
     public function getMetadata($contractId, $request)
     {
-        $params                         = $this->getMetadataIndexType();
+        $params = [];
+        $params['index'] = $this->getMetadataIndex();
         $filters                        = [];
         $category                       = '';
         $type                           = $this->getIdType($contractId);
@@ -558,7 +532,8 @@ class APIServices extends Services
      */
     public function getAllContracts($request)
     {
-        $params         = $this->getMetadataIndexType();
+        $params = [];
+        $params['index'] = $this->getMetadataIndex();
         $filter         = [];
         $lang           = $this->getLang($request);
         $no_hydrocarbon = false;
@@ -685,7 +660,8 @@ class APIServices extends Services
      */
     public function getAllContractCount()
     {
-        $params                               = $this->getMetadataIndexType();
+        $params = [];
+        $params['index'] = $this->getMetadataIndex();
         $params['body']["query"]["match_all"] = new \stdClass();
         $response                             = $this->countResult($params);
 
@@ -778,8 +754,7 @@ class APIServices extends Services
     public function annotationSearch($contractId, $request)
     {
         $params          = [];
-        $params['index'] = $this->index;
-        $params['type']  = "annotations";
+        $params['index'] = $this->getAnnotationsIndex();
         if ((!isset($request['q']) and empty($request['q']))) {
             return [];
         }
@@ -892,8 +867,7 @@ class APIServices extends Services
      */
     public function textSearch($contractId, $request)
     {
-        $params['index'] = $this->index;
-        $params['type']  = "pdf_text";
+        $params['index'] = $this->getPdfTextIndex();
         if ((!isset($request['q']) and empty($request['q']))) {
             return [];
         }
@@ -987,7 +961,8 @@ class APIServices extends Services
      */
     public function getCountriesContracts($request)
     {
-        $params    = $this->getMetadataIndexType();
+        $params = [];
+        $params = $this->getMetadataIndex();
         $lang      = $this->getLang($request);
         $resources = (isset($request['resource']) && ($request['resource'] != '')) ? array_map(
             'trim',
@@ -1078,7 +1053,8 @@ class APIServices extends Services
     public function getResourceContracts($request)
     {
         $lang           = $this->getLang($request);
-        $params         = $this->getMetadataIndexType();
+        $params = [];
+        $params['index'] = $this->getMetadataIndex();
         $country        = (isset($request['country']) && ($request['country'] != '')) ? array_map(
             'trim',
             explode(
@@ -1170,7 +1146,8 @@ class APIServices extends Services
     public function getYearsContracts($request)
     {
         $lang    = $this->getLang($request);
-        $params  = $this->getMetadataIndexType();
+        $params = [];
+        $params['index'] = $this->getMetadataIndex();
         $country = (isset($request['country']) && ($request['country'] != '')) ? array_map(
             'trim',
             explode(
@@ -1246,7 +1223,8 @@ class APIServices extends Services
     public function getContractByCountryAndResource($request)
     {
         $lang           = $this->getLang($request);
-        $params         = $this->getMetadataIndexType();
+        $params = [];
+        $params['index'] = $this->getMetadataIndex();
         $resources      = isset($request['resource']) ? array_map('trim', explode(',', $request['resource'])) : [];
         $filters        = [];
         $no_hydrocarbon = false;
@@ -1352,8 +1330,7 @@ class APIServices extends Services
     public function getFilterAttributes($request)
     {
         $lang            = $this->getLang($request);
-        $params['index'] = $this->index;
-        $params['type']  = "master";
+        $params['index'] = $this->getMasterIndex();
         $data            = [];
         $filter          = [];
         if (isset($request['country_code']) and !empty($request['country_code'])) {
@@ -1481,8 +1458,7 @@ class APIServices extends Services
     public function getAnnotationsCategory($request)
     {
         $lang            = $this->getLang($request);
-        $params['index'] = $this->index;
-        $params['type']  = "master";
+        $params['index'] = $this->getMasterIndex();
         $filters         = [];
 
         if (isset($request['category']) && !empty($request['category'])) {
@@ -1555,8 +1531,7 @@ class APIServices extends Services
     public function downloadMetadtaAsCSV($request)
     {
         $lang            = $this->getLang($request);
-        $params['index'] = $this->index;
-        $params['type']  = "metadata";
+        $params['index'] = $this->getMetadataIndex();
         $filters         = [];
 
         if (isset($request['id']) && !empty($request['id'])) {
@@ -1626,8 +1601,7 @@ class APIServices extends Services
     public function getAnnotationById($id, $request)
     {
         $params          = [];
-        $params['index'] = $this->index;
-        $params['type']  = "annotations";
+        $params['index'] = $this->getAnnotationsIndex();
         $params['body']  = [
             "query" => [
                 "term" => [
@@ -1676,8 +1650,7 @@ class APIServices extends Services
     public function countData()
     {
         $params          = [];
-        $params['index'] = $this->index;
-        $params['type']  = "metadata";
+        $params['index'] = $this->getMetadataIndex();
         $params['body']  = [
             "query" => [
                 "match_all" => new \stdClass(),
@@ -1736,7 +1709,8 @@ class APIServices extends Services
                     ],
                 ];
             }
-            $params         = $this->getMetadataIndexType();
+            $params = [];
+            $params['index'] = $this->getMetadataIndex();
             $params['body'] = [
                 '_source' => [$lang.".contract_name", $lang.".open_contracting_id"],
                 'query'   => [
@@ -1932,8 +1906,7 @@ class APIServices extends Services
      */
     private function getAnnotationType($annotationId)
     {
-        $params['index'] = $this->index;
-        $params['type']  = "annotations";
+        $params['index'] = $this->getAnnotationsIndex();
         $params['body']  = [
             "query" => [
                 "term" => [
@@ -1988,8 +1961,7 @@ class APIServices extends Services
     private function getAnnotaionDetails($annotation_id)
     {
         $params          = [];
-        $params['index'] = $this->index;
-        $params['type']  = "annotations";
+        $params['index'] = $this->getAnnotationsIndex();
         $filter          = [];
 
         $filter[] = [

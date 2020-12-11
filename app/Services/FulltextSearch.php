@@ -34,8 +34,7 @@ class FulltextSearch extends Services
     {
         $params          = [];
         $lang            = $this->getLang($request);
-        $params['index'] = $this->index;
-        $params['type']  = "master";
+        $params['index'] = $this->getMasterIndex();
         $type            = isset($request['group']) ? array_map('trim', explode('|', $request['group'])) : [];
         $typeCheck       = $this->typeCheck($type);
         $filters         = [];
@@ -275,8 +274,7 @@ class FulltextSearch extends Services
     public function getMainContractCount($query_params)
     {
         $params                                                                      = [];
-        $params['index']                                                             = $this->index;
-        $params['type']                                                              = "master";
+        $params['index']                                                             = $this->getMasterIndex();
         $params['body']['query']                                                     = $query_params;
         $params['body']['query']['bool']['must'][]['term']['is_supporting_document'] = '0';
         $count                                                                       = $this->countResult($params);
@@ -294,8 +292,7 @@ class FulltextSearch extends Services
     public function getFilteredAllContractCount($params)
     {
         $temp_params                                                       = [];
-        $temp_params['index']                                              = $this->index;
-        $temp_params['type']                                               = "master";
+        $temp_params['index']                                              = $this->getMasterIndex();
         $temp_params['body']['query']['bool']['should'][0]['bool']['must'] = $params['body']['query']['bool']['must'];
         $contract_ids                                                      = $params['body']['query']['bool']['filter']['terms']['_id'];
         $temp_params['body']['query']['bool']['should'][1]['bool']         = ['filter' => ['terms' => ['_id' => $contract_ids]]];
@@ -336,7 +333,6 @@ class FulltextSearch extends Services
 
                     if (!in_array($parent_contract_id, $temp_ids)) {
                         $temp_params                                                   = [];
-                        $temp_params['type']                                           = $params['type'];
                         $temp_params['index']                                          = $params['index'];
                         $temp_params['body']['_source']                                = [
                             '_id',
@@ -736,7 +732,6 @@ class FulltextSearch extends Services
             $supporting_contracts           = $main_contract['supporting_contracts'];
             $temp_params                    = [
                 'index' => $params['index'],
-                'type'  => $params['type'],
             ];
             $temp_params['body']['_source'] = ['id'];
 
@@ -1027,8 +1022,7 @@ class FulltextSearch extends Services
     ) {
         $params          = [];
         $lang            = $this->getLang($request);
-        $params['index'] = $this->index;
-        $params['type']  = "master";
+        $params['index'] = $this->getMasterIndex();
         $type            = isset($request['group']) ? array_map('trim', explode('|', $request['group'])) : [];
         $typeCheck       = $this->typeCheck($type);
 
