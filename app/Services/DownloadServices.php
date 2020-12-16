@@ -47,6 +47,7 @@ class DownloadServices extends Services
                             $result["_id"],
                             $request['annotation_category']
                         );
+
                         $tempData['annotation'] = $annotations;
                     }
                     array_push($data, $tempData);
@@ -122,23 +123,25 @@ class DownloadServices extends Services
                 "bool" => [
                     "must" => [
                         [
-                            "term" => [
+                            "match" => [
                                 "contract_id" => $id,
                             ],
                         ],
-                        [
-                            "terms" => [
-                                "category.raw" => explode('|', $category),
+                     [
+                        "match"=>[
+                         "category"=>$category,
                             ],
-                        ],
+                    ]
                     ],
                 ],
-            ],
+                   
+                    
+                ],
+            
         ];
         $searchResult    = $this->search($params);
         $request         = Request::createFromGlobals();
         $lang            = $this->getLang($request->query->get('lang'));
-
         foreach ($searchResult['hits']['hits'] as $result) {
             $temp['annotation_category'] = $result['_source']['category'];
             $temp['text']                = $result['_source']['annotation_text'][$lang];
@@ -339,7 +342,7 @@ class DownloadServices extends Services
             'Contract Note'                 => $contract->contract_note,
             'Matrix Page'                   => $contract->matrix_page,
             'Annotation Category'           => isset($annotations->annotation_category) ? $annotations->annotation_category : '',
-            'Annotation Text'               => isset($annotations->annotation_text) ? $annotations->annotation_text : '',
+            'Annotation Text'               => isset($annotations->text) ? $annotations->text : '',
         ];
     }
 
