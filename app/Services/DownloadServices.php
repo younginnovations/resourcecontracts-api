@@ -160,7 +160,7 @@ class DownloadServices extends Services
         $data = [];
 
         foreach ($contracts as $contract) {
-            if (isset($contract->annotation)) {
+            if (isset($contract->annotation)&& !empty($contract->annotation)) {
                 foreach ($contract->annotation as $annotations) {
                     $data[] = $this->getCSVData($contract, $annotations);
                 }
