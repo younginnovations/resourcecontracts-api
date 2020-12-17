@@ -34,8 +34,7 @@ class FulltextSearch extends Services
     {
         $params          = [];
         $lang            = $this->getLang($request);
-        $params['index'] = $this->index;
-        $params['type']  = "master";
+        $params['index'] = $this->getMasterIndex();
         $type            = isset($request['group']) ? array_map('trim', explode('|', $request['group'])) : [];
         $typeCheck       = $this->typeCheck($type);
         $filters         = [];
@@ -183,7 +182,7 @@ class FulltextSearch extends Services
                 $params['body']['sort'][$lang.'.signature_year.keyword']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == "contract_name") {
-                $params['body']['sort'][$lang.'.contract_name.raw']['order'] = $this->getSortOrder($request);
+                $params['body']['sort'][$lang.'.contract_name.keyword']['order'] = $this->getSortOrder($request);
             }
             if ($request['sort_by'] == "resource") {
                 $params['body']['sort'][$lang.'.resource_raw.keyword']['order'] = $this->getSortOrder($request);
@@ -275,8 +274,7 @@ class FulltextSearch extends Services
     public function getMainContractCount($query_params)
     {
         $params                                                                      = [];
-        $params['index']                                                             = $this->index;
-        $params['type']                                                              = "master";
+        $params['index']                                                             = $this->getMasterIndex();
         $params['body']['query']                                                     = $query_params;
         $params['body']['query']['bool']['must'][]['term']['is_supporting_document'] = '0';
         $count                                                                       = $this->countResult($params);
@@ -294,8 +292,7 @@ class FulltextSearch extends Services
     public function getFilteredAllContractCount($params)
     {
         $temp_params                                                       = [];
-        $temp_params['index']                                              = $this->index;
-        $temp_params['type']                                               = "master";
+        $temp_params['index']                                              = $this->getMasterIndex();
         $temp_params['body']['query']['bool']['should'][0]['bool']['must'] = $params['body']['query']['bool']['must'];
         $contract_ids                                                      = $params['body']['query']['bool']['filter']['terms']['_id'];
         $temp_params['body']['query']['bool']['should'][1]['bool']         = ['filter' => ['terms' => ['_id' => $contract_ids]]];
@@ -336,7 +333,6 @@ class FulltextSearch extends Services
 
                     if (!in_array($parent_contract_id, $temp_ids)) {
                         $temp_params                                                   = [];
-                        $temp_params['type']                                           = $params['type'];
                         $temp_params['index']                                          = $params['index'];
                         $temp_params['body']['_source']                                = [
                             '_id',
@@ -736,7 +732,6 @@ class FulltextSearch extends Services
             $supporting_contracts           = $main_contract['supporting_contracts'];
             $temp_params                    = [
                 'index' => $params['index'],
-                'type'  => $params['type'],
             ];
             $temp_params['body']['_source'] = ['id'];
 
@@ -1027,8 +1022,7 @@ class FulltextSearch extends Services
     ) {
         $params          = [];
         $lang            = $this->getLang($request);
-        $params['index'] = $this->index;
-        $params['type']  = "master";
+        $params['index'] = $this->getMasterIndex();
         $type            = isset($request['group']) ? array_map('trim', explode('|', $request['group'])) : [];
         $typeCheck       = $this->typeCheck($type);
 
@@ -1297,114 +1291,6 @@ class FulltextSearch extends Services
                 "page_no"         => $annotationsResult[0]["page_no"],
                 "type"            => $annotationsResult[0]["annotation_type"],
             ];
-        }
-
-        return $data;
-    }
-
-    /*
-     * Get Suggestion Text
-     *
-     * @param $params
-     * @param $q
-     * @return array
-     */
-
-    private function getSuggestionText($params, $q)
-    {
-
-        $params['body']['size'] = 0;
-
-        $q           = urldecode($q);
-        $queryLength = str_word_count($q);
-
-        $filter = [
-            "text"                   => $q,
-            "text_suggestion"        => [
-                "term" => [
-                    "field"         => "pdf_text_string",
-                    "suggest_mode"  => "always",
-                    "prefix_length" => 3,
-                ],
-            ],
-            "annotations_suggestion" => [
-                "term" => [
-                    "field"         => "annotations_string",
-                    "suggest_mode"  => "always",
-                    "prefix_length" => 3,
-                ],
-            ],
-        ];
-        if ($queryLength > 1) {
-            $filter = [
-                "text"                   => $q,
-                "text_suggestion"        => [
-                    "phrase" => [
-                        "field"                      => "pdf_text_string",
-                        "real_word_error_likelihood" => 0.50,
-                        "size"                       => 1,
-                        "max_errors"                 => 0.5,
-                        "gram_size"                  => 2,
-                    ],
-                ],
-                "annotations_suggestion" => [
-                    "phrase" => [
-                        "field"                      => "annotations_string",
-                        "real_word_error_likelihood" => 0.50,
-                        "size"                       => 1,
-                        "max_errors"                 => 0.5,
-                        "gram_size"                  => 2,
-                    ],
-                ],
-            ];
-        }
-
-        $params['body']['suggest'] = $filter;
-        try {
-            $suggestion = $this->search($params);
-        } catch (BadRequest400Exception $e) {
-
-        }
-
-        $suggestions        = isset($suggestion['suggest']) ? $suggestion['suggest'] : [];
-        $annotationsSuggest = $this->formatSuggestedData($suggestions, 'annotations_suggestion');
-        $textSuggestion     = $this->formatSuggestedData($suggestions, 'text_suggestion');
-        $intersections      = array_intersect_key($annotationsSuggest, $textSuggestion);
-        $complement         = array_diff_key($annotationsSuggest, $textSuggestion);
-        foreach ($intersections as $intersection) {
-            $freq                                          = $intersection['freq'];
-            $textSuggestion[$intersection['text']]['freq'] = $freq + $textSuggestion[$intersection['text']]['freq'];
-        }
-        $suggestion = array_merge($textSuggestion, $complement);
-        $data       = array_values($suggestion);
-        usort(
-            $data,
-            function ($a, $b) {
-                return $b['freq'] - $a['freq'];
-            }
-        );
-
-        return $data;
-    }
-
-
-    private function formatSuggestedData($suggestions, $field)
-    {
-        $data        = [];
-        $pspell_link = pspell_new("en");
-        if (isset($suggestions[$field])) {
-            foreach ($suggestions[$field] as $sugField) {
-                foreach ($sugField['options'] as $suggestion) {
-
-                    if (pspell_check($pspell_link, $suggestion['text'])) {
-                        $data[$suggestion['text']] = [
-                            'text' => $suggestion['text'],
-                            'freq' => (isset($suggestion['freq']) && !empty($suggestion['freq'])) ? $suggestion['freq'] : 1,
-                        ];
-                    }
-                }
-
-            }
         }
 
         return $data;
