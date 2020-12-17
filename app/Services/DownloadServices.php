@@ -118,27 +118,11 @@ class DownloadServices extends Services
         $data            = [];
         $params['index'] = $this->index;
         $params['type']  = "annotations";
-        $params['body']  = [
-            'query' => [
-                "bool" => [
-                    "must" => [
-                        [
-                            "match" => [
-                                "contract_id" => $id,
-                            ],
-                        ],
-                     [
-                        "match"=>[
-                         "category"=>$category,
-                            ],
-                    ]
-                    ],
-                ],
-                   
-                    
-                ],
-            
-        ];
+
+        $params['body']['query']['bool']['must'][]['term']=['contract_id'=>$id];
+        $params['body']['query']['bool']['must'][]['terms']=['category.keyword'=>explode('|',$category)];
+
+
         $searchResult    = $this->search($params);
         $request         = Request::createFromGlobals();
         $lang            = $this->getLang($request->query->get('lang'));
