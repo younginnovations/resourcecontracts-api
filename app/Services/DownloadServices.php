@@ -123,6 +123,7 @@ class DownloadServices extends Services
         $params['body']['query']['bool']['must'][]['terms']=['category.keyword'=>explode('|',$category)];
 
 
+
         $searchResult    = $this->search($params);
         $request         = Request::createFromGlobals();
         $lang            = $this->getLang($request->query->get('lang'));
@@ -175,10 +176,10 @@ class DownloadServices extends Services
         }
 
         foreach ($arrays as $array) {
-            if (is_array($array) && array_key_exists($array, $key)) {
+            if (is_array($array) && array_key_exists($array, $key &&$array[$key]!="")) {
                 array_push($data, $array[$key]);
             }
-            if (is_object($array) && property_exists($array, $key)) {
+            if (is_object($array) && property_exists($array, $key) && $array->$key!="") {
                 array_push($data, $array->$key);
             }
         }
