@@ -118,8 +118,11 @@ class DownloadServices extends Services
         $data            = [];
         $params['index'] = $this->index;
         $params['type']  = "annotations";
+
         $params['body']['query']['bool']['must'][]['term']=['contract_id'=>$id];
         $params['body']['query']['bool']['must'][]['terms']=['category.keyword'=>explode('|',$category)];
+
+
 
         $searchResult    = $this->search($params);
         $request         = Request::createFromGlobals();
@@ -145,7 +148,7 @@ class DownloadServices extends Services
         $data = [];
 
         foreach ($contracts as $contract) {
-            if (isset($contract->annotation)) {
+            if (isset($contract->annotation)&& !empty($contract->annotation)) {
                 foreach ($contract->annotation as $annotations) {
                     $data[] = $this->getCSVData($contract, $annotations);
                 }
