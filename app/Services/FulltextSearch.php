@@ -257,8 +257,8 @@ class FulltextSearch extends Services
         if (isset($request['download']) && $request['download']) {
             $download     = new DownloadServices();
             $downloadData = $download->getMetadataAndAnnotations($data, $request, $lang);
-
-            return $download->downloadSearchResult($downloadData);
+            $category=isset($request['category'])?$request['category']:'';
+            return $download->downloadSearchResult($downloadData,$category);
         }
 
 
@@ -851,6 +851,7 @@ class FulltextSearch extends Services
      */
     public function searchText($params, $type, $queryString, $lang)
     {
+       
         $data = [];
         try {
             $results = $this->search($params);
