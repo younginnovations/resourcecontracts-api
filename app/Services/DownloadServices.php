@@ -20,6 +20,7 @@ class DownloadServices extends Services
      */
     public function getMetadataAndAnnotations($data, $request = [], $lang)
     {
+        
         $ids         = $this->getMetadataId($data);
         $contractIds = array_chunk($ids, 500);
         $data        = [];
@@ -55,7 +56,7 @@ class DownloadServices extends Services
                 }
             }
         }
-
+        
         return $data;
     }
 
@@ -83,10 +84,10 @@ class DownloadServices extends Services
      *
      * @return array
      */
-    public function downloadSearchResult($downloadData)
+    public function downloadSearchResult($downloadData,$category)
     {
         $downloadData = json_decode(json_encode($downloadData), false);
-        $data         = $this->formatCSVData($downloadData);
+        $data         = $this->formatCSVData($downloadData,$category);
 
         return $data;
     }
@@ -141,17 +142,17 @@ class DownloadServices extends Services
      *
      * @return array
      */
-    private function formatCSVData($contracts)
+    private function formatCSVData($contracts,$category)
     {
         $data = [];
 
         foreach ($contracts as $contract) {
             if (isset($contract->annotation)&& !empty($contract->annotation)) {
                 foreach ($contract->annotation as $annotations) {
-                    $data[] = $this->getCSVData($contract, $annotations);
+                    $data[] = $this->getCSVData($contract,$category, $annotations);
                 }
             } else {
-                $data[] = $this->getCSVData($contract);
+                $data[] = $this->getCSVData($contract,$category);
             }
         }
 
@@ -227,8 +228,9 @@ class DownloadServices extends Services
      *
      * @return array
      */
-    private function getCSVData($contract, $annotations = [])
+    private function getCSVData($contract,$category, $annotations = [])
     {
+      if($category=='olc'){
         return [
             'OCID'                          => $contract->open_contracting_id,
             'Category'                      => $contract->category[0],
@@ -329,6 +331,106 @@ class DownloadServices extends Services
             'Annotation Category'           => isset($annotations->annotation_category) ? $annotations->annotation_category : '',
             'Annotation Text'               => isset($annotations->text) ? $annotations->text : '',
         ];
+    }
+    if($category=='rc')
+    {
+        return [
+            'OCID'                          => $contract->open_contracting_id,
+            'Association'                      => $contract->is_supporting_document==0?'Main':'Supporting',
+            'Contract Name'                 => $contract->contract_name,
+            'Document Link'                       => $contract->file_url,
+
+            'Language'                      => $contract->language,
+            'Country Name'                  => $contract->country->name,
+            'Resource'                      => implode(';', $contract->resource),
+            'Contract Type'                 => implode(';', $contract->type_of_contract),
+            'Signature Date'                => $contract->signature_date,
+            'Document Type'                 => $contract->document_type,
+            'Government Entity'             => implode(
+                ';',
+                $this->makeSemicolonSeparated($contract->government_entity, 'entity')
+            ),
+           
+            'Company Name'                  => implode(';', $this->makeSemicolonSeparated($contract->company, 'name')),
+            'Company Address'               => implode(
+                ';',
+                $this->makeSemicolonSeparated($contract->company, 'company_address')
+            ),
+            'Jurisdiction of Incorporation' => implode(
+                ';',
+                $this->makeSemicolonSeparated(
+                    $contract->company,
+                    'jurisdiction_of_incorporation'
+                )
+            ),
+            'Registration Agency'           => implode(
+                ';',
+                $this->makeSemicolonSeparated(
+                    $contract->company,
+                    'registration_agency'
+                )
+            ),
+            'Company Number'                => implode(
+                ';',
+                $this->makeSemicolonSeparated(
+                    $contract->company,
+                    'company_number'
+                )
+            ),
+            'Corporate Grouping'            => implode(
+                ';',
+                $this->makeSemicolonSeparated(
+                    $contract->company,
+                    'parent_company'
+                )
+            ),
+            'Participation Share'           => implode(
+                ';',
+                $this->makeSemicolonSeparated(
+                    $contract->company,
+                    'participation_share'
+                )
+            ),
+            'Open Corporates Link'          => implode(
+                ';',
+                $this->makeSemicolonSeparated(
+                    $contract->company,
+                    'open_corporate_id'
+                )
+            ),
+            'Incorporation Date'            => implode(
+                ';',
+                $this->makeSemicolonSeparated(
+                    $contract->company,
+                    'company_founding_date'
+                )
+            ),
+            'Operator'                      => implode(';', $this->getOperator($contract->company)),
+            'Project Title'                 => implode(
+                ';',
+                $this->makeSemicolonSeparated(
+                    $contract->concession,
+                    'license_name'
+                )
+            ),
+            'Project Identifier'            => implode(
+                ';',
+                $this->makeSemicolonSeparated(
+                    $contract->concession,
+                    'license_identifier'
+                )
+            ),
+            'License Name'                  => $contract->project_title,
+            'License Identifier'            => $contract->project_identifier,
+            'Source Url'                    => $contract->source_url,
+            'Disclosure Mode'               => $contract->disclosure_mode,
+            'Retrieval Date'                => $contract->date_retrieval,
+            'Key Clauses'           => isset($annotations->annotation_category) ? $annotations->annotation_category : '',
+            'Clause Summary'               => isset($annotations->text) ? $annotations->text : '',
+        ];
+    }
+  return [];
+   
     }
 
     /**
