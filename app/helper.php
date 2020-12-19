@@ -39,6 +39,18 @@ function config($key = '', $default = null)
     return $default;
 }
 
+/**
+ * Parses the hits total object returned by ES 7.x to retrieve the total number
+ * of matching documents.
+ *
+ * ES 7.x changed how it returns the number of hits:
+ * https://www.elastic.co/guide/en/elasticsearch/reference/current/breaking-changes-7.0.html#hits-total-now-object-search-response
+ *
+ * @param $hits
+ */
+function getHitsTotal($hits) {
+    return $hits['value'];
+}
 
 if (!function_exists('array_set')) {
     /**

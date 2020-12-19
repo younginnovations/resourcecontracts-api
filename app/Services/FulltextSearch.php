@@ -650,10 +650,11 @@ class FulltextSearch extends Services
         $params['body']['from']                                    = 0;
         $params['body']['query']['bool']['filter']['terms']['_id'] = $contract_ids;
         $params['body']['size']                                    = $this->getFilteredAllContractCount($params);
+        $params['body']['track_total_hits'] = true;
 
         $results                 = $this->search($params);
         $fields                  = $results['hits']['hits'];
-        $data['total']           = $results['hits']['total'];
+        $data['total']           = getHitsTotal($results['hits']['total']);
         $data['country']         = [];
         $data['year']            = [];
         $data['resource']        = [];
@@ -832,7 +833,6 @@ class FulltextSearch extends Services
             );
         } catch (BadRequest400Exception $e) {
             $results['hits']['hits']  = [];
-            $results['hits']['total'] = 0;
             $metaData['hits']['hits'] = [];
         }
     }
@@ -851,11 +851,14 @@ class FulltextSearch extends Services
             $results = $this->search($params);
         } catch (BadRequest400Exception $e) {
             $results['hits']['hits']  = [];
-            $results['hits']['total'] = 0;
+            $results['hits']['total'] = [
+                'value' => 0,
+                'relation' => 'eq'
+            ];
         }
 
         $fields                  = $results['hits']['hits'];
-        $data['total']           = $results['hits']['total'];
+        $data['total']           = getHitsTotal($results['hits']['total']);
         $data['country']         = [];
         $data['year']            = [];
         $data['resource']        = [];
