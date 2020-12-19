@@ -125,6 +125,7 @@ class DownloadServices extends Services
         $data            = [];
         $params['index'] = $this->index;
         $params['type']  = "annotations";
+
         $params['body']['query']['bool']['must'][]['term']=['contract_id'=>$id];
         $params['body']['query']['bool']['must'][]['terms']=['category.keyword'=>explode('|',$category)];
 
@@ -152,7 +153,7 @@ class DownloadServices extends Services
         $data = [];
 
         foreach ($contracts as $contract) {
-            if (isset($contract->annotation)) {
+            if (isset($contract->annotation)&& !empty($contract->annotation)) {
                 foreach ($contract->annotation as $annotations) {
                     $data[] = $this->getCSVData($contract,$category, $annotations);
                 }
@@ -180,7 +181,9 @@ class DownloadServices extends Services
         }
 
         foreach ($arrays as $array) {
+
             if (is_array($array) && array_key_exists($array, $key) &&$array[$key]!="") {
+
                 array_push($data, $array[$key]);
             }
             if (is_object($array) && property_exists($array, $key) && $array->$key!="") {
@@ -428,7 +431,9 @@ class DownloadServices extends Services
             'Source Url'                    => $contract->source_url,
             'Disclosure Mode'               => $contract->disclosure_mode,
             'Retrieval Date'                => $contract->date_retrieval,
+
             'Key Clause'           => isset($annotations->annotation_category) ? $annotations->annotation_category : '',
+
             'Clause Summary'               => isset($annotations->text) ? $annotations->text : '',
         ];
     }
