@@ -42,13 +42,6 @@ class FulltextSearch extends Services
         $typeCheck       = $this->typeCheck($type);
         $filters         = [];
 
-            if (isset($request['download']) && $request['download']) {
-            $download     = new DownloadServices();
-            $data=$this->searchInMasterWithWeight($request);
-            $downloadData = $download->getMetadataAndAnnotations($data, $request, $lang);
-            $category=isset($request['category'])?$request['category']:'';
-            return $download->downloadSearchResult($downloadData,$category);
-        }
 
         if (!$typeCheck) {
             return [];
@@ -184,6 +177,9 @@ class FulltextSearch extends Services
             $lang.".corporate_grouping",
             $lang.".show_pdf_text",
             $lang.".category",
+            'is_supporting_document',
+            'supporting_contracts',
+            'parent_contract',
         ];
         if (isset($request['sort_by']) and !empty($request['sort_by'])) {
             if ($request['sort_by'] == "country") {
@@ -264,6 +260,15 @@ class FulltextSearch extends Services
         $data['from'] = isset($request['from']) and !empty($request['from']) and (integer) $request['from'] > -1 ? $request['from'] : self::FROM;
 
         $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
+
+     
+        if (isset($request['download']) && $request['download']) {
+            $download     = new DownloadServices();
+            $data=$this->groupedSearchText($params,$type,$lang,$queryString);
+            $downloadData = $download->getMetadataAndAnnotations($data, $request, $lang);
+            $category=isset($request['category'])?$request['category']:'';
+            return $download->downloadSearchResult($downloadData,$category);
+        }
 
 
         return (array) $data;

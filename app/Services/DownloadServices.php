@@ -71,7 +71,8 @@ class DownloadServices extends Services
         $ids = [];
         foreach ($data['results'] as $result) {
             array_push($ids, $result['id']);
-            if($result['is_supporting_document']==0 && $result['children']!="")
+
+            if($result['is_supporting_document']==0 && !empty($result['children']))
             {
                     foreach($result['children']as $child)
                     {
@@ -433,6 +434,7 @@ class DownloadServices extends Services
             'Retrieval Date'                => $contract->date_retrieval,
 
             'Key Clause'           => isset($annotations->annotation_category) ? $annotations->annotation_category : '',
+
 
             'Clause Summary'               => isset($annotations->text) ? $annotations->text : '',
         ];
