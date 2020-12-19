@@ -22,15 +22,14 @@ class DownloadServices extends Services
     {
         
         $ids         = $this->getMetadataId($data);
-        $contractIds = array_chunk($ids, 500);
         $data        = [];
-        foreach ($contractIds as $contractId) {
+        foreach ($ids as $contractId) {
             $params['index'] = $this->index;
             $params['type']  = "metadata";
             $params['body']  = [
                 'size'  => 500,
                 'query' => [
-                    "terms" => [
+                    "term" => [
                         "_id" => $contractId,
                     ],
                 ],
@@ -72,6 +71,13 @@ class DownloadServices extends Services
         $ids = [];
         foreach ($data['results'] as $result) {
             array_push($ids, $result['id']);
+            if($result['is_supporting_document']==0 && $result['children']!="")
+            {
+                    foreach($result['children']as $child)
+                    {
+                        array_push($ids,$child['id']);
+                    }
+            }
         }
 
         return $ids;
@@ -425,7 +431,9 @@ class DownloadServices extends Services
             'Source Url'                    => $contract->source_url,
             'Disclosure Mode'               => $contract->disclosure_mode,
             'Retrieval Date'                => $contract->date_retrieval,
-            'Key Clauses'           => isset($annotations->annotation_category) ? $annotations->annotation_category : '',
+
+            'Key Clause'           => isset($annotations->annotation_category) ? $annotations->annotation_category : '',
+
             'Clause Summary'               => isset($annotations->text) ? $annotations->text : '',
         ];
     }

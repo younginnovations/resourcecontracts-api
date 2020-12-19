@@ -32,6 +32,8 @@ class FulltextSearch extends Services
      */
     public function searchInMaster($request)
     {
+
+    
         $params          = [];
         $lang            = $this->getLang($request);
         $params['index'] = $this->index;
@@ -39,6 +41,14 @@ class FulltextSearch extends Services
         $type            = isset($request['group']) ? array_map('trim', explode('|', $request['group'])) : [];
         $typeCheck       = $this->typeCheck($type);
         $filters         = [];
+
+            if (isset($request['download']) && $request['download']) {
+            $download     = new DownloadServices();
+            $data=$this->searchInMasterWithWeight($request);
+            $downloadData = $download->getMetadataAndAnnotations($data, $request, $lang);
+            $category=isset($request['category'])?$request['category']:'';
+            return $download->downloadSearchResult($downloadData,$category);
+        }
 
         if (!$typeCheck) {
             return [];
@@ -254,12 +264,6 @@ class FulltextSearch extends Services
         $data['from'] = isset($request['from']) and !empty($request['from']) and (integer) $request['from'] > -1 ? $request['from'] : self::FROM;
 
         $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
-        if (isset($request['download']) && $request['download']) {
-            $download     = new DownloadServices();
-            $downloadData = $download->getMetadataAndAnnotations($data, $request, $lang);
-            $category=isset($request['category'])?$request['category']:'';
-            return $download->downloadSearchResult($downloadData,$category);
-        }
 
 
         return (array) $data;
