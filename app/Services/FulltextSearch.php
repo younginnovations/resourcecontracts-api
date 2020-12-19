@@ -260,6 +260,7 @@ class FulltextSearch extends Services
         $data['from'] = isset($request['from']) and !empty($request['from']) and (integer) $request['from'] > -1 ? $request['from'] : self::FROM;
 
         $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
+
      
         if (isset($request['download']) && $request['download']) {
             $download     = new DownloadServices();
@@ -268,6 +269,7 @@ class FulltextSearch extends Services
             $category=isset($request['category'])?$request['category']:'';
             return $download->downloadSearchResult($downloadData,$category);
         }
+
 
         return (array) $data;
     }
