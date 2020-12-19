@@ -270,7 +270,6 @@ class FulltextSearch extends Services
             return $download->downloadSearchResult($downloadData,$category);
         }
 
-
         return (array) $data;
     }
 

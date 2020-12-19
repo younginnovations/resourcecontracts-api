@@ -81,7 +81,7 @@ class DownloadServices extends Services
             }
         }
 
-        return $ids;
+        return array_unique($ids);
     }
 
     /**
@@ -434,7 +434,6 @@ class DownloadServices extends Services
             'Retrieval Date'                => $contract->date_retrieval,
 
             'Key Clause'           => isset($annotations->annotation_category) ? $annotations->annotation_category : '',
-
 
             'Clause Summary'               => isset($annotations->text) ? $annotations->text : '',
         ];
