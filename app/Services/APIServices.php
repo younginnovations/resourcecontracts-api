@@ -218,6 +218,7 @@ class APIServices extends Services
 
         $params['body'] = [
             'size'  => 10000,
+            'track_total_hits' => true,
             'query' => [
                 'bool' => [
                     'must' => $filter,
@@ -227,7 +228,7 @@ class APIServices extends Services
 
         $results = $this->search($params);
 
-        $data['total'] = $results['hits']['total'];
+        $data['total'] = getHitsTotal($results['hits']['total']);
 
         foreach ($results['hits']['hits'] as $result) {
             $source           = $result['_source'];
@@ -288,6 +289,7 @@ class APIServices extends Services
 
         $params['body'] = [
             'size'  => 10000,
+            'track_total_hits' => true,
             'sort'  => ['page' => ["order" => "asc"]],
             'query' => [
                 'bool' => [
@@ -297,7 +299,7 @@ class APIServices extends Services
         ];
 
         $results         = $this->search($params);
-        $data['total']   = $results['hits']['total'];
+        $data['total']   = getHitsTotal($results['hits']['total']);
         $i               = 0;
         $remove          = [
             "Pages missing from  copy//Pages Manquantes de la copie",
@@ -387,6 +389,7 @@ class APIServices extends Services
 
         $params['body'] = [
             'size'  => 10000,
+            'track_total_hits' => true,
             'sort'  => ['page' => ["order" => "asc"]],
             'query' => [
                 'bool' => [
@@ -396,7 +399,7 @@ class APIServices extends Services
         ];
 
         $results       = $this->search($params);
-        $data['total'] = $results['hits']['total'];
+        $data['total'] = getHitsTotal($results['hits']['total']);
         $remove        = [
             "Pages missing from  copy//Pages Manquantes de la copie",
             "Annexes missing from copy//Annexes Manquantes de la copie",
@@ -581,6 +584,7 @@ class APIServices extends Services
         $from    = ($from < 9900) ? $from : 9900;
 
         $params['body']['size'] = $perPage;
+        $params['body']['track_total_hits'] = true;
         $params['body']['from'] = $from;
 
         if (isset($request['download']) && $request['download']) {
@@ -622,7 +626,7 @@ class APIServices extends Services
         $results = $this->search($params);
 
         $data             = [];
-        $data['total']    = $results['hits']['total'];
+        $data['total']    = getHitsTotal($results['hits']['total']);
         $data['per_page'] = $perPage;
         $data['from']     = $from;
         $data['results']  = [];
@@ -1539,6 +1543,7 @@ class APIServices extends Services
         }
         $params['body'] = [
             'size'  => 10000,
+            'track_total_hits' => true,
             'query' => [
                 "terms" => [
                     "_id" => $filters,
@@ -1547,7 +1552,7 @@ class APIServices extends Services
         ];
         $searchResult   = $this->search($params);
         $data           = [];
-        if ($searchResult['hits']['total'] > 0) {
+        if (getHitsTotal($searchResult['hits']['total']) > 0) {
             $results = $searchResult['hits']['hits'];
             foreach ($results as $result) {
                 unset($result['_source'][$lang]['amla_url'], $result['_source'][$lang]['file_size'], $result['_source'][$lang]['word_file']);
