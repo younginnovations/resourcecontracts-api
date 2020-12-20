@@ -260,11 +260,13 @@ class FulltextSearch extends Services
         $data['from'] = isset($request['from']) and !empty($request['from']) and (integer) $request['from'] > -1 ? $request['from'] : self::FROM;
 
         $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
+
      
         if (isset($request['download']) && $request['download']) {
             $download     = new DownloadServices();
             $dataToDownload=$this->groupedSearchText($params,$type,$lang,$queryString);
             $downloadData = $download->getMetadataAndAnnotations($dataToDownload, $request, $lang);
+
             $category=isset($request['category'])?$request['category']:'';
             return $download->downloadSearchResult($downloadData,$category);
         }
