@@ -194,6 +194,8 @@ class FulltextSearch extends Services
             if ($request['sort_by'] == "contract_type") {
                 $params['body']['sort'][$lang.'.contract_type.keyword']['order'] = $this->getSortOrder($request);
             }
+        }else{
+        $params['body']['sort'][$lang.'.signature_year.keyword']['order'] = 'desc';
         }
         else{
             $params['body']['sort'][$lang.'.signature_year.keyword']['order'] = 'desc';
@@ -264,7 +266,8 @@ class FulltextSearch extends Services
         if (isset($request['download']) && $request['download']) {
             $download     = new DownloadServices();
 
-            $data=$this->searchInMasterWithWeight($request);
+            $data=$this->groupedSearchText($params,$type,$lang,$queryString);
+             $data['results']        = $this->manualSort($data['results'], $request);
 
             $downloadData = $download->getMetadataAndAnnotations($data, $request, $lang);
             $category=isset($request['category'])?$request['category']:'';
