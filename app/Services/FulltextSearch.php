@@ -263,7 +263,9 @@ class FulltextSearch extends Services
         $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
         if (isset($request['download']) && $request['download']) {
             $download     = new DownloadServices();
-            $data=$this->groupedSearchText($params,$type,$lang,$queryString);
+
+            $data=$this->searchInMasterWithWeight($request);
+
             $downloadData = $download->getMetadataAndAnnotations($data, $request, $lang);
             $category=isset($request['category'])?$request['category']:'';
             return $download->downloadSearchResult($downloadData,$category);
