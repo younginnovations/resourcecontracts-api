@@ -196,6 +196,7 @@ class FulltextSearch extends Services
             }
         }else{
         $params['body']['sort'][$lang.'.signature_year.keyword']['order'] = 'desc';
+
         }
 
         $highlightField = [];
@@ -263,6 +264,7 @@ class FulltextSearch extends Services
             $download     = new DownloadServices();
             $data=$this->groupedSearchText($params,$type,$lang,$queryString);
              $data['results']        = $this->manualSort($data['results'], $request);
+
             $downloadData = $download->getMetadataAndAnnotations($data, $request, $lang);
             $category=isset($request['category'])?$request['category']:'';
             return $download->downloadSearchResult($downloadData,$category);

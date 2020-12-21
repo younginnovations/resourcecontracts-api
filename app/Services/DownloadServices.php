@@ -48,6 +48,7 @@ class DownloadServices extends Services
                             $result["_id"],
                             $request['annotation_category']
                         );
+
                         $tempData['annotation'] = $annotations;
                     }
                     array_push($data, $tempData);
@@ -137,6 +138,7 @@ class DownloadServices extends Services
         $data            = [];
         $params['index'] = $this->index;
         $params['type']  = "annotations";
+
         $params['body']  = [
             'query' => [
                 "bool" => [
@@ -155,10 +157,10 @@ class DownloadServices extends Services
                 ],
             ],
         ];
+
         $searchResult    = $this->search($params);
         $request         = Request::createFromGlobals();
         $lang            = $this->getLang($request->query->get('lang'));
-
         foreach ($searchResult['hits']['hits'] as $result) {
             $temp['annotation_category'] = $result['_source']['category'];
             $temp['text']                = $result['_source']['annotation_text'][$lang];
@@ -208,10 +210,12 @@ class DownloadServices extends Services
         }
 
         foreach ($arrays as $array) {
+
             if (is_array($array) && array_key_exists($array, $key) && $array[$key]!="") {
                 array_push($data, $array[$key]);
             }
             if (is_object($array) && property_exists($array, $key) &&$array->$key!="") {
+
                 array_push($data, $array->$key);
             }
         }
@@ -458,6 +462,7 @@ class DownloadServices extends Services
             'Retrieval Date'                => $contract->date_retrieval,
             'Key Clause'           => isset($annotations->annotation_category) ? $annotations->annotation_category : '',
             'Clause Summary'               => isset($annotations->text) ? $annotations->text : '',
+
         ];
 
     }
