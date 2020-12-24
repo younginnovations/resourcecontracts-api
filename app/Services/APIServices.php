@@ -966,7 +966,7 @@ class APIServices extends Services
     public function getCountriesContracts($request)
     {
         $params = [];
-        $params = $this->getMetadataIndex();
+        $params['index'] = $this->getMetadataIndex();
         $lang      = $this->getLang($request);
         $resources = (isset($request['resource']) && ($request['resource'] != '')) ? array_map(
             'trim',
