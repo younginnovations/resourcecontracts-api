@@ -34,8 +34,14 @@ class Services
     {
         $hosts       = explode(",", env('ELASTICSEARCH_SERVER'));
         $this->indices_prefix = env('INDICES_PREFIX');
+
+        $log_level = Logger::WARNING;
+        if (env('APP_DEBUG') === 'true') {
+            $log_level = Logger::DEBUG;
+        }
         $logger = new Logger('log');
-        $logger->pushHandler(new StreamHandler('/var/log/rc-api.log', Logger::WARNING));
+        $logger->pushHandler(new StreamHandler('/var/log/rc-api.log', $log_level));
+
         $client      = ClientBuilder::create()->setHosts($hosts)->setLogger($logger);
         $this->api   = $client->build();
         $this->lang  = "en";
