@@ -24,10 +24,10 @@ class DownloadServices extends Services
         $contractIds = array_chunk($ids, 500);
         $data        = [];
         foreach ($contractIds as $contractId) {
-            $params['index'] = $this->index;
-            $params['type']  = "metadata";
+            $params['index'] = $this->getMetadataIndex();
             $params['body']  = [
                 'size'  => 500,
+                'track_total_hits' => true,
                 'query' => [
                     "terms" => [
                         "_id" => $contractId,
@@ -36,7 +36,7 @@ class DownloadServices extends Services
             ];
             $searchResult    = $this->search($params);
 
-            if ($searchResult['hits']['total'] > 0) {
+            if (getHitsTotal($searchResult['hits']['total']) > 0) {
                 $results = $searchResult['hits']['hits'];
                 $i       = 0;
                 foreach ($results as $result) {
@@ -115,8 +115,7 @@ class DownloadServices extends Services
     private function getAnnotations($id, $category)
     {
         $data            = [];
-        $params['index'] = $this->index;
-        $params['type']  = "annotations";
+        $params['index'] = $this->getAnnotationsIndex();
         $params['body']  = [
             'query' => [
                 "bool" => [
@@ -128,7 +127,7 @@ class DownloadServices extends Services
                         ],
                         [
                             "terms" => [
-                                "category.raw" => explode('|', $category),
+                                "category.keyword" => explode('|', $category),
                             ],
                         ],
                     ],
