@@ -176,6 +176,7 @@ class FulltextSearch extends Services
             'is_supporting_document',
             'supporting_contracts',
             'parent_contract',
+            'published_at'
         ];
         if (isset($request['sort_by']) and !empty($request['sort_by'])) {
             if ($request['sort_by'] == "country") {
@@ -254,7 +255,6 @@ class FulltextSearch extends Services
             );
         }
 
-        $data = $this->searchText($params, $type, $queryString, $lang);
         $data['from'] = isset($request['from']) and !empty($request['from']) and (integer) $request['from'] > -1 ? $request['from'] : self::FROM;
 
         $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
@@ -266,6 +266,7 @@ class FulltextSearch extends Services
             $category=isset($request['category'])?$request['category']:'';
             return $download->downloadSearchResult($downloadData,$category);
         }
+        $data = $this->searchText($params, $type, $queryString, $lang);
 
 
         return (array) $data;
