@@ -1256,6 +1256,11 @@ class FulltextSearch extends Services
 
         $params['body']['size'] = $page_size;
         $params['body']['from'] = $from;
+
+        if (isset($request['download']) && $request['download']) {
+            $params['body']['size'] = $this->countAll();
+            $params['body']['from'] = 0;
+        }
         $data                   = $this->groupedSearchText(
             $params,
             $type,
