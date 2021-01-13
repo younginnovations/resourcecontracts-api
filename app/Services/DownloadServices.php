@@ -99,15 +99,13 @@ class DownloadServices extends Services
      * Download the Search Result as CSV
      *
      * @param $downloadData
+     * @param $category
      *
      * @return array
      */
     public function downloadSearchResult($downloadData,$category)
     {
-        $downloadData = json_decode(json_encode($downloadData), false);
-        $data         = $this->formatCSVData($downloadData,$category);
-
-        return $data;
+        return $this->formatCSVData(json_decode(json_encode($downloadData), false),$category);
     }
 
     /**
