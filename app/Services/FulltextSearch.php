@@ -1276,9 +1276,8 @@ class FulltextSearch extends Services
         if (isset($request['download']) && $request['download']) {
             $download     = new DownloadServices();
             $downloadData = $download->getMetadataAndAnnotations($data, $request, $lang);
-            $category     = isset($request['category']) ? $request['category'] : '';
 
-            return $download->downloadSearchResult($downloadData, $category);
+            return $download->downloadSearchResult($downloadData, $request);
         }
 
         $data['total']    = $this->getContractCount($params, false);
