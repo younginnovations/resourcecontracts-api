@@ -36,9 +36,9 @@ class Services
         $this->indices_prefix = env('INDICES_PREFIX');
 
         $log_level = Logger::WARNING;
-        if (env('APP_DEBUG') === 'true') {
-            $log_level = Logger::DEBUG;
-        }
+//        if (env('APP_DEBUG') === 'true') {
+//            $log_level = Logger::DEBUG;
+//        }
         $logger = new Logger('log');
         $logger->pushHandler(new StreamHandler('/var/log/rc-api.log', $log_level));
 
