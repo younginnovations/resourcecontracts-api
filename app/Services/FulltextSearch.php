@@ -176,7 +176,7 @@ class FulltextSearch extends Services
             'is_supporting_document',
             'supporting_contracts',
             'parent_contract',
-            'published_at'
+            'published_at',
         ];
         if (isset($request['sort_by']) and !empty($request['sort_by'])) {
             if ($request['sort_by'] == "country") {
@@ -194,8 +194,8 @@ class FulltextSearch extends Services
             if ($request['sort_by'] == "contract_type") {
                 $params['body']['sort'][$lang.'.contract_type.keyword']['order'] = $this->getSortOrder($request);
             }
-        }else{
-        $params['body']['sort'][$lang.'.signature_year.keyword']['order'] = 'desc';
+        } else {
+            $params['body']['sort'][$lang.'.signature_year.keyword']['order'] = 'desc';
         }
 
         $highlightField = [];
@@ -259,12 +259,13 @@ class FulltextSearch extends Services
 
         $data['per_page'] = (isset($request['per_page']) and !empty($request['per_page'])) ? $request['per_page'] : self::SIZE;
         if (isset($request['download']) && $request['download']) {
-            $download     = new DownloadServices();
-            $data=$this->groupedSearchText($params,$type,$lang,$queryString);
-             $data['results']        = $this->manualSort($data['results'], $request);
-            $downloadData = $download->getMetadataAndAnnotations($data, $request, $lang);
-            $category=isset($request['category'])?$request['category']:'';
-            return $download->downloadSearchResult($downloadData,$category);
+            $download        = new DownloadServices();
+            $data            = $this->groupedSearchText($params, $type, $lang, $queryString);
+            $data['results'] = $this->manualSort($data['results'], $request);
+            $downloadData    = $download->getMetadataAndAnnotations($data, $request, $lang);
+            $category        = isset($request['category']) ? $request['category'] : '';
+
+            return $download->downloadSearchResult($downloadData, $category);
         }
         $data = $this->searchText($params, $type, $queryString, $lang);
 
@@ -320,6 +321,7 @@ class FulltextSearch extends Services
     public function getMainContracts($params, $contract_id_array)
     {
         $page_size = $params['body']['size'];
+
         $results   = $this->search($params);
         $contracts = $results['hits']['hits'];
 
@@ -656,9 +658,9 @@ class FulltextSearch extends Services
         $recent
     ) {
         $params['body']['from']                                    = 0;
-        $params['body']['query']['bool']['filter']['terms']['_id'] = $contract_ids;
+        $params['body']['query']['bool']['filter']['terms']['_id'] = $contract_ids['contract_ids'];
         $params['body']['size']                                    = $this->getFilteredAllContractCount($params);
-        $params['body']['track_total_hits'] = true;
+        $params['body']['track_total_hits']                        = true;
 
         $results                 = $this->search($params);
         $fields                  = $results['hits']['hits'];
@@ -674,7 +676,7 @@ class FulltextSearch extends Services
 
         $indexed_contract_array = $this->getIndexContracts(
             $fields,
-            $contract_ids,
+            $contract_ids['contract_ids'],
             $params
         );
 
@@ -787,6 +789,9 @@ class FulltextSearch extends Services
         asort($data['company_name']);
         asort($data['corporate_group']);
 
+
+        $data['sorted_main_contracts'] = $contract_ids['main_contract_ids'];
+
         return $data;
     }
 
@@ -831,7 +836,7 @@ class FulltextSearch extends Services
 
             return $this->rearrangeContracts(
                 $params,
-                $contract_id_array['contract_ids'],
+                $contract_id_array,
                 $lang,
                 $type,
                 $queryString,
@@ -860,8 +865,8 @@ class FulltextSearch extends Services
         } catch (BadRequest400Exception $e) {
             $results['hits']['hits']  = [];
             $results['hits']['total'] = [
-                'value' => 0,
-                'relation' => 'eq'
+                'value'    => 0,
+                'relation' => 'eq',
             ];
         }
 
@@ -1259,12 +1264,47 @@ class FulltextSearch extends Services
             $only_default_filter,
             $recent
         );
-        $data['results']        = $this->manualSort($data['results'], $request);
-        $data['total']          = $this->getContractCount($params, false);
-        $data['from']           = $from;
-        $data['per_page']       = $page_size;
+
+//        $data['results']        = $this->manualSort($data['results'], $request);
+        $data['results'] = $this->sortByMainContracts($data['results'], $data['sorted_main_contracts']);
+
+        if (isset($request['download']) && $request['download']) {
+            $download     = new DownloadServices();
+            $downloadData = $download->getMetadataAndAnnotations($data, $request, $lang);
+            $category     = isset($request['category']) ? $request['category'] : '';
+
+            return $download->downloadSearchResult($downloadData, $category);
+        }
+
+        $data['total']    = $this->getContractCount($params, false);
+        $data['from']     = $from;
+        $data['per_page'] = $page_size;
 
         return $data;
+    }
+
+    /**
+     * Sorts the contract by alredy sorted main contracts
+     *
+     * @param $contracts
+     * @param $sorted_main_contract_ids
+     *
+     * @return array
+     */
+    public function sortByMainContracts($contracts, $sorted_main_contract_ids)
+    {
+        $temp_sorted_contracts = [];
+
+        foreach ($sorted_main_contract_ids as $sorted_main_contract_id) {
+            foreach ($contracts as $contract) {
+
+                if ($contract['id'] == $sorted_main_contract_id) {
+                    $temp_sorted_contracts[] = $contract;
+                }
+            }
+        }
+
+        return $temp_sorted_contracts;
     }
 
     /**
