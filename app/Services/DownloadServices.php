@@ -103,9 +103,9 @@ class DownloadServices extends Services
      *
      * @return array
      */
-    public function downloadSearchResult($downloadData,$category)
+    public function downloadSearchResult($downloadData,$request)
     {
-        return $this->formatCSVData(json_decode(json_encode($downloadData), false),$category);
+        return $this->formatCSVData(json_decode(json_encode($downloadData), false),$request);
     }
 
     /**
@@ -159,6 +159,7 @@ class DownloadServices extends Services
         foreach ($searchResult['hits']['hits'] as $result) {
             $temp['annotation_category'] = $result['_source']['category'];
             $temp['text']                = $result['_source']['annotation_text'][$lang];
+            $temp['article_reference']   =  $result['_source']['article_reference'][$lang];
             $data[]                      = $temp;
         }
 
@@ -172,17 +173,17 @@ class DownloadServices extends Services
      *
      * @return array
      */
-    private function formatCSVData($contracts,$category)
+    private function formatCSVData($contracts,$request)
     {
         $data = [];
 
         foreach($contracts as $contract) {
             if (isset($contract->annotation)) {
                 foreach ($contract->annotation as $annotations) {
-                    $data[] = $this->getCSVData($contract,$category, $annotations);
+                    $data[] = $this->getCSVData($contract,$request, $annotations);
                 }
             } else {
-                $data[] = $this->getCSVData($contract,$category);
+                $data[] = $this->getCSVData($contract,$request);
             }
         }
 
@@ -256,10 +257,10 @@ class DownloadServices extends Services
      *
      * @return array
      */
-    private function getCSVData($contract,$category, $annotations = [])
+    private function getCSVData($contract,$request, $annotations = [])
     {
-        if($category=='olc'){
-        return [
+        if($request['category']=='olc'){
+      $data= [
             'OCID'                          => $contract->open_contracting_id,
             'Category'                      => $contract->category[0],
             'Contract Name'                 => $contract->contract_name,
@@ -360,9 +361,9 @@ class DownloadServices extends Services
             'Clause Summary'               => isset($annotations->text) ? $annotations->text : '',
         ];
     }
-    if($category=='rc')
+    if($request['category']=='rc')
     {
-        return [
+        $data =[
             'OCID'                          => $contract->open_contracting_id,
             'Association'                      => ($contract->is_supporting_document==0)?"Main":"Supporting",
             'Contract Name'                 => $contract->contract_name,
@@ -454,10 +455,15 @@ class DownloadServices extends Services
             'Disclosure Mode'               => $contract->disclosure_mode,
             'Retrieval Date'                => $contract->date_retrieval,
             'Key Clause'           => isset($annotations->annotation_category) ? $annotations->annotation_category : '',
-            'Clause Summary'               => isset($annotations->text) ? $annotations->text : '',
+            'View Clause'               => isset($annotations->article_reference) ? $annotations->article_reference : '',
         ];
 
+        if (empty($request['annotation_category'])) {
+            unset($data['Key Clause'],$data['Clause Summary']);
+        }
+        
     }
+    return $data;
     }
 
     /**
