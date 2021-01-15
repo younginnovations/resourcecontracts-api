@@ -178,7 +178,7 @@ class DownloadServices extends Services
         $data = [];
 
         foreach($contracts as $contract) {
-            if (isset($contract->annotation)) {
+            if (isset($contract->annotation) && $request['category']=='olc') {
                 foreach ($contract->annotation as $annotations) {
                     $data[] = $this->getCSVData($contract,$request, $annotations);
                 }
@@ -454,12 +454,23 @@ class DownloadServices extends Services
             'Source Url'                    => $contract->source_url,
             'Disclosure Mode'               => $contract->disclosure_mode,
             'Retrieval Date'                => $contract->date_retrieval,
-            'Key Clause'           => isset($annotations->annotation_category) ? $annotations->annotation_category : '',
-            'View Clause'               => isset($annotations->article_reference) ? $annotations->article_reference : '',
+            'Key Clause'           =>  implode(
+                ',',
+                $this->makeSemicolonSeparated(
+                    $contract->annotation,
+                    'annotation_category'
+                )),
+            'View Clause'               => implode(
+                ',',
+                $this->makeSemicolonSeparated(
+                    $contract->annotation,
+                    'article_reference'
+                )),
         ];
+        
 
         if (empty($request['annotation_category'])) {
-            unset($data['Key Clause'],$data['Clause Summary']);
+            unset($data['Key Clause'],$data['View Clause']);
         }
         
     }
