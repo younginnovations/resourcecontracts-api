@@ -1256,6 +1256,11 @@ class FulltextSearch extends Services
 
         $params['body']['size'] = $page_size;
         $params['body']['from'] = $from;
+
+        if (isset($request['download']) && $request['download']) {
+            $params['body']['size'] = $this->countAll();
+            $params['body']['from'] = 0;
+        }
         $data                   = $this->groupedSearchText(
             $params,
             $type,
@@ -1271,9 +1276,8 @@ class FulltextSearch extends Services
         if (isset($request['download']) && $request['download']) {
             $download     = new DownloadServices();
             $downloadData = $download->getMetadataAndAnnotations($data, $request, $lang);
-            $category     = isset($request['category']) ? $request['category'] : '';
 
-            return $download->downloadSearchResult($downloadData, $category);
+            return $download->downloadSearchResult($downloadData, $request);
         }
 
         $data['total']    = $this->getContractCount($params, false);
