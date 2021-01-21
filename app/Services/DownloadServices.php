@@ -50,7 +50,8 @@ class DownloadServices extends Services
                     if (isset($request['annotation_category']) && !empty($request['annotation_category'])) {
                         $annotations            = $this->getAnnotations(
                             $result["_id"],
-                            $request['annotation_category']
+                            $request['annotation_category'],
+                            $request['category']
                         );
                         $tempData['annotation'] = $annotations;
                     }
@@ -142,7 +143,7 @@ class DownloadServices extends Services
      *
      * @return array
      */
-    private function getAnnotations($id, $category)
+    private function getAnnotations($id, $category,$siteName)
     {
         $data            = [];
         $params['index'] = $this->getAnnotationsIndex();
@@ -164,16 +165,30 @@ class DownloadServices extends Services
                 ],
             ],
         ];
+        $params['body']['sort']['annotation_id']['order'] = 'desc';
+
         $searchResult    = $this->search($params);
         $request         = Request::createFromGlobals();
         $lang            = $this->getLang($request->query->get('lang'));
+       
+        // if($siteName=='rc' && !empty($searchResult['hits']['hits'])){
 
-        foreach ($searchResult['hits']['hits'] as $result) {
+        //         $source=$searchResult['hits']['hits'][0]['_source'];
+        //         $temp['annotation_category'] = $source['category'];
+        //         $temp['article_reference']   =$source['article_reference'][$lang];
+        //         $temp['link']                = 'contract/'.$source['open_contracting_id'].'/view#/pdf/page/'.$source['page'].'/annotation/'.$source['annotation_id']; 
+        //         $data[]                      = $temp;
+        // }
+
+        // else{
+        
+            foreach ($searchResult['hits']['hits'] as $result) {
             $temp['annotation_category'] = $result['_source']['category'];
             $temp['text']                = $result['_source']['annotation_text'][$lang];
             $temp['article_reference']   = $result['_source']['article_reference'][$lang];
             $data[]                      = $temp;
         }
+    // }
 
         return $data;
     }
@@ -487,18 +502,32 @@ class DownloadServices extends Services
                         'annotation_category'
                     )
                 ) : '',
-                'View Clause'                   => (isset($contract->annotation) && !empty($contract->annotation)) ? implode(
+                // 'View Clause'                   => (isset($contract->annotation) && !empty($contract->annotation)) ? implode(
+                //     ',',
+                //     $this->makeSemicolonSeparated(
+                //         $contract->annotation,
+                //         'article_reference'
+                //     )
+                // ) : '',
+                'Clause Summary'                   => (isset($contract->annotation) && !empty($contract->annotation)) ? implode(
                     ',',
                     $this->makeSemicolonSeparated(
                         $contract->annotation,
-                        'article_reference'
+                        'text'
                     )
                 ) : '',
+                // 'Link'                   => (isset($contract->annotation) && !empty($contract->annotation)) ? implode(
+                //     ',',
+                //     $this->makeSemicolonSeparated(
+                //         $contract->annotation,
+                //         'link'
+                //     )
+                // ) : '',
             ];
 
 
             if (empty($request['annotation_category'])) {
-                unset($data['Key Clause'], $data['View Clause']);
+                unset($data['Key Clause'], $data['Clause Summary']);
             }
 
         }
