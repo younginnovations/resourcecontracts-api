@@ -1247,6 +1247,11 @@ class FulltextSearch extends Services
             );
         }
 
+//        $params['body']['query']['bool']['must'][]=['term'=>['en.open_contracting_id'=>'ocds-591adf-1022255942']];
+//        echo '<pre>';
+//        print_r($params);
+//        echo '</pre>';die;
+
         $page_size = (isset($request['per_page']) && !empty($request['per_page'])) ? (integer) $request['per_page'] : self::SIZE;
         $page_size = ($page_size < 100) ? $page_size : 100;
         $from      = (isset($request['from']) && !empty($request['from'])) && (integer) $request['from'] > -1 ? (integer) $request['from'] : self::FROM;

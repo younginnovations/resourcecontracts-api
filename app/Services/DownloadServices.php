@@ -167,10 +167,18 @@ class DownloadServices extends Services
                 ],
             ],
         ];
-        $params['body']['sort']['annotation_id']['order'] = 'desc';
+
+
+        if($siteName=='rc') {
+            $params['body']['sort']['page']['order'] = 'asc';
+        }else {
+            $params['body']['sort']['annotation_id']['order'] = 'desc';
+        }
 
         $searchResult = $this->search($params);
         $tagged_hits  = $searchResult['hits']['hits'];
+
+
         $request      = Request::createFromGlobals();
         $lang         = $this->getLang($request->query->get('lang'));
 
@@ -179,7 +187,7 @@ class DownloadServices extends Services
                 $source                      = $tagged_hit['_source'];
                 $temp['annotation_category'] = $source['category'];
                 $temp['article_reference']   = $source['article_reference'][$lang];
-                $temp['link']                = 'contract/'.$source['open_contracting_id'].'/view#/pdf/page/'.$source['page'].'/tagged/'.$source['annotation_id'];
+                $temp['link']                = 'contract/'.$source['open_contracting_id'].'/view#/pdf/page/'.$source['page'].'/tagged/'.$source['id'];
                 $data[]                      = $temp;
             }
         } else {
@@ -225,7 +233,6 @@ class DownloadServices extends Services
                         $grouped_annotations[$annotation_key][] = $temp_annotation;
                     }
 
-
                     foreach ($grouped_annotations as $grouped_annotation) {
                         $temp_contract             = clone $contract;
                         $temp_contract->annotation = $grouped_annotation;
@@ -244,12 +251,13 @@ class DownloadServices extends Services
     /**
      * Make the array semicolon separated for multiple data
      *
-     * @param $arrays
-     * @param $key
+     * @param      $arrays
+     * @param      $key
+     * @param bool $unique
      *
      * @return array
      */
-    private function makeSemicolonSeparated($arrays, $key): array
+    private function makeSemicolonSeparated($arrays, $key, $unique = false): array
     {
         $data = [];
         if ($arrays == null) {
@@ -265,7 +273,7 @@ class DownloadServices extends Services
             }
         }
 
-        return $data;
+        return $unique ? array_unique($data) : $data;
     }
 
     /**
@@ -516,7 +524,8 @@ class DownloadServices extends Services
                     ',',
                     $this->makeSemicolonSeparated(
                         $contract->annotation,
-                        'annotation_category'
+                        'annotation_category',
+                        true
                     )
                 ) : '',
                 'View Clause'                   => (isset($contract->annotation) && !empty($contract->annotation)) ? implode(
