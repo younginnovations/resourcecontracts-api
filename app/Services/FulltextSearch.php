@@ -401,12 +401,13 @@ class FulltextSearch extends Services
     {
         $from                        = $params['body']['from'];
         $page_size                   = $params['body']['size'];
-        $params['body']['size']      = $this->countAll();
+        
         $params['body']['from']      = 0;
         $paginated_contract_ids      = [];
         $paginated_main_contract_ids = [];
         $main_contract_ids           = [];
         $results                     = $this->search($params);
+        $params['body']['size']      = $this->countAll();
         $contracts                   = $results['hits']['hits'];
 
         if (!empty($contracts)) {
