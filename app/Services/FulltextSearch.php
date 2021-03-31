@@ -401,7 +401,7 @@ class FulltextSearch extends Services
     {
         $from                        = $params['body']['from'];
         $page_size                   = $params['body']['size'];
-        
+        $params['body']['query']['bool']['must'][]['term']['is_supporting_document'] = '0';
         // $params['body']['from']      = 0;
         $paginated_contract_ids      = [];
         $paginated_main_contract_ids = [];
