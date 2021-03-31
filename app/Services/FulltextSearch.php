@@ -430,9 +430,10 @@ class FulltextSearch extends Services
                     }
                 }
             }
-            $main_contract_ids               = array_values(array_unique($main_contract_ids));
+            // $main_contract_ids               = array_values(array_unique($main_contract_ids));
             $to_be_spliced_main_contract_ids = $main_contract_ids;
-            $paginated_main_contract_ids     = array_splice($to_be_spliced_main_contract_ids, $from, $page_size);
+            $paginated_main_contract_ids=$to_be_spliced_main_contract_ids;
+            // $paginated_main_contract_ids     = array_splice($to_be_spliced_main_contract_ids, $from, $page_size);
 
             foreach ($paginated_main_contract_ids as $paginated_main_contract_id) {
                 $paginated_contract_ids[] = $paginated_main_contract_id;
