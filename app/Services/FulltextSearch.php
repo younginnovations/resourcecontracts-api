@@ -401,12 +401,13 @@ class FulltextSearch extends Services
     {
         $from                        = $params['body']['from'];
         $page_size                   = $params['body']['size'];
-        $params['body']['size']      = $this->countAll();
-        $params['body']['from']      = 0;
+        $params['body']['query']['bool']['must'][]['term']['is_supporting_document'] = '0';
+        // $params['body']['from']      = 0;
         $paginated_contract_ids      = [];
         $paginated_main_contract_ids = [];
         $main_contract_ids           = [];
         $results                     = $this->search($params);
+        $params['body']['size']      = $this->countAll();
         $contracts                   = $results['hits']['hits'];
 
         if (!empty($contracts)) {
@@ -431,7 +432,8 @@ class FulltextSearch extends Services
             }
             $main_contract_ids               = array_values(array_unique($main_contract_ids));
             $to_be_spliced_main_contract_ids = $main_contract_ids;
-            $paginated_main_contract_ids     = array_splice($to_be_spliced_main_contract_ids, $from, $page_size);
+            $paginated_main_contract_ids=$to_be_spliced_main_contract_ids;
+            // $paginated_main_contract_ids     = array_splice($to_be_spliced_main_contract_ids, $from, $page_size);
 
             foreach ($paginated_main_contract_ids as $paginated_main_contract_id) {
                 $paginated_contract_ids[] = $paginated_main_contract_id;
