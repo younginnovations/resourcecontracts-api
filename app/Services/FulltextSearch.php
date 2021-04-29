@@ -246,7 +246,7 @@ class FulltextSearch extends Services
             $params['body']['size'] = $this->countAll();
             $params['body']['from'] = 0;
         }
-
+        
         if ($no_hydrocarbons) {
             $params['body']['query']['bool']['must_not']['term'] = $this->excludeResource(
                 'resource_raw.keyword',
@@ -268,7 +268,6 @@ class FulltextSearch extends Services
             return $download->downloadSearchResult($downloadData, $category);
         }
         $data = $this->searchText($params, $type, $queryString, $lang);
-
 
         return (array) $data;
     }
@@ -1094,7 +1093,16 @@ class FulltextSearch extends Services
         }
         if (isset($request['annotation_category']) and !empty($request['annotation_category'])) {
             $annotationsCategory = explode('|', $request['annotation_category']);
-            $filters[]           = ["terms" => ["annotations_category.keyword" => $annotationsCategory]];
+
+            if(isset($request['and']) and !empty($request['and'] and $request['and']==1)) {
+
+                foreach ($annotationsCategory as $cat) {
+                    $filters[]           = ["terms" => ["annotations_category.keyword" => [$cat]]];
+                }
+
+            }else {
+                $filters[]           = ["terms" => ["annotations_category.keyword" => $annotationsCategory]];
+            }
         }
         if (isset($request['annotated']) and !empty($request['annotated']) and $request['annotated'] == 1) {
             $filters[] = [
