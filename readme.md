@@ -1,3 +1,5 @@
+Moved to https://github.com/NRGI/resourcecontracts-api 
+
 # NRGI- Client API
 
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/younginnovations/resourcecontracts-api/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/younginnovations/resourcecontracts-api/?branch=master)
